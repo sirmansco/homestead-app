@@ -10,6 +10,8 @@ import { ScreenBell } from './ScreenBell';
 import { ScreenTimeOff } from './ScreenTimeOff';
 import { ScreenVillage } from './ScreenVillage';
 import { HouseholdProvider } from './HouseholdSwitcher';
+import { InstallHint } from './InstallHint';
+import { RefreshButton } from './RefreshButton';
 
 type TabId = 'home' | 'almanac' | 'post' | 'bell' | 'village' | 'shifts' | 'timeoff';
 type Role = 'parent' | 'caregiver';
@@ -211,6 +213,7 @@ export function HomesteadApp() {
           overflow: 'hidden',
         }}>
           <RoleSwitcherMobile role={role} onChange={handleRoleChange} />
+          <RefreshButton />
           <div style={{
             flex: 1, overflow: 'hidden', position: 'relative',
             paddingTop: 'env(safe-area-inset-top, 0px)',
@@ -219,6 +222,7 @@ export function HomesteadApp() {
           </div>
           <GTabBar active={currentTab} onNavigate={navigate} role={role} />
           {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
+          <InstallHint />
         </div>
       </HouseholdProvider>
     );

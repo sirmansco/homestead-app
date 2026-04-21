@@ -55,9 +55,12 @@ export function GAvatar({ name = '', size = 36, style = {} }: {
 }
 
 // ── GMasthead ─────────────────────────────────────────────────────────────
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.0';
+const APP_SHA = process.env.NEXT_PUBLIC_APP_SHA || 'dev';
+
 export function GMasthead({
   left, right, title, tagline,
-  folioLeft = 'No. 142', folioRight = 'Homestead Press',
+  folioLeft = `v${APP_VERSION} · ${APP_SHA}`, folioRight = 'Homestead Press',
   leftAction, rightAction, titleColor,
 }: {
   left?: string;
