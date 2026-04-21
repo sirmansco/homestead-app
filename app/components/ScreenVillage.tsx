@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
+import { UserButton } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
@@ -346,7 +347,14 @@ export function ScreenVillage() {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        right={total === 0 ? 'empty · + invite' : `${total} people · + invite`}
+        rightAction={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GLabel color={G.clay}>
+              {myRole === 'parent' ? (total === 0 ? 'empty · + add' : `${total} people · + add`) : `${total} people`}
+            </GLabel>
+            <UserButton />
+          </div>
+        }
         title="The Village"
         tagline="Grouped by how close they are when the call goes out."
         folioLeft="No. 142" folioRight="Homestead Press"
@@ -365,7 +373,9 @@ export function ScreenVillage() {
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
               Invite family and caregivers who help with the kids.
             </div>
-            <button onClick={() => setShowInvite(true)} style={btnStyle}>Invite someone</button>
+            {myRole === 'parent' && (
+              <button onClick={() => setShowInvite(true)} style={btnStyle}>Invite or add</button>
+            )}
           </div>
         ) : (
           <>
@@ -427,9 +437,11 @@ export function ScreenVillage() {
               <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 17, color: G.ink, lineHeight: 1.3 }}>
                 &ldquo;Many hands make light work.&rdquo;
               </div>
-              <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>
-                Invite someone
-              </button>
+              {myRole === 'parent' && (
+                <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>
+                  Invite or add
+                </button>
+              )}
             </div>
           </>
         )}
