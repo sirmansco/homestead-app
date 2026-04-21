@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GTabBar } from './shared';
 import { ScreenHome } from './ScreenHome';
@@ -12,6 +13,8 @@ import { ScreenVillage } from './ScreenVillage';
 import { HouseholdProvider } from './HouseholdSwitcher';
 import { InstallHint } from './InstallHint';
 import { RefreshButton } from './RefreshButton';
+
+const DEV_USER_ID = process.env.NEXT_PUBLIC_DEV_CLERK_USER_ID;
 
 type TabId = 'home' | 'almanac' | 'post' | 'bell' | 'village' | 'shifts' | 'timeoff';
 type Role = 'parent' | 'caregiver';
@@ -138,21 +141,42 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
 }
 
 export function HomesteadApp() {
+  const { user } = useUser();
+  const canSwitchRole = !!DEV_USER_ID && user?.id === DEV_USER_ID;
+
   const [role, setRole] = useState<Role>('parent');
   const [screen, setScreen] = useState<TabId>('home');
   const [bellCompose, setBellCompose] = useState(false);
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const isMobile = useIsMobile();
 
+  // Load real role from API; dev user may override via localStorage
+  useEffect(() => {
+    fetch('/api/household')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.user?.role) {
+          const apiRole = data.user.role as Role;
+          if (canSwitchRole) {
+            const savedRole = localStorage.getItem('hs.role') as Role | null;
+            setRole(savedRole ?? apiRole);
+          } else {
+            setRole(apiRole);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [user?.id, canSwitchRole]);
+
   useEffect(() => {
     const savedScreen = localStorage.getItem('hs.screen') as TabId | null;
-    const savedRole   = localStorage.getItem('hs.role')   as Role | null;
     if (savedScreen) setScreen(savedScreen);
-    if (savedRole)   setRole(savedRole);
   }, []);
 
   useEffect(() => { localStorage.setItem('hs.screen', screen); }, [screen]);
-  useEffect(() => { localStorage.setItem('hs.role',   role);   }, [role]);
+  useEffect(() => {
+    if (canSwitchRole) localStorage.setItem('hs.role', role);
+  }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
     if (id === 'bell') setBellCompose(false);
@@ -212,7 +236,7 @@ export function HomesteadApp() {
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}>
-          <RoleSwitcherMobile role={role} onChange={handleRoleChange} />
+          {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
           <RefreshButton />
           <div style={{
             flex: 1, overflow: 'hidden', position: 'relative',
@@ -240,7 +264,7 @@ export function HomesteadApp() {
           fontFamily: G.display, fontStyle: 'italic', fontSize: 18, color: '#FBF7F0',
           marginBottom: 24, lineHeight: 1.2,
         }}>Homestead</div>
-        <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />
+        {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FBF7F0', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
         {(role === 'parent'
           ? [['1', 'Week'], ['2', 'Almanac'], ['3', 'Post'], ['4', 'Bell'], ['5', 'Village']]

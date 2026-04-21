@@ -50,7 +50,7 @@ export function InstallHint() {
             Add Homestead to your home screen
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12.5, opacity: 0.85, lineHeight: 1.4 }}>
-            Tap <span style={{ display: 'inline-block', padding: '0 4px', border: '1px solid rgba(251,247,240,0.4)', borderRadius: 3, fontSize: 11 }}>􀈂</span> Share, then <strong>Add to Home Screen</strong>.
+            Tap the <strong>Share</strong> button at the bottom of Safari, then <strong>Add to Home Screen</strong>.
           </div>
         </div>
         <button
