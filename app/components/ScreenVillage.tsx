@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
-import { HouseholdSwitcher } from './HouseholdSwitcher';
+import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 
 type VillageGroup = 'inner' | 'family' | 'sitter';
 type AppRole = 'parent' | 'caregiver';
@@ -283,6 +283,159 @@ const btnStyleAlt: React.CSSProperties = {
   background: 'transparent', color: G.ink, border: `1px solid ${G.ink}`,
 };
 
+// ── Caregiver view: My Families ──────────────────────────────────────────
+
+type FamilyData = {
+  household: { id: string; name: string; glyph: string };
+  adults: Adult[];
+  kids: Kid[];
+};
+
+function FamilyCard({ family }: { family: FamilyData }) {
+  const parents = family.adults.filter(a => a.role === 'parent');
+  const caregivers = family.adults.filter(a => a.role === 'caregiver');
+  return (
+    <div style={{
+      background: G.paper, border: `1px solid ${G.hairline2}`,
+      borderRadius: 10, padding: 16, marginBottom: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 24 }}>{family.household.glyph}</span>
+        <div>
+          <div style={{ fontFamily: G.display, fontSize: 18, fontWeight: 500, color: G.ink, lineHeight: 1.15 }}>
+            {family.household.name}
+          </div>
+        </div>
+      </div>
+
+      {parents.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <GLabel style={{ marginBottom: 6 }}>Parents</GLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {parents.map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <GAvatar name={p.name} size={28} />
+                <span style={{ fontFamily: G.display, fontSize: 13, fontWeight: 500 }}>{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {family.kids.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <GLabel style={{ marginBottom: 6 }}>Kids</GLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {family.kids.map(k => (
+              <div key={k.id} style={{
+                fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2,
+                background: G.bg, border: `1px solid ${G.hairline}`,
+                borderRadius: 100, padding: '3px 10px',
+              }}>{k.name}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {caregivers.length > 1 && (
+        <div>
+          <GLabel style={{ marginBottom: 6 }}>Also helping</GLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {caregivers.map(c => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <GAvatar name={c.name} size={24} />
+                <span style={{ fontFamily: G.sans, fontSize: 11, color: G.ink2 }}>{c.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CaregiverVillage() {
+  const { all, active } = useHousehold();
+  const [activeData, setActiveData] = useState<{ adults: Adult[]; kids: Kid[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/village');
+        const data = res.ok ? await res.json() : { adults: [], kids: [] };
+        setActiveData({ adults: data.adults || [], kids: data.kids || [] });
+      } catch {
+        setActiveData({ adults: [], kids: [] });
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [active?.id]);
+
+  async function shareAppLink() {
+    const url = window.location.origin;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }
+
+  const activeFamilyData: FamilyData | null = active && activeData
+    ? { household: active, adults: activeData.adults, kids: activeData.kids }
+    : null;
+
+  return (
+    <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
+      <GMasthead
+        leftAction={<HouseholdSwitcher />}
+        rightAction={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GLabel color={G.clay}>{all.length} {all.length === 1 ? 'family' : 'families'}</GLabel>
+            <UserButton />
+          </div>
+        }
+        title="My Families"
+        tagline={all.length > 1 ? 'Switch households above to see each family.' : 'The household you help with.'}
+        folioRight="Homestead Press"
+      />
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted }}>
+            Loading…
+          </div>
+        ) : activeFamilyData ? (
+          <FamilyCard family={activeFamilyData} />
+        ) : (
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>
+            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink }}>
+              No families yet.
+            </div>
+          </div>
+        )}
+
+        <div style={{
+          marginTop: 16, padding: 18, textAlign: 'center',
+          borderTop: `1px solid ${G.hairline2}`,
+        }}>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 12, lineHeight: 1.5 }}>
+            Helping another family? Ask them to invite you from their Village screen — or share the app link so they can sign up.
+          </div>
+          <button onClick={shareAppLink} style={{ ...btnStyle, opacity: copied ? 0.6 : 1 }}>
+            {copied ? 'Copied!' : 'Share app link'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Parent view ───────────────────────────────────────────────────────────
+
 export function ScreenVillage() {
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
@@ -339,6 +492,8 @@ export function ScreenVillage() {
     await fetch(`/api/village?type=kid&id=${id}`, { method: 'DELETE' });
     load();
   };
+
+  if (!loading && myRole === 'caregiver') return <CaregiverVillage />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
   const total = adults.length + kids.length;
