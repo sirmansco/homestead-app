@@ -155,18 +155,18 @@ export function HomesteadApp() {
     fetch('/api/household')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
+        // Dev user: always prefer localStorage so the switcher actually works
+        if (canSwitchRole) {
+          const savedRole = localStorage.getItem('hs.role') as Role | null;
+          setRole(savedRole ?? (data?.user?.role as Role ?? 'parent'));
+          return;
+        }
         if (data?.isDualRole) {
           setRole('parent');
           return;
         }
         if (data?.user?.role) {
-          const apiRole = data.user.role as Role;
-          if (canSwitchRole) {
-            const savedRole = localStorage.getItem('hs.role') as Role | null;
-            setRole(savedRole ?? apiRole);
-          } else {
-            setRole(apiRole);
-          }
+          setRole(data.user.role as Role);
         }
       })
       .catch(() => {});
