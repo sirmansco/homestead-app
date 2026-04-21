@@ -252,27 +252,27 @@ function BellCompose({ onRing, onBack, onPost }: {
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-            <label style={{ display: 'block' }}>
+            <label style={{ display: 'block', width: '100%' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: RED, fontWeight: 700, marginBottom: 4 }}>Start</div>
               <input
                 type="datetime-local"
                 value={startsAt}
                 onChange={e => setStartsAt(e.target.value)}
                 style={{
-                  width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
+                  display: 'block', width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
                   border: `1px solid ${RED}`, background: '#FFE6DA',
                   fontFamily: G.display, fontSize: 13, color: G.ink, outline: 'none',
                 }}
               />
             </label>
-            <label style={{ display: 'block' }}>
+            <label style={{ display: 'block', width: '100%' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
               <input
                 type="datetime-local"
                 value={endsAt}
                 onChange={e => setEndsAt(e.target.value)}
                 style={{
-                  width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
+                  display: 'block', width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
                   border: `1px solid ${G.hairline2}`, background: G.paper,
                   fontFamily: G.display, fontSize: 13, color: G.ink, outline: 'none',
                 }}
