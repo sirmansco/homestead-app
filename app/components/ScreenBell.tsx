@@ -98,7 +98,7 @@ function Rung({ ring, label, status, time, people }: {
   );
 }
 
-function BellCompose({ onRing, onBack }: { onRing: () => void; onBack?: () => void }) {
+function BellCompose({ onRing, onBack, onPost }: { onRing: () => void; onBack?: () => void; onPost?: () => void }) {
   const [why, setWhy] = useState(1);
   const reasons = [
     { id: 0, label: 'Sick kid',             desc: 'need someone home, now' },
@@ -172,10 +172,10 @@ function BellCompose({ onRing, onBack }: { onRing: () => void; onBack?: () => vo
         }}>
           <GLabel color={RED}>How it&apos;ll ring</GLabel>
           <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; inner circle · 4 people</div>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+1 MIN</b> &nbsp; family & close friends · 5 more</div>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+3 MIN</b> &nbsp; trusted sitters · 3 more</div>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; the whole village</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; inner circle</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+2 MIN</b> &nbsp; family & close friends</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; trusted sitters</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+10 MIN</b> &nbsp; the whole village</div>
           </div>
         </div>
 
@@ -189,7 +189,11 @@ function BellCompose({ onRing, onBack }: { onRing: () => void; onBack?: () => vo
 
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           Not urgent?{' '}
-          <span style={{ color: G.ink, borderBottom: `1px solid ${G.ink}`, paddingBottom: 1 }}>Post a need instead →</span>
+          <button onClick={onPost} style={{
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            color: G.ink, borderBottom: `1px solid ${G.ink}`, paddingBottom: 1,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
+          }}>Post a need instead →</button>
         </div>
       </div>
     </div>
@@ -239,19 +243,13 @@ function BellRinging({ onBack }: { onBack?: () => void }) {
         </div>
 
         <div style={{ marginTop: 18, display: 'flex', gap: 8 }}>
-          <button style={{
+          <button onClick={onBack} style={{
             flex: 1, padding: '14px 12px',
             background: 'transparent', color: G.ink,
             border: `1px solid ${G.ink}`, borderRadius: 8,
             fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
           }}>Mark handled</button>
-          <button style={{
-            flex: 1, padding: '14px 12px',
-            background: RED, color: '#FBF7F0', border: 'none', borderRadius: 8,
-            fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
-            textTransform: 'uppercase', cursor: 'pointer',
-          }}>Widen now</button>
         </div>
       </div>
     </div>
@@ -363,14 +361,15 @@ function BellIncoming() {
   );
 }
 
-export function ScreenBell({ initialCompose = false, role = 'parent', onBack }: {
+export function ScreenBell({ initialCompose = false, role = 'parent', onBack, onPost }: {
   initialCompose?: boolean;
   role?: 'parent' | 'caregiver';
   onBack?: () => void;
+  onPost?: () => void;
 }) {
   const [mode, setMode] = useState<'compose' | 'ringing'>(initialCompose ? 'compose' : 'ringing');
   if (role === 'caregiver') return <BellIncoming />;
   return mode === 'compose'
-    ? <BellCompose onRing={() => setMode('ringing')} onBack={onBack} />
+    ? <BellCompose onRing={() => setMode('ringing')} onBack={onBack} onPost={onPost} />
     : <BellRinging onBack={onBack} />;
 }

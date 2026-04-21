@@ -87,7 +87,7 @@ export function GMasthead({
       </div>
       <div style={{ height: 1, background: G.ink, margin: '6px 0 10px', opacity: 0.85 }} />
       <div style={{
-        fontFamily: G.display, fontSize: 34, lineHeight: 1.05, fontWeight: 500,
+        fontFamily: G.display, fontSize: title.length > 18 ? 26 : 34, lineHeight: 1.05, fontWeight: 500,
         fontStyle: 'italic', letterSpacing: '-0.02em',
         color: titleColor || G.ink,
         height: 38, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',

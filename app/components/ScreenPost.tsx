@@ -11,9 +11,10 @@ function toLocalInputValue(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function ScreenPost({ onCancel, onPost }: {
+export function ScreenPost({ onCancel, onPost, onRing }: {
   onCancel?: () => void;
   onPost?: (msg?: string) => void;
+  onRing?: () => void;
 }) {
   const { active, all } = useHousehold();
   const multi = all.length > 1;
@@ -247,9 +248,11 @@ export function ScreenPost({ onCancel, onPost }: {
           fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted,
         }}>
           Last-minute?{' '}
-          <span style={{ color: G.clay, borderBottom: `1px solid ${G.clay}`, paddingBottom: 1 }}>
-            Ring the bell instead →
-          </span>
+          <button onClick={onRing} style={{
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            color: G.clay, borderBottom: `1px solid ${G.clay}`, paddingBottom: 1,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
+          }}>Ring the bell instead →</button>
         </div>
       </div>
     </div>
