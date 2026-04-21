@@ -47,6 +47,19 @@ export async function notifyNewShift(shiftId: string) {
     ne(users.id, row.shift.createdByUserId),
   ));
   const emails = recipients.map(r => r.email).filter(Boolean);
+
+  const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Push notification (fire-and-forget)
+  import('@/lib/push').then(({ pushToHousehold }) =>
+    pushToHousehold(row.household!.id, row.shift.createdByUserId, {
+      title: `📋 New shift — ${row.household!.name}`,
+      body: `${row.shift.title} · ${when}`,
+      url: '/',
+      tag: `shift-${shiftId}`,
+    })
+  ).catch(() => {});
+
   if (!emails.length) return;
 
   const subject = `New shift posted — ${row.shift.title}`;

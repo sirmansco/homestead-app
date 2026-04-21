@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { G, RED, RED_DARK, BELL_BG } from './tokens';
 import { GMasthead, GLabel, GAvatar } from './shared';
+import { requestPushPermission } from './PushRegistrar';
 
 function BellPill({ label, value, emphasized }: { label: string; value: string; emphasized?: boolean }) {
   return (
@@ -110,6 +111,53 @@ function plusHours(h: number) {
 }
 
 type VillageMember = { id: string; name: string; villageGroup: 'inner' | 'family' | 'sitter' };
+
+function PushPermissionBanner() {
+  const [permission, setPermission] = useState<NotificationPermission | null>(null);
+  const [requesting, setRequesting] = useState(false);
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') setPermission(Notification.permission);
+  }, []);
+
+  if (permission === 'granted' || permission === null) return null;
+
+  return (
+    <div style={{
+      margin: '12px 0', padding: '12px 14px', borderRadius: 8,
+      background: permission === 'denied' ? G.paper : '#FFF8EC',
+      border: `1px solid ${permission === 'denied' ? G.hairline2 : '#D4A017'}`,
+    }}>
+      {permission === 'denied' ? (
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, lineHeight: 1.5 }}>
+          Notifications blocked. Enable them in your browser settings so caregivers get alerted when you ring.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.4, flex: 1 }}>
+            Allow notifications so caregivers are alerted instantly.
+          </div>
+          <button
+            onClick={async () => {
+              setRequesting(true);
+              const ok = await requestPushPermission();
+              setPermission(ok ? 'granted' : 'denied');
+              setRequesting(false);
+            }}
+            disabled={requesting}
+            style={{
+              flexShrink: 0, padding: '7px 12px', borderRadius: 6,
+              background: G.ink, color: '#FBF7F0', border: 'none',
+              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1,
+              textTransform: 'uppercase', cursor: 'pointer',
+              opacity: requesting ? 0.6 : 1,
+            }}
+          >{requesting ? '…' : 'Enable'}</button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function BellCompose({ onRing, onBack, onPost }: {
   onRing: (bellId: string, label: string) => void;
@@ -261,6 +309,8 @@ function BellCompose({ onRing, onBack, onPost }: {
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+10 MIN</b> &nbsp; the whole village</div>
           </div>
         </div>
+
+        <PushPermissionBanner />
 
         {error && (
           <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: '#FFE6DA', border: `1px solid ${RED}`, fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED }}>
@@ -462,10 +512,11 @@ function BellIncoming() {
           tagline="No bells ringing right now. You'll see alerts here when a family needs help."
           folioLeft="No alerts" folioRight="Standing by"
         />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ textAlign: 'center' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+          <PushPermissionBanner />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <BellGlyph size={48} />
-            <div style={{ marginTop: 16, fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, lineHeight: 1.6 }}>
+            <div style={{ marginTop: 16, fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, lineHeight: 1.6, textAlign: 'center' }}>
               When someone rings the bell,<br />it will appear here.
             </div>
           </div>

@@ -508,6 +508,7 @@ function CaregiverVillage() {
 // ── Parent view ───────────────────────────────────────────────────────────
 
 export function ScreenVillage() {
+  const { refresh: refreshHousehold } = useHousehold();
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -553,7 +554,7 @@ export function ScreenVillage() {
       });
       if (res.ok) {
         setRenaming(false);
-        await load();
+        await Promise.all([load(), refreshHousehold()]);
       }
     } finally {
       setRenameBusy(false);

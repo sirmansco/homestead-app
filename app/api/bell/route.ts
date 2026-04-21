@@ -29,6 +29,16 @@ export async function POST(req: NextRequest) {
       status: 'ringing',
     }).returning();
 
+    // Fire-and-forget push to all household members
+    import('@/lib/push').then(({ pushToHousehold }) =>
+      pushToHousehold(household.id, user.id, {
+        title: `🔔 ${household.name} needs help`,
+        body: reason + (note ? ` — ${note}` : ''),
+        url: '/',
+        tag: `bell-${bell.id}`,
+      })
+    ).catch(() => {});
+
     return NextResponse.json({ bell });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

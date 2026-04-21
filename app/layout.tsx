@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
+import { PushRegistrar } from './components/PushRegistrar';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -29,7 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        <body>
+          <PushRegistrar />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

@@ -74,6 +74,16 @@ export const bells = pgTable('bells', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export const bellResponses = pgTable('bell_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
   bellId: uuid('bell_id').notNull().references(() => bells.id, { onDelete: 'cascade' }),
