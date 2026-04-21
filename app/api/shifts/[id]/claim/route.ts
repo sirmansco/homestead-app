@@ -55,6 +55,9 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'already claimed' }, { status: 409 });
     }
 
+    const { notifyShiftClaimed } = await import('@/lib/notify');
+    notifyShiftClaimed(claimed.id).catch(() => {});
+
     return NextResponse.json({ shift: claimed });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

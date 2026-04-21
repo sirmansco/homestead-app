@@ -19,7 +19,11 @@ type ShiftRow = {
   };
   household: { id: string; name: string; glyph: string } | null;
   creator: { id: string; name: string } | null;
+  claimedByMe?: boolean;
+  createdByMe?: boolean;
 };
+
+type ApiResponse = { shifts: ShiftRow[]; meClerkUserId?: string };
 
 function fmtWhen(startIso: string) {
   const s = new Date(startIso);
@@ -45,8 +49,13 @@ function dollars(cents: number | null) {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}/hr`;
 }
 
-function ShiftCard({ row, onClaim, first, claiming }: {
-  row: ShiftRow; onClaim: (id: string) => void; first?: boolean; claiming?: boolean;
+function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine }: {
+  row: ShiftRow;
+  onClaim: (id: string) => void;
+  onUnclaim?: (id: string) => void;
+  first?: boolean;
+  busy?: boolean;
+  mine?: boolean;
 }) {
   const s = new Date(row.shift.startsAt);
   const month = s.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
@@ -88,17 +97,31 @@ function ShiftCard({ row, onClaim, first, claiming }: {
           <span style={{ fontFamily: G.display, fontSize: 14, color: G.ink }}>{dollars(row.shift.rateCents)}</span>
           <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>· {durationH(row.shift.startsAt, row.shift.endsAt)}</span>
         </div>
-        <button
-          onClick={() => onClaim(row.shift.id)}
-          disabled={claiming}
-          style={{
-            padding: '7px 14px',
-            background: G.ink, color: '#FBF7F0',
-            border: 'none', borderRadius: 100,
-            fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-            textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
-            opacity: claiming ? 0.7 : 1,
-          }}>{claiming ? 'Claiming…' : 'Claim'}</button>
+        {mine && onUnclaim ? (
+          <button
+            onClick={() => onUnclaim(row.shift.id)}
+            disabled={busy}
+            style={{
+              padding: '7px 14px',
+              background: 'transparent', color: G.ink,
+              border: `1px solid ${G.hairline2}`, borderRadius: 100,
+              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+              textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
+              opacity: busy ? 0.7 : 1,
+            }}>{busy ? 'Releasing…' : 'Release'}</button>
+        ) : (
+          <button
+            onClick={() => onClaim(row.shift.id)}
+            disabled={busy}
+            style={{
+              padding: '7px 14px',
+              background: G.ink, color: '#FBF7F0',
+              border: 'none', borderRadius: 100,
+              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+              textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
+              opacity: busy ? 0.7 : 1,
+            }}>{busy ? 'Claiming…' : 'Claim'}</button>
+        )}
       </div>
     </article>
   );
@@ -106,16 +129,27 @@ function ShiftCard({ row, onClaim, first, claiming }: {
 
 export function ScreenShifts() {
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
+  const [myRows, setMyRows] = useState<ShiftRow[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch('/api/shifts?scope=village');
-      if (!res.ok) throw new Error(`Failed (${res.status})`);
-      const data = await res.json() as { shifts: ShiftRow[] };
-      setRows(data.shifts);
+      const [villageRes, mineRes] = await Promise.all([
+        fetch('/api/shifts?scope=village'),
+        fetch('/api/shifts?scope=mine'),
+      ]);
+      if (!villageRes.ok) throw new Error(`Failed (${villageRes.status})`);
+      const village = await villageRes.json() as ApiResponse;
+      setRows(village.shifts);
+
+      if (mineRes.ok) {
+        const mine = await mineRes.json() as ApiResponse;
+        setMyRows(mine.shifts.filter(r =>
+          r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
+        ));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
@@ -125,7 +159,7 @@ export function ScreenShifts() {
   useEffect(() => { load(); }, [load]);
 
   async function claim(id: string) {
-    setClaimingId(id);
+    setBusyId(id);
     try {
       const res = await fetch(`/api/shifts/${id}/claim`, { method: 'POST' });
       if (!res.ok) {
@@ -136,7 +170,24 @@ export function ScreenShifts() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'claim failed');
     } finally {
-      setClaimingId(null);
+      setBusyId(null);
+    }
+  }
+
+  async function unclaim(id: string) {
+    if (!confirm('Release this shift back to the village?')) return;
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/shifts/${id}/unclaim`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'unclaim failed');
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'unclaim failed');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -173,8 +224,29 @@ export function ScreenShifts() {
             No open shifts right now. Check back later.
           </div>
         )}
+        {myRows.length > 0 && (
+          <>
+            <div style={{
+              fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+              color: G.ink, fontWeight: 700, margin: '14px 0 6px',
+            }}>Your claimed shifts</div>
+            {myRows.map((r, i) => (
+              <ShiftCard
+                key={r.shift.id} row={r} first={i === 0}
+                onClaim={claim}
+                onUnclaim={unclaim}
+                mine
+                busy={busyId === r.shift.id}
+              />
+            ))}
+            <div style={{
+              fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+              color: G.ink, fontWeight: 700, margin: '22px 0 6px',
+            }}>Open in your villages</div>
+          </>
+        )}
         {openRows.map((r, i) => (
-          <ShiftCard key={r.shift.id} row={r} first={i === 0} onClaim={claim} claiming={claimingId === r.shift.id} />
+          <ShiftCard key={r.shift.id} row={r} first={i === 0 && myRows.length === 0} onClaim={claim} onUnclaim={unclaim} busy={busyId === r.shift.id} />
         ))}
         {rows && openRows.length > 0 && (
           <div style={{

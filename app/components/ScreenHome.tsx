@@ -41,7 +41,10 @@ function bucketOf(iso: string): 'today' | 'tomorrow' | 'week' | 'later' {
   return 'later';
 }
 
-function StatusCard({ row, accent, tagline }: { row: ShiftRow; accent: string; tagline: string }) {
+function StatusCard({ row, accent, tagline, onCancel, cancelling }: {
+  row: ShiftRow; accent: string; tagline: string;
+  onCancel?: (id: string) => void; cancelling?: boolean;
+}) {
   return (
     <div style={{
       background: G.paper, border: `1px solid ${G.hairline2}`,
@@ -71,6 +74,22 @@ function StatusCard({ row, accent, tagline }: { row: ShiftRow; accent: string; t
           <div style={{ fontFamily: G.display, fontSize: 22, color: accent }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</div>
         </div>
       </div>
+      {onCancel && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+          <button
+            onClick={() => {
+              if (confirm('Cancel this shift? Your village will see it disappear.')) onCancel(row.shift.id);
+            }}
+            disabled={cancelling}
+            style={{
+              padding: '6px 12px', background: 'transparent',
+              border: `1px solid ${G.hairline2}`, borderRadius: 6, color: G.muted,
+              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+              textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
+            }}
+          >{cancelling ? 'Cancelling…' : 'Cancel'}</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -109,6 +128,7 @@ export function ScreenHome({ onRing, role = 'parent' }: {
   const { active } = useHousehold();
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -124,6 +144,22 @@ export function ScreenHome({ onRing, role = 'parent' }: {
   }, []);
 
   useEffect(() => { load(); }, [load, active?.id]);
+
+  async function cancelShift(id: string) {
+    setCancellingId(id);
+    try {
+      const res = await fetch(`/api/shifts/${id}/cancel`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'cancel failed');
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'cancel failed');
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   const upcoming = (rows || []).filter(r => new Date(r.shift.endsAt) >= new Date());
   const today = upcoming.filter(r => bucketOf(r.shift.startsAt) === 'today');
@@ -169,6 +205,8 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
+              onCancel={role === 'parent' ? cancelShift : undefined}
+              cancelling={cancellingId === r.shift.id}
             />
           ))}
         </>}
@@ -180,6 +218,8 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
+              onCancel={role === 'parent' ? cancelShift : undefined}
+              cancelling={cancellingId === r.shift.id}
             />
           ))}
         </>}
@@ -191,6 +231,8 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
+              onCancel={role === 'parent' ? cancelShift : undefined}
+              cancelling={cancellingId === r.shift.id}
             />
           ))}
         </>}
