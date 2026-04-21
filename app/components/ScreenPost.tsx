@@ -1,8 +1,10 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
+
+type Kid = { id: string; name: string };
 
 function toLocalInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -26,9 +28,22 @@ export function ScreenPost({ onCancel, onPost }: {
 
   const [title, setTitle] = useState('Evening sit');
   const [forWhom, setForWhom] = useState('');
+  const [selectedKidIds, setSelectedKidIds] = useState<string[]>([]);
+  const [kids, setKids] = useState<Kid[]>([]);
+
+  useEffect(() => {
+    fetch('/api/village').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.kids) setKids(d.kids);
+    }).catch(() => {});
+  }, [active?.id]);
+
+  const toggleKid = (id: string) => {
+    setSelectedKidIds(prev => prev.includes(id) ? prev.filter(k => k !== id) : [...prev, id]);
+  };
   const [notes, setNotes] = useState('');
   const [startsAt, setStartsAt] = useState(defaults.start);
   const [endsAt, setEndsAt] = useState(defaults.end);
+  const [isPaid, setIsPaid] = useState(false);
   const [rate, setRate] = useState('22');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +57,18 @@ export function ScreenPost({ onCancel, onPost }: {
     if (e <= s) return setError('End must be after start.');
     setSubmitting(true);
     try {
-      const rateCents = rate.trim() ? Math.round(parseFloat(rate) * 100) : null;
+      const rateCents = isPaid && rate.trim() ? Math.round(parseFloat(rate) * 100) : null;
+      const kidNames = selectedKidIds
+        .map(id => kids.find(k => k.id === id)?.name)
+        .filter(Boolean)
+        .join(' & ');
+      const forWhomFinal = [kidNames, forWhom.trim()].filter(Boolean).join(' · ');
       const res = await fetch('/api/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
-          forWhom: forWhom.trim() || undefined,
+          forWhom: forWhomFinal || undefined,
           notes: notes.trim() || undefined,
           startsAt: s.toISOString(),
           endsAt: e.toISOString(),
@@ -111,13 +131,43 @@ export function ScreenPost({ onCancel, onPost }: {
           />
         </Field>
 
-        <Field label="For">
+        <div style={{ marginTop: 22 }}>
+          <GLabel>For</GLabel>
+          {kids.length > 0 ? (
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {kids.map(k => {
+                const on = selectedKidIds.includes(k.id);
+                return (
+                  <button
+                    key={k.id} type="button"
+                    onClick={() => toggleKid(k.id)}
+                    style={{
+                      padding: '7px 12px', borderRadius: 100,
+                      background: on ? G.ink : 'transparent',
+                      color: on ? '#FBF7F0' : G.ink,
+                      border: `1px solid ${on ? G.ink : G.hairline2}`,
+                      fontFamily: G.sans, fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
+                      cursor: 'pointer',
+                    }}
+                  >{k.name}</button>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{
+              marginTop: 8, padding: '10px 12px',
+              background: G.paper, border: `1px dashed ${G.hairline2}`, borderRadius: 8,
+              fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted,
+            }}>
+              No children added yet. Add them on the Village tab.
+            </div>
+          )}
           <input
             value={forWhom} onChange={e => setForWhom(e.target.value)}
-            placeholder="Who is this for? (e.g. Maya & Theo)"
-            style={inputStyle}
+            placeholder="Or note someone else (e.g. grandma)"
+            style={{ ...inputStyle, marginTop: 10, fontSize: 14, fontFamily: G.serif, fontStyle: 'italic' }}
           />
-        </Field>
+        </div>
 
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>
@@ -146,19 +196,30 @@ export function ScreenPost({ onCancel, onPost }: {
         </div>
 
         <div style={{ marginTop: 22 }}>
-          <GLabel>Offer</GLabel>
-          <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <Pill label="Rate ($/hr)">
-              <input
-                type="number" inputMode="decimal" min="0" step="0.5"
-                value={rate} onChange={e => setRate(e.target.value)}
-                style={pillInput}
-              />
-            </Pill>
-            <Pill label="Extras">
-              <input placeholder="optional" style={pillInput} />
-            </Pill>
-          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="checkbox" checked={isPaid}
+              onChange={e => setIsPaid(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: G.ink }}
+            />
+            <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.ink }}>
+              This is a paid shift
+            </span>
+          </label>
+          {isPaid && (
+            <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <Pill label="Rate ($/hr)">
+                <input
+                  type="number" inputMode="decimal" min="0" step="0.5"
+                  value={rate} onChange={e => setRate(e.target.value)}
+                  style={pillInput}
+                />
+              </Pill>
+              <Pill label="Extras">
+                <input placeholder="optional" style={pillInput} />
+              </Pill>
+            </div>
+          )}
         </div>
 
         {error && (

@@ -40,12 +40,18 @@ export async function GET(req: NextRequest) {
       );
     } else if (scope === 'mine') {
       if (!myUserIds.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
-      where = or(
-        inArray(shifts.claimedByUserId, myUserIds),
-        inArray(shifts.createdByUserId, myUserIds),
+      where = and(
+        or(
+          inArray(shifts.claimedByUserId, myUserIds),
+          inArray(shifts.createdByUserId, myUserIds),
+        ),
+        gte(shifts.endsAt, new Date()),
       );
     } else {
-      where = eq(shifts.householdId, household.id);
+      where = and(
+        eq(shifts.householdId, household.id),
+        gte(shifts.endsAt, new Date()),
+      );
     }
 
     const orderBy = scope === 'village' ? asc(shifts.startsAt) : desc(shifts.startsAt);

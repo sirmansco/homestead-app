@@ -161,7 +161,7 @@ export function HomesteadApp() {
 
   useEffect(() => {
     const parentScreens: TabId[]    = ['home', 'almanac', 'post',   'bell', 'village', 'almanac', 'home'];
-    const caregiverScreens: TabId[] = ['home', 'shifts',  'bell', 'almanac', 'timeoff', 'home', 'home'];
+    const caregiverScreens: TabId[] = ['home', 'shifts',  'bell', 'timeoff', 'village', 'home', 'home'];
     const map = role === 'caregiver' ? caregiverScreens : parentScreens;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
@@ -244,7 +244,7 @@ export function HomesteadApp() {
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FBF7F0', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
         {(role === 'parent'
           ? [['1', 'Week'], ['2', 'Almanac'], ['3', 'Post'], ['4', 'Bell'], ['5', 'Village']]
-          : [['1', 'Week'], ['2', 'Shifts'], ['3', 'Bell'], ['4', 'Schedule'], ['5', 'Time Off']]
+          : [['1', 'Week'], ['2', 'Shifts'], ['3', 'Bell'], ['4', 'Time Off'], ['5', 'Village']]
         ).map(([k, l]) => (
           <div key={k} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
             <div style={{

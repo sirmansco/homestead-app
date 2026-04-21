@@ -45,7 +45,7 @@ function durationH(startIso: string, endIso: string) {
   return `${(ms / 3600000).toFixed(ms % 3600000 === 0 ? 0 : 1)}h`;
 }
 function dollars(cents: number | null) {
-  if (cents == null) return '—';
+  if (cents == null) return null;
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}/hr`;
 }
 
@@ -94,8 +94,13 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine }: {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingLeft: 70 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <span style={{ fontFamily: G.display, fontSize: 14, color: G.ink }}>{dollars(row.shift.rateCents)}</span>
-          <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>· {durationH(row.shift.startsAt, row.shift.endsAt)}</span>
+          {dollars(row.shift.rateCents) && (
+            <>
+              <span style={{ fontFamily: G.display, fontSize: 14, color: G.ink }}>{dollars(row.shift.rateCents)}</span>
+              <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>·</span>
+            </>
+          )}
+          <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</span>
         </div>
         {mine && onUnclaim ? (
           <button

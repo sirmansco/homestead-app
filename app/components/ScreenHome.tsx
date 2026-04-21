@@ -19,6 +19,8 @@ type ShiftRow = {
   };
   household: { id: string; name: string; glyph: string } | null;
   creator: { id: string; name: string } | null;
+  claimedByMe?: boolean;
+  createdByMe?: boolean;
 };
 
 function fmtTimeRange(startIso: string, endIso: string) {
@@ -41,9 +43,10 @@ function bucketOf(iso: string): 'today' | 'tomorrow' | 'week' | 'later' {
   return 'later';
 }
 
-function StatusCard({ row, accent, tagline, onCancel, cancelling }: {
+function StatusCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming }: {
   row: ShiftRow; accent: string; tagline: string;
   onCancel?: (id: string) => void; cancelling?: boolean;
+  onClaim?: (id: string) => void; claiming?: boolean;
 }) {
   return (
     <div style={{
@@ -74,20 +77,35 @@ function StatusCard({ row, accent, tagline, onCancel, cancelling }: {
           <div style={{ fontFamily: G.display, fontSize: 22, color: accent }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</div>
         </div>
       </div>
-      {onCancel && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button
-            onClick={() => {
-              if (confirm('Cancel this shift? Your village will see it disappear.')) onCancel(row.shift.id);
-            }}
-            disabled={cancelling}
-            style={{
-              padding: '6px 12px', background: 'transparent',
-              border: `1px solid ${G.hairline2}`, borderRadius: 6, color: G.muted,
-              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-              textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
-            }}
-          >{cancelling ? 'Cancelling…' : 'Cancel'}</button>
+      {(onCancel || onClaim) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+          {onCancel && (
+            <button
+              onClick={() => {
+                if (confirm('Cancel this shift? Your village will see it disappear.')) onCancel(row.shift.id);
+              }}
+              disabled={cancelling}
+              style={{
+                padding: '6px 12px', background: 'transparent',
+                border: `1px solid ${G.hairline2}`, borderRadius: 6, color: G.muted,
+                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+                textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
+              }}
+            >{cancelling ? 'Cancelling…' : 'Cancel'}</button>
+          )}
+          {onClaim && (
+            <button
+              onClick={() => onClaim(row.shift.id)}
+              disabled={claiming}
+              style={{
+                padding: '7px 14px', background: G.ink, color: '#FBF7F0',
+                border: 'none', borderRadius: 100,
+                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+                textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
+                opacity: claiming ? 0.7 : 1,
+              }}
+            >{claiming ? 'Claiming…' : 'Claim'}</button>
+          )}
         </div>
       )}
     </div>
@@ -129,11 +147,13 @@ export function ScreenHome({ onRing, role = 'parent' }: {
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch('/api/shifts');
+      const scope = role === 'caregiver' ? 'village' : 'household';
+      const res = await fetch(`/api/shifts?scope=${scope}`);
       if (!res.ok) throw new Error(`Failed (${res.status})`);
       const data = await res.json() as { shifts: ShiftRow[] };
       setRows(data.shifts);
@@ -141,7 +161,7 @@ export function ScreenHome({ onRing, role = 'parent' }: {
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
     }
-  }, []);
+  }, [role]);
 
   useEffect(() => { load(); }, [load, active?.id]);
 
@@ -158,6 +178,22 @@ export function ScreenHome({ onRing, role = 'parent' }: {
       setError(err instanceof Error ? err.message : 'cancel failed');
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function claimShift(id: string) {
+    setClaimingId(id);
+    try {
+      const res = await fetch(`/api/shifts/${id}/claim`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'claim failed');
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'claim failed');
+    } finally {
+      setClaimingId(null);
     }
   }
 
@@ -205,8 +241,10 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
-              onCancel={role === 'parent' ? cancelShift : undefined}
+              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
+              onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
+              claiming={claimingId === r.shift.id}
             />
           ))}
         </>}
@@ -218,8 +256,10 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
-              onCancel={role === 'parent' ? cancelShift : undefined}
+              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
+              onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
+              claiming={claimingId === r.shift.id}
             />
           ))}
         </>}
@@ -231,8 +271,10 @@ export function ScreenHome({ onRing, role = 'parent' }: {
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
-              onCancel={role === 'parent' ? cancelShift : undefined}
+              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
+              onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
+              claiming={claimingId === r.shift.id}
             />
           ))}
         </>}

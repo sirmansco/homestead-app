@@ -40,7 +40,14 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
   );
 }
 
-function MemberCard({ name, role, onDelete }: { name: string; role: string; onDelete?: () => void }) {
+function MemberCard({ name, role, isMe, appRole, onToggleRole, onDelete }: {
+  name: string;
+  role: string;
+  isMe?: boolean;
+  appRole?: AppRole;
+  onToggleRole?: () => void;
+  onDelete?: () => void;
+}) {
   return (
     <div style={{
       background: G.bg, border: `1px solid ${G.hairline}`,
@@ -49,9 +56,27 @@ function MemberCard({ name, role, onDelete }: { name: string; role: string; onDe
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <GAvatar name={name} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>{name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>{name}</div>
+            {isMe && (
+              <span style={{
+                fontFamily: G.sans, fontSize: 8, letterSpacing: 1, fontWeight: 700,
+                color: G.muted, textTransform: 'uppercase',
+              }}>· you</span>
+            )}
+          </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10.5, color: G.muted, marginTop: 2, lineHeight: 1.3 }}>{role}</div>
         </div>
+        {onToggleRole && appRole && (
+          <button onClick={onToggleRole} title="Toggle role" style={{
+            background: appRole === 'parent' ? G.ink : 'transparent',
+            color: appRole === 'parent' ? '#FBF7F0' : G.ink,
+            border: `1px solid ${G.ink}`, borderRadius: 100,
+            padding: '3px 8px', cursor: 'pointer',
+            fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
+            textTransform: 'uppercase',
+          }}>{appRole === 'parent' ? 'P' : 'C'}</button>
+        )}
         {onDelete && (
           <button onClick={onDelete} aria-label="Remove" style={{
             background: 'transparent', border: 'none', color: G.muted,
@@ -262,14 +287,24 @@ export function ScreenVillage() {
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
+  const [myRole, setMyRole] = useState<AppRole>('caregiver');
+  const [myUserId, setMyUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/village');
-      const data = await res.json();
-      if (res.ok) {
+      const [villageRes, meRes] = await Promise.all([
+        fetch('/api/village'),
+        fetch('/api/household'),
+      ]);
+      const data = await villageRes.json();
+      if (villageRes.ok) {
         setAdults(data.adults || []);
         setKids(data.kids || []);
+      }
+      if (meRes.ok) {
+        const me = await meRes.json();
+        if (me.user?.role) setMyRole(me.user.role);
+        if (me.user?.id) setMyUserId(me.user.id);
       }
     } finally {
       setLoading(false);
@@ -279,7 +314,24 @@ export function ScreenVillage() {
   useEffect(() => { load(); }, [load]);
 
   const removeAdult = async (id: string) => {
-    await fetch(`/api/village?type=adult&id=${id}`, { method: 'DELETE' });
+    if (!confirm('Remove this person from your household? They will lose access.')) return;
+    const res = await fetch(`/api/household/members/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Failed to remove');
+    }
+    load();
+  };
+  const changeRole = async (id: string, role: AppRole) => {
+    const res = await fetch(`/api/household/members/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Failed to change role');
+    }
     load();
   };
   const removeKid = async (id: string) => {
@@ -332,14 +384,21 @@ export function ScreenVillage() {
                       marginBottom: 18,
                     }}>
                       <div style={{ display: 'grid', gridTemplateColumns: g === 'inner' ? 'repeat(2, 1fr)' : '1fr', gap: 10 }}>
-                        {members.map(m => (
-                          <MemberCard
-                            key={m.id}
-                            name={m.name}
-                            role={`${m.role}${m.email ? ` · ${m.email}` : ''}`}
-                            onDelete={() => removeAdult(m.id)}
-                          />
-                        ))}
+                        {members.map(m => {
+                          const isMe = myUserId === m.id;
+                          const canManage = myRole === 'parent' && !isMe;
+                          return (
+                            <MemberCard
+                              key={m.id}
+                              name={m.name}
+                              role={`${m.role}${m.email ? ` · ${m.email}` : ''}`}
+                              isMe={isMe}
+                              appRole={canManage ? m.role : undefined}
+                              onToggleRole={canManage ? () => changeRole(m.id, m.role === 'parent' ? 'caregiver' : 'parent') : undefined}
+                              onDelete={canManage ? () => removeAdult(m.id) : undefined}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -355,7 +414,7 @@ export function ScreenVillage() {
                     key={k.id}
                     name={k.name}
                     role={k.birthday ? `born ${k.birthday}` : 'child'}
-                    onDelete={() => removeKid(k.id)}
+                    onDelete={myRole === 'parent' ? () => removeKid(k.id) : undefined}
                   />
                 ))}
               </div>
