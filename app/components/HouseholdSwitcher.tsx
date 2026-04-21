@@ -107,7 +107,7 @@ export function HouseholdSwitcher() {
       >
         <span style={{ fontSize: 14 }}>{active.glyph}</span>
         <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {active.name}
+          {active.name.replace(/\s+(household|family|home|house)s?$/i, '')}
         </span>
         {all.length > 1 && <span style={{ opacity: 0.5 }}>▾</span>}
       </button>

@@ -283,7 +283,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
   const later    = ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later');
 
   function possessive(name: string) {
-    return name.endsWith('s') ? `${name}'` : `${name}'s`;
+    // Strip generic suffixes so "Sirmans Household" → "Sirmans"
+    const cleaned = name.replace(/\s+(household|family|home|house)s?$/i, '').trim();
+    return cleaned.endsWith('s') ? `${cleaned}'` : `${cleaned}'s`;
   }
   const title = role === 'caregiver' ? 'My Schedule' : (active?.name ? `${possessive(active.name)} Almanac` : 'The Almanac');
 
