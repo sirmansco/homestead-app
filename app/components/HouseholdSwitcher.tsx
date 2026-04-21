@@ -12,6 +12,11 @@ type HouseholdSummary = {
   active: boolean;
 };
 
+type ActiveHouseholdDetails = {
+  id: string;
+  setupCompleteAt: string | null;
+};
+
 type Ctx = {
   active: HouseholdSummary | null;
   all: HouseholdSummary[];
@@ -31,8 +36,13 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/household');
       if (!res.ok) return;
-      const data = await res.json();
+      const data = await res.json() as { household?: ActiveHouseholdDetails; allHouseholds?: HouseholdSummary[] };
       setAll(data.allHouseholds || []);
+      if (data.household && !data.household.setupCompleteAt && typeof window !== 'undefined') {
+        if (window.location.pathname !== '/setup') {
+          window.location.replace('/setup');
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
