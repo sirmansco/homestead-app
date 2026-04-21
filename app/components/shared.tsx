@@ -169,8 +169,8 @@ export function GTabBar({ active = 'home', onNavigate, role = 'parent' }: {
   ];
   const caregiverTabs: { id: TabId; label: string; icon: (c: string) => React.ReactNode; primary?: boolean }[] = [
     { id: 'home',    label: 'Week',     icon: Icons.home },
-    { id: 'shifts',  label: 'Shifts',   icon: Icons.shifts,  primary: true },
     { id: 'bell',    label: 'Bell',     icon: Icons.bell },
+    { id: 'shifts',  label: 'Shifts',   icon: Icons.shifts,  primary: true },
     { id: 'timeoff', label: 'Time Off', icon: Icons.almanac },
     { id: 'village', label: 'Village',  icon: Icons.shifts },
   ];
