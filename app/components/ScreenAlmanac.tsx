@@ -263,7 +263,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
     }
   }
 
-  const upcoming = (rows || []).filter(r => new Date(r.shift.endsAt) >= new Date());
+  const upcoming = (rows || []).filter(r => new Date(r.shift.endsAt) >= new Date() && r.shift.status !== 'cancelled');
 
   // Dual-role split: own household vs other families needing help
   const myHouseholdId = active?.id;
