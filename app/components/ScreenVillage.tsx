@@ -1,9 +1,20 @@
 'use client';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
+
+async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: string): Promise<string | null> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('type', targetType);
+  form.append('id', targetId);
+  const res = await fetch('/api/upload', { method: 'POST', body: form });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.url ?? null;
+}
 
 type VillageGroup = 'inner' | 'family' | 'sitter';
 type AppRole = 'parent' | 'caregiver';
@@ -14,6 +25,7 @@ type Adult = {
   email: string;
   role: AppRole;
   villageGroup: VillageGroup;
+  photoUrl: string | null;
 };
 
 type Kid = {
@@ -21,6 +33,7 @@ type Kid = {
   name: string;
   birthday: string | null;
   notes: string | null;
+  photoUrl: string | null;
 };
 
 const GROUP_META: Record<VillageGroup, { label: string; note: string }> = {
@@ -41,21 +54,79 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
   );
 }
 
-function MemberCard({ name, role, isMe, appRole, onToggleRole, onDelete }: {
+function MemberCard({ name, role, isMe, appRole, onToggleRole, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
   name: string;
   role: string;
   isMe?: boolean;
   appRole?: AppRole;
   onToggleRole?: () => void;
   onDelete?: () => void;
+  photoUrl?: string | null;
+  targetType?: 'user' | 'kid';
+  targetId?: string;
+  onPhotoChange?: (url: string) => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [localPhoto, setLocalPhoto] = useState<string | null>(photoUrl ?? null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !targetType || !targetId) return;
+    setUploading(true);
+    try {
+      const url = await uploadPhoto(file, targetType, targetId);
+      if (url) { setLocalPhoto(url); onPhotoChange?.(url); }
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  const size = 40;
   return (
     <div style={{
       background: G.bg, border: `1px solid ${G.hairline}`,
       borderRadius: 8, padding: 12, position: 'relative',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <GAvatar name={name} size={40} />
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          {localPhoto ? (
+            <img src={localPhoto} alt={name} style={{
+              width: size, height: size, borderRadius: size,
+              objectFit: 'cover', display: 'block',
+              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+            }} />
+          ) : (
+            <GAvatar name={name} size={size} />
+          )}
+          {targetType && targetId && (
+            <>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                title="Change photo"
+                style={{
+                  position: 'absolute', bottom: -2, right: -2,
+                  width: 16, height: 16, borderRadius: 16,
+                  background: G.ink, border: `1.5px solid ${G.bg}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: uploading ? 'wait' : 'pointer',
+                }}
+              >
+                {uploading ? (
+                  <span style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.5)' }} />
+                ) : (
+                  <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                    <path d="M5 2v6M2 5h6" stroke="#FBF7F0" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                )}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile}
+                style={{ display: 'none' }} />
+            </>
+          )}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>{name}</div>
@@ -467,6 +538,28 @@ export function ScreenVillage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [renameBusy, setRenameBusy] = useState(false);
+
+  async function saveRename() {
+    if (!newName.trim() || renameBusy) return;
+    setRenameBusy(true);
+    try {
+      const res = await fetch('/api/household', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      if (res.ok) {
+        setRenaming(false);
+        await load();
+      }
+    } finally {
+      setRenameBusy(false);
+    }
+  }
+
   const removeAdult = async (id: string) => {
     if (!confirm('Remove this person from your household? They will lose access.')) return;
     const res = await fetch(`/api/household/members/${id}`, { method: 'DELETE' });
@@ -504,9 +597,13 @@ export function ScreenVillage() {
         leftAction={<HouseholdSwitcher />}
         rightAction={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GLabel color={G.clay}>
-              {myRole === 'parent' ? (total === 0 ? 'empty · + add' : `${total} people · + add`) : `${total} people`}
-            </GLabel>
+            {myRole === 'parent' && (
+              <button onClick={() => { setNewName(''); setRenaming(true); }} style={{
+                background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+                fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase',
+                color: G.muted, textDecoration: 'underline', textUnderlineOffset: 2,
+              }}>rename</button>
+            )}
             <UserButton />
           </div>
         }
@@ -561,6 +658,10 @@ export function ScreenVillage() {
                               appRole={canManage ? m.role : undefined}
                               onToggleRole={canManage ? () => changeRole(m.id, m.role === 'parent' ? 'caregiver' : 'parent') : undefined}
                               onDelete={canManage ? () => removeAdult(m.id) : undefined}
+                              photoUrl={m.photoUrl}
+                              targetType="user"
+                              targetId={m.id}
+                              onPhotoChange={() => load()}
                             />
                           );
                         })}
@@ -580,6 +681,10 @@ export function ScreenVillage() {
                     name={k.name}
                     role={k.birthday ? `born ${k.birthday}` : 'child'}
                     onDelete={myRole === 'parent' ? () => removeKid(k.id) : undefined}
+                    photoUrl={k.photoUrl}
+                    targetType="kid"
+                    targetId={k.id}
+                    onPhotoChange={() => load()}
                   />
                 ))}
               </div>
@@ -603,6 +708,43 @@ export function ScreenVillage() {
       </div>
 
       {showInvite && <InviteSheet onClose={() => setShowInvite(false)} onInvited={load} />}
+
+      {renaming && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000,
+        }} onClick={() => setRenaming(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: G.bg, width: '100%', maxWidth: 480,
+            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderTop: `1px solid ${G.ink}`,
+          }}>
+            <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
+            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 14 }}>
+              Rename household
+            </div>
+            <input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveRename()}
+              autoFocus
+              style={{
+                width: '100%', padding: '12px 14px', marginBottom: 12,
+                background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 8,
+                fontFamily: G.sans, fontSize: 15, color: G.ink, outline: 'none',
+              }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button onClick={() => setRenaming(false)} style={{ ...btnStyle, background: 'transparent', color: G.ink, border: `1px solid ${G.ink}` }}>
+                Cancel
+              </button>
+              <button onClick={saveRename} disabled={!newName.trim() || renameBusy} style={{ ...btnStyle, opacity: (!newName.trim() || renameBusy) ? 0.4 : 1 }}>
+                {renameBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

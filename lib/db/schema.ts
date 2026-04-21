@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean } from 'drizzle-orm/pg-core';
 
 export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
 export const villageGroupEnum = pgEnum('village_group', ['inner', 'family', 'sitter']);
@@ -22,6 +22,7 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   role: appRoleEnum('role').notNull().default('parent'),
   villageGroup: villageGroupEnum('village_group').notNull().default('inner'),
+  photoUrl: text('photo_url'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   userHouseholdUnique: unique('users_clerk_user_household_unique').on(t.clerkUserId, t.householdId),
@@ -33,6 +34,7 @@ export const kids = pgTable('kids', {
   name: text('name').notNull(),
   birthday: date('birthday'),
   notes: text('notes'),
+  photoUrl: text('photo_url'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -49,5 +51,9 @@ export const shifts = pgTable('shifts', {
   rateCents: integer('rate_cents'),
   status: shiftStatusEnum('status').notNull().default('open'),
   claimedAt: timestamp('claimed_at'),
+  isRecurring: boolean('is_recurring').notNull().default(false),
+  recurDayOfWeek: integer('recur_day_of_week'),
+  recurEndsAt: date('recur_ends_at'),
+  recurOccurrences: integer('recur_occurrences'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

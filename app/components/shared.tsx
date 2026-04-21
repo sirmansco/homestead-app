@@ -171,17 +171,17 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   role?: 'parent' | 'caregiver';
   bellCount?: number;
 }) {
-  type Tab = { id: TabId; label: string; icon: (c: string) => React.ReactNode; primary?: boolean; badge?: number };
+  type Tab = { id: TabId; label: string; icon: (c: string) => React.ReactNode; badge?: number };
 
   const parentTabs: Tab[] = [
     { id: 'almanac', label: 'Almanac', icon: Icons.almanac },
+    { id: 'post',    label: 'Post',    icon: Icons.post },
     { id: 'village', label: 'Village', icon: Icons.village },
-    { id: 'post',    label: 'Post',    icon: Icons.post, primary: true },
   ];
   const caregiverTabs: Tab[] = [
     { id: 'almanac', label: 'Almanac', icon: Icons.almanac },
+    { id: 'shifts',  label: 'Shifts',  icon: Icons.shifts, badge: bellCount },
     { id: 'village', label: 'Village', icon: Icons.village },
-    { id: 'shifts',  label: 'Shifts',  icon: Icons.shifts, primary: true, badge: bellCount },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 

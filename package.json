@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.2.3",
+    "@vercel/blob": "^2.3.3",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.4",
     "postgres": "^3.4.9",

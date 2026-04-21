@@ -98,13 +98,31 @@ function Rung({ ring, label, status, time, people }: {
   );
 }
 
+function nowLocal() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function plusHours(h: number) {
+  const d = new Date(Date.now() + h * 3600000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
 function BellCompose({ onRing, onBack, onPost }: { onRing: () => void; onBack?: () => void; onPost?: () => void }) {
-  const [why, setWhy] = useState(1);
+  const [why, setWhy] = useState<number | null>(null);
+  const [startsAt, setStartsAt] = useState(nowLocal);
+  const [endsAt, setEndsAt] = useState(() => plusHours(3));
+  const [note, setNote] = useState('');
   const reasons = [
     { id: 0, label: 'Sick kid',             desc: 'need someone home, now' },
     { id: 1, label: 'Last-minute conflict', desc: 'appointment, meeting, something came up' },
     { id: 2, label: 'Pickup mixup',         desc: "I can't get to school/daycare" },
     { id: 3, label: 'Emergency',            desc: "something's wrong — help" },
+    { id: 4, label: 'Other',               desc: 'something else came up' },
   ];
 
   return (
@@ -122,7 +140,14 @@ function BellCompose({ onRing, onBack, onPost }: { onRing: () => void; onBack?: 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
         <div style={{ marginTop: 10 }}>
           <GLabel color={G.ink}>What&apos;s happening?</GLabel>
-          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {why === null && (
+            <div style={{
+              marginTop: 8, padding: '10px 14px', borderRadius: 8,
+              border: `1px dashed ${G.hairline2}`, background: 'transparent',
+              fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted,
+            }}>Select what&apos;s happening…</div>
+          )}
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {reasons.map(r => (
               <button key={r.id} onClick={() => setWhy(r.id)} style={{
                 textAlign: 'left', padding: '12px 14px', cursor: 'pointer',
@@ -149,21 +174,49 @@ function BellCompose({ onRing, onBack, onPost }: { onRing: () => void; onBack?: 
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-            <BellPill label="Start" value="Now · 2:14 PM" emphasized />
-            <BellPill label="Until" value="6:00 PM" />
+            <label style={{ display: 'block' }}>
+              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: RED, fontWeight: 700, marginBottom: 4 }}>Start</div>
+              <input
+                type="datetime-local"
+                value={startsAt}
+                onChange={e => setStartsAt(e.target.value)}
+                style={{
+                  width: '100%', padding: '8px 10px', borderRadius: 8,
+                  border: `1px solid ${RED}`, background: '#FFE6DA',
+                  fontFamily: G.display, fontSize: 13, color: G.ink, outline: 'none',
+                }}
+              />
+            </label>
+            <label style={{ display: 'block' }}>
+              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
+              <input
+                type="datetime-local"
+                value={endsAt}
+                onChange={e => setEndsAt(e.target.value)}
+                style={{
+                  width: '100%', padding: '8px 10px', borderRadius: 8,
+                  border: `1px solid ${G.hairline2}`, background: G.paper,
+                  fontFamily: G.display, fontSize: 13, color: G.ink, outline: 'none',
+                }}
+              />
+            </label>
           </div>
         </div>
 
         <div style={{ marginTop: 18 }}>
           <GLabel>A short note <span style={{ color: G.muted, fontWeight: 500, letterSpacing: 0.5, textTransform: 'none' }}>· optional</span></GLabel>
-          <div style={{
-            marginTop: 8, padding: 12, borderRadius: 8,
-            border: `1px solid ${G.hairline2}`, background: G.paper,
-            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, lineHeight: 1.4,
-            minHeight: 60,
-          }}>
-            Theo&apos;s at 102°. I&apos;m stuck at work till 4. Just need someone with him.
-          </div>
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="What happened, what you need…"
+            rows={3}
+            style={{
+              marginTop: 8, padding: 12, borderRadius: 8, width: '100%',
+              border: `1px solid ${G.hairline2}`, background: G.paper,
+              fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink, lineHeight: 1.4,
+              outline: 'none', resize: 'none',
+            }}
+          />
         </div>
 
         <div style={{
@@ -179,12 +232,15 @@ function BellCompose({ onRing, onBack, onPost }: { onRing: () => void; onBack?: 
           </div>
         </div>
 
-        <button onClick={onRing} style={{
+        <button onClick={onRing} disabled={why === null} style={{
           marginTop: 22, width: '100%', padding: '18px 14px',
-          background: RED, color: '#FBF7F0', border: 'none', borderRadius: 8,
+          background: why === null ? G.hairline2 : RED,
+          color: why === null ? G.muted : '#FBF7F0',
+          border: 'none', borderRadius: 8,
           fontFamily: G.sans, fontSize: 13, fontWeight: 700, letterSpacing: 1.8,
-          textTransform: 'uppercase', cursor: 'pointer',
-          boxShadow: `0 4px 0 ${RED_DARK}`,
+          textTransform: 'uppercase', cursor: why === null ? 'default' : 'pointer',
+          boxShadow: why === null ? 'none' : `0 4px 0 ${RED_DARK}`,
+          transition: 'background 0.15s, color 0.15s',
         }}>Ring the Bell</button>
 
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>

@@ -131,7 +131,7 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
   );
 }
 
-function EmptyAlmanac({ onRing, role }: { onRing?: () => void; role: 'parent' | 'caregiver' }) {
+function EmptyAlmanac({ onRing, onPost, role }: { onRing?: () => void; onPost?: () => void; role: 'parent' | 'caregiver' }) {
   return (
     <div style={{
       margin: '18px 0', padding: '26px 20px', textAlign: 'center',
@@ -142,17 +142,44 @@ function EmptyAlmanac({ onRing, role }: { onRing?: () => void; role: 'parent' | 
       </div>
       <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
         {role === 'parent'
-          ? 'Post a need to get started, or ring the bell for something urgent.'
+          ? 'Post a need or ring the bell for something urgent.'
           : 'Open shifts from your villages will appear on the Shifts tab.'}
       </div>
-      {role === 'parent' && onRing && (
-        <button onClick={onRing} style={{
-          marginTop: 14, padding: '10px 18px',
-          background: G.ink, color: '#FBF7F0',
-          border: 'none', borderRadius: 6,
-          fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
-          textTransform: 'uppercase', cursor: 'pointer',
-        }}>Ring the Bell</button>
+      {role === 'parent' && (
+        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 24 }}>
+          {onPost && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <button onClick={onPost} style={{
+                width: 56, height: 56, borderRadius: 28,
+                background: G.ink, color: '#FBF7F0',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(27,23,19,0.18)',
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12h14" stroke="#FBF7F0" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Post</span>
+            </div>
+          )}
+          {onRing && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <button onClick={onRing} style={{
+                width: 56, height: 56, borderRadius: 28,
+                background: 'transparent', color: G.ink,
+                border: `1.5px solid ${G.ink}`, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3v1.5M6.5 19.5h11M8 19.5L8 12a4 4 0 018 0v7.5M10.5 22h3a1.5 1.5 0 01-3 0z"
+                    stroke={G.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Ring Bell</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -174,9 +201,10 @@ function BellButton({ onRing }: { onRing: () => void }) {
   );
 }
 
-export function ScreenAlmanac({ role = 'parent', onRing }: {
+export function ScreenAlmanac({ role = 'parent', onRing, onPost }: {
   role?: 'parent' | 'caregiver';
   onRing?: () => void;
+  onPost?: () => void;
 }) {
   const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
@@ -239,7 +267,10 @@ export function ScreenAlmanac({ role = 'parent', onRing }: {
   const week     = upcoming.filter(r => bucketOf(r.shift.startsAt) === 'week');
   const later    = upcoming.filter(r => bucketOf(r.shift.startsAt) === 'later');
 
-  const title = role === 'caregiver' ? 'My Schedule' : (active?.name || 'The Almanac');
+  function possessive(name: string) {
+    return name.endsWith('s') ? `${name}'` : `${name}'s`;
+  }
+  const title = role === 'caregiver' ? 'My Schedule' : (active?.name ? `${possessive(active.name)} Almanac` : 'The Almanac');
   const tagline = rows === null ? 'Loading…'
     : upcoming.length === 0 ? 'Nothing on the books yet.'
     : multiHousehold
@@ -272,7 +303,7 @@ export function ScreenAlmanac({ role = 'parent', onRing }: {
             Loading your schedule…
           </div>
         )}
-        {rows && upcoming.length === 0 && <EmptyAlmanac onRing={onRing} role={role} />}
+        {rows && upcoming.length === 0 && <EmptyAlmanac onRing={onRing} onPost={onPost} role={role} />}
 
         {today.length > 0 && <>
           <SectionHead label="Today" />

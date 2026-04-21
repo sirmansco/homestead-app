@@ -46,6 +46,11 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [endsAt, setEndsAt] = useState(defaults.end);
   const [isPaid, setIsPaid] = useState(false);
   const [rate, setRate] = useState('22');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurDay, setRecurDay] = useState<number>(1); // 0=Sun…6=Sat
+  const [recurEnds, setRecurEnds] = useState<'date' | 'count'>('count');
+  const [recurEndDate, setRecurEndDate] = useState('');
+  const [recurCount, setRecurCount] = useState('8');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +69,11 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         .filter(Boolean)
         .join(' & ');
       const forWhomFinal = [kidNames, forWhom.trim()].filter(Boolean).join(' · ');
+      const recurrence = isRecurring ? {
+        dayOfWeek: recurDay,
+        endsBy: recurEnds === 'date' ? recurEndDate || undefined : undefined,
+        occurrences: recurEnds === 'count' ? parseInt(recurCount) || undefined : undefined,
+      } : undefined;
       const res = await fetch('/api/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,6 +84,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           startsAt: s.toISOString(),
           endsAt: e.toISOString(),
           rateCents: Number.isFinite(rateCents as number) ? rateCents : null,
+          recurrence,
         }),
       });
       if (!res.ok) {
@@ -172,7 +183,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
 
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
             <Pill label="Starts">
               <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={pillInput} />
             </Pill>
@@ -180,6 +191,67 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={pillInput} />
             </Pill>
           </div>
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="checkbox" checked={isRecurring}
+              onChange={e => setIsRecurring(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: G.ink }}
+            />
+            <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.ink }}>
+              This repeats weekly
+            </span>
+          </label>
+          {isRecurring && (
+            <div style={{ marginTop: 12, padding: '14px 14px 10px', borderRadius: 8, border: `1px solid ${G.hairline2}`, background: G.paper, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <label>
+                <div style={microLabel}>Repeats every</div>
+                <select value={recurDay} onChange={e => setRecurDay(Number(e.target.value))} style={selectStyle}>
+                  <option value={0}>Sunday</option>
+                  <option value={1}>Monday</option>
+                  <option value={2}>Tuesday</option>
+                  <option value={3}>Wednesday</option>
+                  <option value={4}>Thursday</option>
+                  <option value={5}>Friday</option>
+                  <option value={6}>Saturday</option>
+                </select>
+              </label>
+              <div>
+                <div style={microLabel}>Ends after</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  {(['count', 'date'] as const).map(opt => (
+                    <button key={opt} type="button" onClick={() => setRecurEnds(opt)} style={{
+                      padding: '5px 12px', borderRadius: 100, cursor: 'pointer',
+                      background: recurEnds === opt ? G.ink : 'transparent',
+                      color: recurEnds === opt ? '#FBF7F0' : G.ink,
+                      border: `1px solid ${recurEnds === opt ? G.ink : G.hairline2}`,
+                      fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 0.8,
+                      textTransform: 'uppercase',
+                    }}>{opt === 'count' ? 'N weeks' : 'A date'}</button>
+                  ))}
+                </div>
+                {recurEnds === 'count' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                    <input
+                      type="number" min="1" max="52" value={recurCount}
+                      onChange={e => setRecurCount(e.target.value)}
+                      style={{ ...selectStyle, width: 72 }}
+                    />
+                    <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted }}>occurrences</span>
+                  </div>
+                )}
+                {recurEnds === 'date' && (
+                  <input
+                    type="date" value={recurEndDate}
+                    onChange={e => setRecurEndDate(e.target.value)}
+                    style={{ ...selectStyle, marginTop: 10 }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: 22 }}>
@@ -279,6 +351,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+const microLabel: React.CSSProperties = {
+  fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase',
+  color: G.muted, fontWeight: 700, marginBottom: 4,
+};
+
+const selectStyle: React.CSSProperties = {
+  width: '100%', padding: '8px 10px', borderRadius: 8,
+  border: `1px solid ${G.hairline2}`, background: G.bg,
+  fontFamily: G.display, fontSize: 14, color: G.ink, outline: 'none',
+};
 
 function Pill({ label, children }: { label: string; children: React.ReactNode }) {
   return (
