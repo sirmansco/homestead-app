@@ -42,3 +42,4 @@ next-env.d.ts
 
 # macOS resource forks
 ._*
+.env*.local
