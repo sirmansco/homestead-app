@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc, asc, inArray, or, isNull } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
+
+const claimerUsers = alias(users, 'claimer');
 import { requireHousehold } from '@/lib/auth/household';
 import { apiError, authError } from '@/lib/api-error';
 
@@ -94,11 +97,13 @@ export async function GET(req: NextRequest) {
     const rows = await db.select({
       shift: shifts,
       household: households,
-      creator: users,
+      creator: { id: users.id, name: users.name },
+      claimer: { id: claimerUsers.id, name: claimerUsers.name },
     })
       .from(shifts)
       .leftJoin(households, eq(shifts.householdId, households.id))
       .leftJoin(users, eq(shifts.createdByUserId, users.id))
+      .leftJoin(claimerUsers, eq(shifts.claimedByUserId, claimerUsers.id))
       .where(where)
       .orderBy(orderBy);
 

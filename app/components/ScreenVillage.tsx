@@ -59,7 +59,7 @@ const GROUP_CYCLE: VillageGroup[] = ['inner', 'family', 'sitter'];
 const GROUP_LABEL: Record<VillageGroup, string> = { inner: 'IC', family: 'FC', sitter: 'TS' };
 const GROUP_TITLE: Record<VillageGroup, string> = { inner: 'Inner Circle', family: 'Family & Close', sitter: 'Trusted Sitter' };
 
-function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange, draggableId, onPointerDownDrag, isDragging }: {
+function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
   name: string;
   role: string;
   isMe?: boolean;
@@ -72,9 +72,6 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   targetType?: 'user' | 'kid';
   targetId?: string;
   onPhotoChange?: (url: string) => void;
-  draggableId?: string;
-  onPointerDownDrag?: (id: string, e: React.PointerEvent) => void;
-  isDragging?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -95,25 +92,12 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   }
 
   const size = 40;
-  const isDraggable = !!(draggableId && onPointerDownDrag);
   return (
-    <div
-      data-draggable-id={draggableId}
-      onPointerDown={isDraggable ? (e) => {
-        // Don't start drag if touching an interactive child (buttons, inputs)
-        const target = e.target as HTMLElement;
-        if (target.closest('button, input, label')) return;
-        onPointerDownDrag!(draggableId!, e);
-      } : undefined}
-      style={{
-        background: G.bg, border: `1px solid ${G.hairline}`,
-        borderRadius: 8, padding: 12, position: 'relative',
-        cursor: isDraggable ? 'grab' : 'default',
-        opacity: isDragging ? 0.4 : 1,
-        touchAction: isDraggable ? 'pan-y' : 'auto',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-      }}>
+    <div style={{
+      background: G.bg, border: `1px solid ${G.hairline}`,
+      borderRadius: 8, padding: 12, position: 'relative',
+      userSelect: 'none', WebkitUserSelect: 'none',
+    }}>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -170,15 +154,19 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
         {villageGroup && onChangeGroup && (
           <button
             onClick={() => setPickerOpen(true)}
-            title={`Circle: ${GROUP_TITLE[villageGroup]} — tap to change`}
             style={{
-              background: 'transparent', color: G.muted,
+              background: G.paper, color: G.ink,
               border: `1px solid ${G.hairline2}`, borderRadius: 100,
-              padding: '3px 7px', cursor: 'pointer',
-              fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
-              textTransform: 'uppercase', flexShrink: 0,
+              padding: '5px 10px', cursor: 'pointer',
+              fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 0.8,
+              textTransform: 'uppercase', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
             }}
-          >{GROUP_LABEL[villageGroup]}</button>
+          >
+            <span>{GROUP_LABEL[villageGroup]}</span>
+            <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 1v8M1 5l4 4 4-4" />
+            </svg>
+          </button>
         )}
         {onToggleRole && appRole && (
           <button onClick={onToggleRole} title="Toggle role" style={{
@@ -709,167 +697,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
     load();
   };
 
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverGroup, setDragOverGroup] = useState<VillageGroup | null>(null);
-  const [ghostPos, setGhostPos] = useState<{ x: number; y: number; name: string } | null>(null);
-  // Stable refs for drop zone containers — keyed by group
-  const groupRefs = useRef<Record<VillageGroup, HTMLDivElement | null>>({ inner: null, family: null, sitter: null });
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ id: string; startX: number; startY: number; active: boolean; name: string } | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Edge auto-scroll state during drag
-  const autoScrollRef = useRef<{ raf: number | null; dir: number; lastY: number }>({ raf: null, dir: 0, lastY: 0 });
-  // Shadow ref mirroring ghostPos so the rAF loop can read without stale closure
-  const ghostPosRef = useRef<{ x: number; y: number; name: string } | null>(null);
-
-  // Hit-test pointer position against group containers
-  const hitTestGroup = useCallback((x: number, y: number): VillageGroup | null => {
-    for (const g of ['inner', 'family', 'sitter'] as VillageGroup[]) {
-      const el = groupRefs.current[g];
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return g;
-    }
-    return null;
-  }, []);
-
-  const stopAutoScroll = useCallback(() => {
-    if (autoScrollRef.current.raf != null) {
-      cancelAnimationFrame(autoScrollRef.current.raf);
-      autoScrollRef.current.raf = null;
-    }
-    autoScrollRef.current.dir = 0;
-  }, []);
-
-  const startAutoScroll = useCallback((dir: number) => {
-    if (autoScrollRef.current.dir === dir) return;
-    autoScrollRef.current.dir = dir;
-    if (autoScrollRef.current.raf != null) return;
-    const tick = () => {
-      const { dir: d } = autoScrollRef.current;
-      const el = scrollRef.current;
-      if (!d || !el) { autoScrollRef.current.raf = null; return; }
-      // Speed scales with how close to the edge (computed in onMove); keep simple here.
-      el.scrollBy({ top: d * 10 });
-      // Re-run hit-test against the last known pointer y so dragOverGroup stays fresh
-      const y = autoScrollRef.current.lastY;
-      const g = hitTestGroup(ghostPosRef.current?.x ?? 0, y);
-      setDragOverGroup(g);
-      autoScrollRef.current.raf = requestAnimationFrame(tick);
-    };
-    autoScrollRef.current.raf = requestAnimationFrame(tick);
-  }, [hitTestGroup]);
-
-  const endDrag = useCallback(() => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-    stopAutoScroll();
-    dragStateRef.current = null;
-    ghostPosRef.current = null;
-    setDraggingId(null);
-    setDragOverGroup(null);
-    setGhostPos(null);
-  }, [stopAutoScroll]);
-
-  useEffect(() => {
-    if (!draggingId) return;
-    const EDGE_ZONE = 64;
-    const onMove = (e: PointerEvent) => {
-      if (!dragStateRef.current?.active) return;
-      e.preventDefault();
-      ghostPosRef.current = { x: e.clientX, y: e.clientY, name: dragStateRef.current.name };
-      setGhostPos({ x: e.clientX, y: e.clientY, name: dragStateRef.current.name });
-      const g = hitTestGroup(e.clientX, e.clientY);
-      setDragOverGroup(g);
-
-      // Edge-driven auto-scroll so drops can reach sections below/above the fold
-      const container = scrollRef.current;
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        autoScrollRef.current.lastY = e.clientY;
-        if (e.clientY < rect.top + EDGE_ZONE) {
-          startAutoScroll(-1);
-        } else if (e.clientY > rect.bottom - EDGE_ZONE) {
-          startAutoScroll(1);
-        } else {
-          stopAutoScroll();
-        }
-      }
-    };
-    const onUp = (e: PointerEvent) => {
-      const state = dragStateRef.current;
-      if (!state?.active) { endDrag(); return; }
-      const g = hitTestGroup(e.clientX, e.clientY);
-      if (g) {
-        const member = adults.find(a => a.id === state.id);
-        if (member && member.villageGroup !== g) changeGroup(state.id, g);
-      }
-      endDrag();
-    };
-    const onCancel = () => endDrag();
-    window.addEventListener('pointermove', onMove, { passive: false });
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onCancel);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onCancel);
-    };
-  }, [draggingId, adults, hitTestGroup, endDrag, startAutoScroll, stopAutoScroll]);
-
-  const handlePointerDownDrag = useCallback((id: string, e: React.PointerEvent) => {
-    const member = adults.find(a => a.id === id);
-    if (!member) return;
-    const startX = e.clientX, startY = e.clientY;
-    dragStateRef.current = { id, startX, startY, active: false, name: member.name };
-    // Start drag after short hold (200ms on touch, instant movement on mouse)
-    const isTouch = e.pointerType === 'touch';
-    const activate = () => {
-      if (!dragStateRef.current) return;
-      dragStateRef.current.active = true;
-      setDraggingId(id);
-      setGhostPos({ x: startX, y: startY, name: member.name });
-      // Haptic feedback on mobile
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try { (navigator as Navigator & { vibrate: (p: number) => void }).vibrate(15); } catch { /* ignore */ }
-      }
-    };
-    if (isTouch) {
-      longPressTimer.current = setTimeout(activate, 300);
-      // If user moves before long-press fires, cancel (treat as scroll)
-      const onEarlyMove = (me: PointerEvent) => {
-        const dx = Math.abs(me.clientX - startX), dy = Math.abs(me.clientY - startY);
-        if (dx > 12 || dy > 12) {
-          if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-          dragStateRef.current = null;
-          window.removeEventListener('pointermove', onEarlyMove);
-        }
-      };
-      const onEarlyUp = () => {
-        if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-        dragStateRef.current = null;
-        window.removeEventListener('pointermove', onEarlyMove);
-        window.removeEventListener('pointerup', onEarlyUp);
-      };
-      window.addEventListener('pointermove', onEarlyMove);
-      window.addEventListener('pointerup', onEarlyUp, { once: true });
-    } else {
-      // Mouse: activate on first movement > 4px
-      const onEarlyMove = (me: PointerEvent) => {
-        const dx = Math.abs(me.clientX - startX), dy = Math.abs(me.clientY - startY);
-        if (dx > 4 || dy > 4) {
-          window.removeEventListener('pointermove', onEarlyMove);
-          window.removeEventListener('pointerup', onEarlyUp);
-          activate();
-        }
-      };
-      const onEarlyUp = () => {
-        window.removeEventListener('pointermove', onEarlyMove);
-        dragStateRef.current = null;
-      };
-      window.addEventListener('pointermove', onEarlyMove);
-      window.addEventListener('pointerup', onEarlyUp, { once: true });
-    }
-  }, [adults]);
 
   if (!loading && myRole === 'caregiver') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
 
@@ -930,31 +758,26 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
             {(['inner', 'family', 'sitter'] as const).map(g => {
               const members = byGroup(g);
               const meta = GROUP_META[g];
-              const isOver = dragOverGroup === g;
-              const groupProps = myRole === 'parent' ? {
-                ref: (el: HTMLDivElement | null) => { groupRefs.current[g] = el; },
-              } : {};
               return (
-                <div key={g} {...groupProps}>
+                <div key={g}>
                   <GroupHeader count={members.length} label={meta.label} note={meta.note} />
                   {members.length === 0 ? (
                     <div style={{
-                      background: isOver ? G.paper : 'transparent',
-                      border: `1px dashed ${isOver ? G.ink : G.hairline2}`,
+                      background: 'transparent',
+                      border: `1px dashed ${G.hairline2}`,
                       borderRadius: 10, padding: 18, textAlign: 'center',
                       fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
-                      color: isOver ? G.ink : G.muted, marginBottom: 18,
+                      color: G.muted, marginBottom: 18,
                     }}>
-                      {isOver ? `Drop to move to ${meta.label}` : `No one in ${meta.label} yet.`}
+                      No one in {meta.label} yet.
                     </div>
                   ) : (
                     <div style={{
-                      background: isOver ? '#F3EADA' : (g === 'inner' ? G.paper : 'transparent'),
-                      border: isOver ? `1px dashed ${G.ink}` : (g === 'inner' ? `1px solid ${G.hairline2}` : 'none'),
-                      borderRadius: (isOver || g === 'inner') ? 10 : 0,
-                      padding: (isOver || g === 'inner') ? 14 : 0,
+                      background: g === 'inner' ? G.paper : 'transparent',
+                      border: g === 'inner' ? `1px solid ${G.hairline2}` : 'none',
+                      borderRadius: g === 'inner' ? 10 : 0,
+                      padding: g === 'inner' ? 14 : 0,
                       marginBottom: 18,
-                      transition: 'background 120ms',
                     }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {members.map(m => {
@@ -975,9 +798,6 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
                               targetType="user"
                               targetId={m.id}
                               onPhotoChange={() => load()}
-                              draggableId={canManage ? m.id : undefined}
-                              onPointerDownDrag={canManage ? handlePointerDownDrag : undefined}
-                              isDragging={draggingId === m.id}
                             />
                           );
                         })}
@@ -1022,22 +842,6 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
           </>
         )}
       </div>
-
-      {ghostPos && draggingId && (
-        <div style={{
-          position: 'fixed',
-          left: ghostPos.x, top: ghostPos.y,
-          transform: 'translate(-50%, -50%) scale(1.05)',
-          pointerEvents: 'none', zIndex: 2000,
-          background: G.bg, border: `1px solid ${G.ink}`,
-          borderRadius: 8, padding: '8px 14px',
-          fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink,
-          boxShadow: '0 12px 32px rgba(27,23,19,0.35)',
-          whiteSpace: 'nowrap',
-        }}>
-          {shortName(ghostPos.name)}
-        </div>
-      )}
 
       {showInvite && <InviteSheet onClose={() => setShowInvite(false)} onInvited={load} />}
 
