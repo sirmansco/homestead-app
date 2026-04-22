@@ -200,6 +200,15 @@ export function ScreenShifts() {
         fetch('/api/shifts?scope=mine'),
       ]);
       // 401 = not signed in, 409 = no household yet — both are valid empty states
+      // Process mine first — works even without an active org
+      if (mineRes.ok) {
+        const mine = await mineRes.json() as ApiResponse;
+        setMyRows(mine.shifts.filter(r =>
+          r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
+        ));
+      }
+
+      // Village scope requires active org — 401/409 just means empty open list, not an error
       if (villageRes.status === 401 || villageRes.status === 409) {
         setRows([]);
         return;
@@ -207,13 +216,6 @@ export function ScreenShifts() {
       if (!villageRes.ok) throw new Error(`Failed (${villageRes.status})`);
       const village = await villageRes.json() as ApiResponse;
       setRows(village.shifts);
-
-      if (mineRes.ok) {
-        const mine = await mineRes.json() as ApiResponse;
-        setMyRows(mine.shifts.filter(r =>
-          r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
-        ));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
