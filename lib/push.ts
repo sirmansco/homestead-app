@@ -3,11 +3,19 @@ import { eq, and, ne, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { pushSubscriptions, users } from '@/lib/db/schema';
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+// Lazy VAPID init — called at runtime, not module evaluation.
+// Calling setVapidDetails at the top level causes build failures because
+// VAPID env vars are not available during Next.js "Collecting page data".
+let vapidInitialised = false;
+function ensureVapid() {
+  if (vapidInitialised) return;
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT!,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!,
+  );
+  vapidInitialised = true;
+}
 
 type PushPayload = {
   title: string;
@@ -34,6 +42,7 @@ async function sendBatch(
   payload: PushPayload,
   context: string,
 ): Promise<PushResult> {
+  ensureVapid();
   const result: PushResult = { attempted: subs.length, delivered: 0, stale: 0, failed: 0, errors: [] };
   if (subs.length === 0) return result;
 
