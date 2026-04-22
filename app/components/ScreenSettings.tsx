@@ -186,8 +186,12 @@ export function ScreenSettings({ onBack }: { onBack?: () => void }) {
           )}
         </div>
 
-        <div style={{ marginTop: 32, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted }}>
+        <div style={{ marginTop: 32, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted, lineHeight: 1.6 }}>
           Homestead · family childcare coordination
+          <br />
+          <span style={{ fontSize: 10, opacity: 0.6 }}>
+            build {process.env.NEXT_PUBLIC_APP_SHA || 'dev'}
+          </span>
         </div>
       </div>
     </div>
