@@ -3,28 +3,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
+import { shortName } from '@/lib/format';
 
 type Kid = { id: string; name: string };
 type Caregiver = { id: string; name: string; role: string };
-
-function shortName(full: string): string {
-  const trimmed = full.trim();
-  if (trimmed.includes('@')) {
-    const local = trimmed.split('@')[0];
-    return local.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-  }
-  if (!trimmed.includes(' ') && /[._]/.test(trimmed)) {
-    return trimmed.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-  }
-  const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) {
-    if (trimmed === trimmed.toLowerCase()) return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-    return trimmed;
-  }
-  const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-  const lastInitial = parts[parts.length - 1][0]?.toUpperCase();
-  return lastInitial ? `${first} ${lastInitial}.` : first;
-}
 
 function toLocalInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');

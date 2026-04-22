@@ -8,6 +8,7 @@ import { ScreenShifts } from './ScreenShifts';
 import { ScreenAlmanac } from './ScreenAlmanac';
 import { ScreenBell } from './ScreenBell';
 import { ScreenVillage } from './ScreenVillage';
+import { ScreenSettings } from './ScreenSettings';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
 import { InstallHint } from './InstallHint';
 
@@ -17,7 +18,7 @@ const DEV_USER_ID = process.env.NODE_ENV === 'production'
   ? (process.env.NEXT_PUBLIC_DEV_CLERK_USER_ID === 'user_3CeQiFzHv2dCasCCiNx7xGEn8Vu' ? null : null)
   : 'user_3CeQiFzHv2dCasCCiNx7xGEn8Vu';
 
-type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell';
+type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell' | 'settings';
 type Role = 'parent' | 'caregiver';
 
 function useIsMobile() {
@@ -187,6 +188,10 @@ export function HomesteadApp() {
 
   const navigate = useCallback((id: TabId) => setScreen(id), []);
 
+  // Which tab pill to highlight. Non-nav screens (bell, settings) map to a neighbor.
+  type NavTab = 'almanac' | 'post' | 'village' | 'shifts';
+  const activeTab: NavTab = screen === 'bell' ? 'almanac' : screen === 'settings' ? 'village' : screen;
+
   useEffect(() => {
     const parentMap:    TabId[] = ['almanac', 'post',   'village'];
     const caregiverMap: TabId[] = ['almanac', 'village'];
@@ -217,7 +222,8 @@ export function HomesteadApp() {
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
       case 'shifts':  return <ScreenShifts />;
       case 'bell':    return <ScreenBell initialCompose={true} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
-      case 'village': return <ScreenVillage role={role} />;
+      case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
+      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
     }
   }
@@ -240,7 +246,7 @@ export function HomesteadApp() {
           }}>
             {renderScreen()}
           </div>
-          <GTabBar active={screen === 'bell' ? 'almanac' : screen} onNavigate={navigate} role={role} bellCount={bellCount} />
+          <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
           {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
           <InstallHint />
         </div>
@@ -312,7 +318,7 @@ export function HomesteadApp() {
         <div style={{ position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
           {renderScreen()}
         </div>
-        <GTabBar active={screen === 'bell' ? 'almanac' : screen} onNavigate={navigate} role={role} bellCount={bellCount} />
+        <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
         <div style={{
           position: 'absolute', bottom: 6, left: 0, right: 0,
           display: 'flex', justifyContent: 'center', zIndex: 60,

@@ -4,6 +4,7 @@ import { UserButton } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
+import { shortName } from '@/lib/format';
 
 async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: string): Promise<string | null> {
   const form = new FormData();
@@ -52,28 +53,6 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
       <GLabel style={{ marginTop: 2 }}>{note}</GLabel>
     </div>
   );
-}
-
-function shortName(full: string): string {
-  const trimmed = full.trim();
-  // If the stored name looks like an email, use the local part before @
-  if (trimmed.includes('@')) {
-    const local = trimmed.split('@')[0];
-    return local.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-  }
-  // If it looks like a slug/username (no spaces, contains dots/underscores, or all lowercase with no spaces)
-  if (!trimmed.includes(' ') && /[._]/.test(trimmed)) {
-    return trimmed.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-  }
-  const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) {
-    // Single token — title-case it if it's all lowercase (likely a username)
-    if (trimmed === trimmed.toLowerCase()) return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-    return trimmed;
-  }
-  const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-  const lastInitial = parts[parts.length - 1][0]?.toUpperCase();
-  return lastInitial ? `${first} ${lastInitial}.` : first;
 }
 
 const GROUP_CYCLE: VillageGroup[] = ['inner', 'family', 'sitter'];
@@ -555,7 +534,7 @@ function FamilyCard({ family }: { family: FamilyData }) {
   );
 }
 
-function CaregiverVillage() {
+function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [families, setFamilies] = useState<FamilyData[] | null>(null);
   const [showInvite, setShowInvite] = useState(false);
 
@@ -580,6 +559,17 @@ function CaregiverVillage() {
         rightAction={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <GLabel color={G.clay}>{count} {count === 1 ? 'family' : 'families'}</GLabel>
+            {onOpenSettings && (
+              <button onClick={onOpenSettings} aria-label="Settings" style={{
+                background: 'transparent', border: 'none', padding: 2, cursor: 'pointer',
+                color: G.muted, display: 'flex', alignItems: 'center',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
+            )}
             <UserButton />
           </div>
         }
@@ -626,7 +616,7 @@ function CaregiverVillage() {
 
 // ── Parent view ───────────────────────────────────────────────────────────
 
-export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver' }) {
+export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'parent' | 'caregiver'; onOpenSettings?: () => void }) {
   const { refresh: refreshHousehold } = useHousehold();
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
@@ -831,7 +821,7 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
     }
   }, [adults]);
 
-  if (!loading && myRole === 'caregiver') return <CaregiverVillage />;
+  if (!loading && myRole === 'caregiver') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
   const total = adults.length + kids.length;
@@ -848,6 +838,17 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
                 fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase',
                 color: G.muted, textDecoration: 'underline', textUnderlineOffset: 2,
               }}>rename</button>
+            )}
+            {onOpenSettings && (
+              <button onClick={onOpenSettings} aria-label="Settings" style={{
+                background: 'transparent', border: 'none', padding: 2, cursor: 'pointer',
+                color: G.muted, display: 'flex', alignItems: 'center',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
             )}
             <UserButton />
           </div>
