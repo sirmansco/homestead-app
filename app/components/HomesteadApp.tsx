@@ -10,7 +10,6 @@ import { ScreenBell } from './ScreenBell';
 import { ScreenVillage } from './ScreenVillage';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
 import { InstallHint } from './InstallHint';
-import { RefreshButton } from './RefreshButton';
 
 const DEV_USER_ID = 'user_3CeQiFzHv2dCasCCiNx7xGEn8Vu';
 
@@ -81,17 +80,18 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
         onClick={() => setOpen(o => !o)}
         aria-label="Switch role"
         style={{
-          position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 12, zIndex: 200,
+          position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)', left: 12, zIndex: 200,
           background: 'rgba(27,23,19,0.85)', color: '#FBF7F0',
           border: '1px solid rgba(251,247,240,0.25)', borderRadius: 100,
-          padding: '6px 12px', cursor: 'pointer',
-          fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1,
+          padding: '5px 10px', cursor: 'pointer',
+          fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 0.8,
           textTransform: 'uppercase', backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          opacity: 0.7,
         }}
       >
-        {role === 'parent' ? '👪 Parent' : '🤝 Caregiver'} · Switch
+        Dev · {role === 'parent' ? 'P' : 'C'}
       </button>
       {open && (
         <div
@@ -230,7 +230,6 @@ export function HomesteadApp() {
           overflow: 'hidden',
         }}>
           {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
-          <RefreshButton />
           <div style={{
             flex: 1, overflow: 'hidden', position: 'relative',
             paddingTop: 'env(safe-area-inset-top, 0px)',

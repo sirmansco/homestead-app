@@ -84,6 +84,19 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const familyInvites = pgTable('family_invites', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: text('token').notNull().unique(),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  parentEmail: text('parent_email').notNull(),
+  parentName: text('parent_name'),
+  villageGroup: villageGroupEnum('village_group').notNull().default('family'),
+  status: text('status').notNull().default('pending'),
+  acceptedHouseholdId: uuid('accepted_household_id').references(() => households.id, { onDelete: 'set null' }),
+  acceptedAt: timestamp('accepted_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export const bellResponses = pgTable('bell_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
   bellId: uuid('bell_id').notNull().references(() => bells.id, { onDelete: 'cascade' }),

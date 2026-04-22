@@ -75,6 +75,7 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [localPhoto, setLocalPhoto] = useState<string | null>(photoUrl ?? null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -147,10 +148,7 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
         </div>
         {villageGroup && onChangeGroup && (
           <button
-            onClick={() => {
-              const next = GROUP_CYCLE[(GROUP_CYCLE.indexOf(villageGroup) + 1) % GROUP_CYCLE.length];
-              onChangeGroup(next);
-            }}
+            onClick={() => setPickerOpen(true)}
             title={`Circle: ${GROUP_TITLE[villageGroup]} — tap to change`}
             style={{
               background: 'transparent', color: G.muted,
@@ -178,6 +176,48 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
           }}>×</button>
         )}
       </div>
+      {pickerOpen && villageGroup && onChangeGroup && (
+        <div onClick={() => setPickerOpen(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)', zIndex: 1100,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: G.bg, width: '100%', maxWidth: 480,
+            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderTop: `1px solid ${G.ink}`,
+          }}>
+            <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
+            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 4 }}>
+              Move {name} to…
+            </div>
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 14 }}>
+              Currently in {GROUP_TITLE[villageGroup]}.
+            </div>
+            {(GROUP_CYCLE).map(g => (
+              <button
+                key={g}
+                onClick={() => { if (g !== villageGroup) onChangeGroup(g); setPickerOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', marginBottom: 8,
+                  padding: '14px 16px', textAlign: 'left',
+                  background: g === villageGroup ? G.ink : 'transparent',
+                  color: g === villageGroup ? '#FBF7F0' : G.ink,
+                  border: `1px solid ${g === villageGroup ? G.ink : G.hairline2}`,
+                  borderRadius: 8, cursor: 'pointer',
+                  fontFamily: G.display, fontSize: 15, fontWeight: 500,
+                }}
+              >
+                {GROUP_TITLE[g]}
+                {g === villageGroup && (
+                  <span style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', marginLeft: 8, opacity: 0.7 }}>
+                    · current
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -195,7 +235,7 @@ function EmptyGroup({ label }: { label: string }) {
   );
 }
 
-function InviteSheet({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
+function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => void; onInvited: () => void; caregiverMode?: boolean }) {
   const [kind, setKind] = useState<'adult' | 'kid'>('adult');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -209,10 +249,14 @@ function InviteSheet({ onClose, onInvited }: { onClose: () => void; onInvited: (
   const sendInvite = async (mode: 'email' | 'link') => {
     setBusy(true); setError(null); setLinkUrl(null);
     try {
-      const res = await fetch('/api/village/invite', {
+      const endpoint = caregiverMode ? '/api/village/invite-family' : '/api/village/invite';
+      const payload = caregiverMode
+        ? { parentName: name, parentEmail: email, villageGroup, mode }
+        : { name, email, role, villageGroup, mode };
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, role, villageGroup, mode }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
@@ -269,19 +313,29 @@ function InviteSheet({ onClose, onInvited }: { onClose: () => void; onInvited: (
       }}>
         <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
 
-        <div style={{ display: 'flex', gap: 4, marginBottom: 18, padding: 3,
-          background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 100 }}>
-          {(['adult', 'kid'] as const).map(k => (
-            <button key={k} onClick={() => setKind(k)} style={{
-              flex: 1, padding: '8px 12px', borderRadius: 100,
-              background: kind === k ? G.ink : 'transparent',
-              color: kind === k ? '#FBF7F0' : G.ink2,
-              border: 'none', cursor: 'pointer',
-              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase',
-            }}>{k === 'adult' ? 'Invite adult' : 'Add child'}</button>
-          ))}
-        </div>
+        {caregiverMode ? (
+          <div style={{
+            marginBottom: 18, padding: '10px 12px', borderRadius: 8,
+            background: G.paper, border: `1px solid ${G.hairline2}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.5,
+          }}>
+            Invite a parent of a family you help. They&rsquo;ll get a link to accept — you&rsquo;ll be linked as their caregiver automatically.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 18, padding: 3,
+            background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 100 }}>
+            {(['adult', 'kid'] as const).map(k => (
+              <button key={k} onClick={() => setKind(k)} style={{
+                flex: 1, padding: '8px 12px', borderRadius: 100,
+                background: kind === k ? G.ink : 'transparent',
+                color: kind === k ? '#FBF7F0' : G.ink2,
+                border: 'none', cursor: 'pointer',
+                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                textTransform: 'uppercase',
+              }}>{k === 'adult' ? 'Invite adult' : 'Add child'}</button>
+            ))}
+          </div>
+        )}
 
         <label style={{ display: 'block', marginBottom: 14 }}>
           <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Name</div>
@@ -295,23 +349,34 @@ function InviteSheet({ onClose, onInvited }: { onClose: () => void; onInvited: (
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
             </label>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-              <label>
-                <div style={labelStyle}>Role</div>
-                <select value={role} onChange={e => setRole(e.target.value as AppRole)} style={inputStyle}>
-                  <option value="parent">Parent</option>
-                  <option value="caregiver">Caregiver</option>
-                </select>
-              </label>
-              <label>
-                <div style={labelStyle}>Group</div>
+            {caregiverMode ? (
+              <label style={{ display: 'block', marginBottom: 14 }}>
+                <div style={labelStyle}>Your circle with this family</div>
                 <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
                   <option value="inner">Inner Circle</option>
                   <option value="family">Family &amp; Close</option>
                   <option value="sitter">Trusted Sitter</option>
                 </select>
               </label>
-            </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                <label>
+                  <div style={labelStyle}>Role</div>
+                  <select value={role} onChange={e => setRole(e.target.value as AppRole)} style={inputStyle}>
+                    <option value="parent">Parent</option>
+                    <option value="caregiver">Caregiver</option>
+                  </select>
+                </label>
+                <label>
+                  <div style={labelStyle}>Group</div>
+                  <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
+                    <option value="inner">Inner Circle</option>
+                    <option value="family">Family &amp; Close</option>
+                    <option value="sitter">Trusted Sitter</option>
+                  </select>
+                </label>
+              </div>
+            )}
 
             {linkUrl ? (
               <div style={{
@@ -448,38 +513,22 @@ function FamilyCard({ family }: { family: FamilyData }) {
 }
 
 function CaregiverVillage() {
-  const { all, active } = useHousehold();
-  const [activeData, setActiveData] = useState<{ adults: Adult[]; kids: Kid[] } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [families, setFamilies] = useState<FamilyData[] | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/village');
-        const data = res.ok ? await res.json() : { adults: [], kids: [] };
-        setActiveData({ adults: data.adults || [], kids: data.kids || [] });
-      } catch {
-        setActiveData({ adults: [], kids: [] });
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [active?.id]);
-
-  async function shareAppLink() {
-    const url = window.location.origin;
+  const load = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
-  }
+      const res = await fetch('/api/village?scope=all');
+      const data = res.ok ? await res.json() : { families: [] };
+      setFamilies(data.families || []);
+    } catch {
+      setFamilies([]);
+    }
+  }, []);
 
-  const activeFamilyData: FamilyData | null = active && activeData
-    ? { household: active, adults: activeData.adults, kids: activeData.kids }
-    : null;
+  useEffect(() => { load(); }, [load]);
+
+  const count = families?.length ?? 0;
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -487,28 +536,31 @@ function CaregiverVillage() {
         leftAction={<HouseholdSwitcher />}
         rightAction={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GLabel color={G.clay}>{all.length} {all.length === 1 ? 'family' : 'families'}</GLabel>
+            <GLabel color={G.clay}>{count} {count === 1 ? 'family' : 'families'}</GLabel>
             <UserButton />
           </div>
         }
         title="My Families"
-        tagline={all.length > 1 ? 'Switch households above to see each family.' : 'The household you help with.'}
+        tagline="The families you help with."
         folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
-        {loading ? (
+        {families === null ? (
           <div style={{ padding: 40, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted }}>
             Loading…
           </div>
-        ) : activeFamilyData ? (
-          <FamilyCard family={activeFamilyData} />
-        ) : (
+        ) : families.length === 0 ? (
           <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink }}>
+            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 8 }}>
               No families yet.
             </div>
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
+              Invite a family you help — they&rsquo;ll receive a link to accept.
+            </div>
           </div>
+        ) : (
+          families.map(f => <FamilyCard key={f.household.id} family={f} />)
         )}
 
         <div style={{
@@ -516,13 +568,15 @@ function CaregiverVillage() {
           borderTop: `1px solid ${G.hairline2}`,
         }}>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 12, lineHeight: 1.5 }}>
-            Helping another family? Ask them to invite you from their Village screen — or share the app link so they can sign up.
+            Helping another family? Send them an invite to link up on Homestead.
           </div>
-          <button onClick={shareAppLink} style={{ ...btnStyle, opacity: copied ? 0.6 : 1 }}>
-            {copied ? 'Copied!' : 'Share app link'}
+          <button onClick={() => setShowInvite(true)} style={btnStyle}>
+            Invite a family
           </button>
         </div>
       </div>
+
+      {showInvite && <InviteSheet onClose={() => setShowInvite(false)} onInvited={load} caregiverMode />}
     </div>
   );
 }
@@ -687,8 +741,8 @@ export function ScreenVillage() {
                           return (
                             <MemberCard
                               key={m.id}
-                              name={m.name}
-                              role={`${m.role}${m.email ? ` · ${m.email}` : ''}`}
+                              name={m.name.split(' ')[0]}
+                              role={m.role}
                               isMe={isMe}
                               appRole={canManage ? m.role : undefined}
                               onToggleRole={canManage ? () => changeRole(m.id, m.role === 'parent' ? 'caregiver' : 'parent') : undefined}

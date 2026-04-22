@@ -1,13 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
+import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { users, kids } from '@/lib/db/schema';
+import { users, kids, households } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { household } = await requireHousehold();
+    const scope = req.nextUrl.searchParams.get('scope') || 'household';
 
+    if (scope === 'all') {
+      const { userId } = await auth();
+      if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+
+      const myRows = await db.select().from(users).where(eq(users.clerkUserId, userId));
+      const hhIds = myRows.map(r => r.householdId);
+      if (hhIds.length === 0) return NextResponse.json({ families: [] });
+
+      const [hhRows, allAdults, allKids] = await Promise.all([
+        db.select().from(households).where(inArray(households.id, hhIds)),
+        db.select().from(users).where(inArray(users.householdId, hhIds)),
+        db.select().from(kids).where(inArray(kids.householdId, hhIds)),
+      ]);
+
+      const families = hhRows.map(h => ({
+        household: { id: h.id, name: h.name, glyph: h.glyph },
+        adults: allAdults.filter(a => a.householdId === h.id),
+        kids: allKids.filter(k => k.householdId === h.id),
+      }));
+
+      return NextResponse.json({ families });
+    }
+
+    const { household } = await requireHousehold();
     const [adults, kidsList] = await Promise.all([
       db.select().from(users).where(eq(users.householdId, household.id)),
       db.select().from(kids).where(eq(kids.householdId, household.id)),
