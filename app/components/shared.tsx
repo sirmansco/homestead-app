@@ -179,9 +179,8 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
     { id: 'village', label: 'Village', icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
-    { id: 'almanac', label: 'Almanac', icon: Icons.almanac },
-    { id: 'shifts',  label: 'Shifts',  icon: Icons.shifts, badge: bellCount },
-    { id: 'village', label: 'Village', icon: Icons.village },
+    { id: 'almanac', label: 'Schedule', icon: Icons.almanac, badge: bellCount },
+    { id: 'village', label: 'Village',  icon: Icons.village },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 
@@ -195,7 +194,7 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
         background: G.paper,
         border: `1px solid ${G.hairline}`,
         borderRadius: 18,
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
         alignItems: 'center',
         boxShadow: '0 4px 16px rgba(27,23,19,0.07)',
       }}>

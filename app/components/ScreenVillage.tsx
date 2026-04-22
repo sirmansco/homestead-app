@@ -54,11 +54,19 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
   );
 }
 
+function shortName(full: string): string {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const lastInitial = parts[parts.length - 1][0]?.toUpperCase();
+  return lastInitial ? `${first} ${lastInitial}.` : first;
+}
+
 const GROUP_CYCLE: VillageGroup[] = ['inner', 'family', 'sitter'];
 const GROUP_LABEL: Record<VillageGroup, string> = { inner: 'IC', family: 'FC', sitter: 'TS' };
 const GROUP_TITLE: Record<VillageGroup, string> = { inner: 'Inner Circle', family: 'Family & Close', sitter: 'Trusted Sitter' };
 
-function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
+function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange, draggableId, onDragStart, onDragEnd }: {
   name: string;
   role: string;
   isMe?: boolean;
@@ -71,6 +79,9 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   targetType?: 'user' | 'kid';
   targetId?: string;
   onPhotoChange?: (url: string) => void;
+  draggableId?: string;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -91,11 +102,22 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   }
 
   const size = 40;
+  const isDraggable = !!(draggableId && onDragStart);
   return (
-    <div style={{
-      background: G.bg, border: `1px solid ${G.hairline}`,
-      borderRadius: 8, padding: 12, position: 'relative',
-    }}>
+    <div
+      draggable={isDraggable}
+      onDragStart={isDraggable ? (e) => {
+        e.dataTransfer.setData('text/plain', draggableId!);
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart!(draggableId!);
+      } : undefined}
+      onDragEnd={isDraggable ? () => onDragEnd?.() : undefined}
+      style={{
+        background: G.bg, border: `1px solid ${G.hairline}`,
+        borderRadius: 8, padding: 12, position: 'relative',
+        cursor: isDraggable ? 'grab' : 'default',
+      }}>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           {localPhoto ? (
@@ -473,7 +495,7 @@ function FamilyCard({ family }: { family: FamilyData }) {
             {parents.map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <GAvatar name={p.name} size={28} />
-                <span style={{ fontFamily: G.display, fontSize: 13, fontWeight: 500 }}>{p.name}</span>
+                <span style={{ fontFamily: G.display, fontSize: 13, fontWeight: 500 }}>{shortName(p.name)}</span>
               </div>
             ))}
           </div>
@@ -502,7 +524,7 @@ function FamilyCard({ family }: { family: FamilyData }) {
             {caregivers.map(c => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <GAvatar name={c.name} size={24} />
-                <span style={{ fontFamily: G.sans, fontSize: 11, color: G.ink2 }}>{c.name}</span>
+                <span style={{ fontFamily: G.sans, fontSize: 11, color: G.ink2 }}>{shortName(c.name)}</span>
               </div>
             ))}
           </div>
@@ -675,10 +697,21 @@ export function ScreenVillage() {
     load();
   };
 
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverGroup, setDragOverGroup] = useState<VillageGroup | null>(null);
+
   if (!loading && myRole === 'caregiver') return <CaregiverVillage />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
   const total = adults.length + kids.length;
+
+  const handleDropOnGroup = (g: VillageGroup) => {
+    if (!draggingId) return;
+    const member = adults.find(a => a.id === draggingId);
+    if (member && member.villageGroup !== g) changeGroup(draggingId, g);
+    setDraggingId(null);
+    setDragOverGroup(null);
+  };
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -723,25 +756,47 @@ export function ScreenVillage() {
             {(['inner', 'family', 'sitter'] as const).map(g => {
               const members = byGroup(g);
               const meta = GROUP_META[g];
+              const isOver = dragOverGroup === g;
+              const groupProps = myRole === 'parent' ? {
+                onDragOver: (e: React.DragEvent) => {
+                  if (!draggingId) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverGroup !== g) setDragOverGroup(g);
+                },
+                onDragLeave: () => { if (dragOverGroup === g) setDragOverGroup(null); },
+                onDrop: (e: React.DragEvent) => { e.preventDefault(); handleDropOnGroup(g); },
+              } : {};
               return (
-                <div key={g}>
+                <div key={g} {...groupProps}>
                   <GroupHeader count={members.length} label={meta.label} note={meta.note} />
-                  {members.length === 0 ? <EmptyGroup label={meta.label} /> : (
+                  {members.length === 0 ? (
                     <div style={{
-                      background: g === 'inner' ? G.paper : 'transparent',
-                      border: g === 'inner' ? `1px solid ${G.hairline2}` : 'none',
-                      borderRadius: g === 'inner' ? 10 : 0,
-                      padding: g === 'inner' ? 14 : 0,
-                      marginBottom: 18,
+                      background: isOver ? G.paper : 'transparent',
+                      border: `1px dashed ${isOver ? G.ink : G.hairline2}`,
+                      borderRadius: 10, padding: 18, textAlign: 'center',
+                      fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
+                      color: isOver ? G.ink : G.muted, marginBottom: 18,
                     }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: g === 'inner' ? 'repeat(2, 1fr)' : '1fr', gap: 10 }}>
+                      {isOver ? `Drop to move to ${meta.label}` : `No one in ${meta.label} yet.`}
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: isOver ? '#F3EADA' : (g === 'inner' ? G.paper : 'transparent'),
+                      border: isOver ? `1px dashed ${G.ink}` : (g === 'inner' ? `1px solid ${G.hairline2}` : 'none'),
+                      borderRadius: (isOver || g === 'inner') ? 10 : 0,
+                      padding: (isOver || g === 'inner') ? 14 : 0,
+                      marginBottom: 18,
+                      transition: 'background 120ms',
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {members.map(m => {
                           const isMe = myUserId === m.id;
                           const canManage = myRole === 'parent' && !isMe;
                           return (
                             <MemberCard
                               key={m.id}
-                              name={m.name.split(' ')[0]}
+                              name={shortName(m.name)}
                               role={m.role}
                               isMe={isMe}
                               appRole={canManage ? m.role : undefined}
@@ -753,6 +808,9 @@ export function ScreenVillage() {
                               targetType="user"
                               targetId={m.id}
                               onPhotoChange={() => load()}
+                              draggableId={canManage ? m.id : undefined}
+                              onDragStart={canManage ? setDraggingId : undefined}
+                              onDragEnd={canManage ? () => { setDraggingId(null); setDragOverGroup(null); } : undefined}
                             />
                           );
                         })}

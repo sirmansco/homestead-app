@@ -58,17 +58,29 @@ function HouseholdChip({ name, glyph }: { name: string; glyph: string }) {
   );
 }
 
-function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming, showHousehold }: {
+function fmtRate(cents: number | null | undefined) {
+  if (cents == null) return null;
+  const dollars = cents / 100;
+  return dollars % 1 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+}
+
+function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming, showHousehold, onOpen }: {
   row: ShiftRow; accent: string; tagline: string;
   onCancel?: (id: string) => void; cancelling?: boolean;
   onClaim?: (id: string) => void; claiming?: boolean;
   showHousehold?: boolean;
+  onOpen?: (row: ShiftRow) => void;
 }) {
+  const rate = fmtRate(row.shift.rateCents);
   return (
-    <div style={{
-      background: G.paper, border: `1px solid ${G.hairline2}`,
-      borderRadius: 8, padding: 16, position: 'relative', marginBottom: 10,
-    }}>
+    <div
+      onClick={onOpen ? () => onOpen(row) : undefined}
+      style={{
+        background: G.paper, border: `1px solid ${G.hairline2}`,
+        borderRadius: 8, padding: 16, position: 'relative', marginBottom: 10,
+        cursor: onOpen ? 'pointer' : 'default',
+      }}
+    >
       <div style={{
         position: 'absolute', top: -1, left: -1, width: 4, height: 'calc(100% + 2px)',
         background: accent, borderRadius: '8px 0 0 8px',
@@ -94,13 +106,19 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: G.display, fontSize: 22, color: accent }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</div>
+          {rate && (
+            <div style={{ fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1, color: G.ink, marginTop: 2 }}>
+              {rate}
+            </div>
+          )}
         </div>
       </div>
       {(onCancel || onClaim) && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
           {onCancel && (
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (confirm('Cancel this shift? Your village will see it disappear.')) onCancel(row.shift.id);
               }}
               disabled={cancelling}
@@ -114,7 +132,7 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
           )}
           {onClaim && (
             <button
-              onClick={() => onClaim(row.shift.id)}
+              onClick={(e) => { e.stopPropagation(); onClaim(row.shift.id); }}
               disabled={claiming}
               style={{
                 padding: '7px 14px', background: G.ink, color: '#FBF7F0',
@@ -127,6 +145,93 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
+  row: ShiftRow; onClose: () => void;
+  onClaim?: (id: string) => void; claiming?: boolean; canClaim?: boolean;
+}) {
+  const rate = fmtRate(row.shift.rateCents);
+  const d = new Date(row.shift.startsAt);
+  const dateLabel = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 480, background: G.bg,
+          borderRadius: '16px 16px 0 0', padding: '20px 20px 32px',
+          maxHeight: '85vh', overflowY: 'auto',
+        }}
+      >
+        {row.household && (
+          <HouseholdChip name={row.household.name} glyph={row.household.glyph} />
+        )}
+        <div style={{ fontFamily: G.display, fontSize: 26, fontWeight: 500, color: G.ink, lineHeight: 1.2, marginTop: 4 }}>
+          {row.shift.title}
+        </div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.ink2, fontSize: 14, marginTop: 6 }}>
+          {dateLabel} · {fmtTimeRange(row.shift.startsAt, row.shift.endsAt)} · {durationH(row.shift.startsAt, row.shift.endsAt)}
+        </div>
+        {row.shift.forWhom && (
+          <div style={{ marginTop: 14 }}>
+            <GLabel>For</GLabel>
+            <div style={{ fontFamily: G.serif, fontSize: 14, color: G.ink, marginTop: 2 }}>{row.shift.forWhom}</div>
+          </div>
+        )}
+        {rate && (
+          <div style={{ marginTop: 14 }}>
+            <GLabel>Rate</GLabel>
+            <div style={{ fontFamily: G.display, fontSize: 22, color: G.ink, marginTop: 2 }}>{rate}</div>
+          </div>
+        )}
+        {row.shift.notes && (
+          <div style={{ marginTop: 14 }}>
+            <GLabel>Notes</GLabel>
+            <div style={{ fontFamily: G.serif, fontSize: 14, color: G.ink2, marginTop: 2, lineHeight: 1.5 }}>
+              {row.shift.notes}
+            </div>
+          </div>
+        )}
+        {row.creator && (
+          <div style={{ marginTop: 14 }}>
+            <GLabel>Posted by</GLabel>
+            <div style={{ fontFamily: G.serif, fontSize: 14, color: G.ink, marginTop: 2 }}>{row.creator.name.split(' ')[0]}</div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '12px', background: 'transparent',
+              border: `1px solid ${G.hairline2}`, borderRadius: 8, color: G.ink,
+              fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
+              textTransform: 'uppercase', cursor: 'pointer',
+            }}
+          >Close</button>
+          {canClaim && onClaim && (
+            <button
+              onClick={() => onClaim(row.shift.id)}
+              disabled={claiming}
+              style={{
+                flex: 2, padding: '12px', background: G.ink, color: '#FBF7F0',
+                border: 'none', borderRadius: 8,
+                fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
+                textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
+                opacity: claiming ? 0.7 : 1,
+              }}
+            >{claiming ? 'Claiming…' : 'Claim this shift'}</button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -192,11 +297,13 @@ function BellButton({ onRing }: { onRing: () => void }) {
       aria-label="Ring the bell"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'transparent', border: 'none', cursor: 'pointer',
-        padding: 2, color: G.ink,
+        width: 38, height: 38, borderRadius: 38,
+        background: G.clay, border: 'none', cursor: 'pointer',
+        padding: 0, color: '#FBF7F0',
+        boxShadow: '0 2px 6px rgba(181,52,43,0.35)',
       }}
     >
-      {Icons.bell(G.ink)}
+      {Icons.bell('#FBF7F0')}
     </button>
   );
 }
@@ -213,6 +320,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -350,6 +458,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
               onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
+              onOpen={setOpenRow}
             />
           ))}
         </>}
@@ -366,24 +475,50 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
               onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
+              onOpen={setOpenRow}
             />
           ))}
         </>}
 
         {week.length > 0 && <>
           <SectionHead label="This week" />
-          {week.map(r => (
-            <ShiftCard
-              key={r.shift.id} row={r}
-              accent={r.shift.status === 'claimed' ? G.green : G.clay}
-              tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
-              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
-              cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
-              claiming={claimingId === r.shift.id}
-              showHousehold={multiHousehold}
-            />
-          ))}
+          {(() => {
+            const byDay = new Map<string, ShiftRow[]>();
+            week.forEach(r => {
+              const d = new Date(r.shift.startsAt);
+              const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+              const list = byDay.get(key) ?? [];
+              list.push(r);
+              byDay.set(key, list);
+            });
+            return Array.from(byDay.entries()).map(([key, dayRows]) => {
+              const first = new Date(dayRows[0].shift.startsAt);
+              const label = first.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+              return (
+                <React.Fragment key={key}>
+                  <div style={{
+                    fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+                    textTransform: 'uppercase', color: G.muted,
+                    margin: '14px 0 8px', paddingBottom: 4,
+                    borderBottom: `1px solid ${G.hairline2}`,
+                  }}>{label}</div>
+                  {dayRows.map(r => (
+                    <ShiftCard
+                      key={r.shift.id} row={r}
+                      accent={r.shift.status === 'claimed' ? G.green : G.clay}
+                      tagline={r.shift.status === 'claimed' ? 'Covered' : 'Open · needs someone'}
+                      onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
+                      cancelling={cancellingId === r.shift.id}
+                      onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
+                      claiming={claimingId === r.shift.id}
+                      showHousehold={multiHousehold}
+                      onOpen={setOpenRow}
+                    />
+                  ))}
+                </React.Fragment>
+              );
+            });
+          })()}
         </>}
 
         {later.length > 0 && <>
@@ -398,6 +533,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
               onClaim={r.shift.status === 'open' && !r.createdByMe ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
+              onOpen={setOpenRow}
             />
           ))}
         </>}
@@ -424,6 +560,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
                   accent={G.green}
                   tagline={`Covering · ${r.household?.name ?? 'another family'}`}
                   showHousehold={true}
+                  onOpen={setOpenRow}
                 />
               ))}
             </>}
@@ -438,12 +575,25 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
                   onClaim={claimShift}
                   claiming={claimingId === r.shift.id}
                   showHousehold={true}
+                  onOpen={setOpenRow}
                 />
               ))}
             </>}
           </>
         )}
       </div>
+      {openRow && (
+        <ShiftDetailSheet
+          row={openRow}
+          onClose={() => setOpenRow(null)}
+          onClaim={async (id) => {
+            await claimShift(id);
+            setOpenRow(null);
+          }}
+          claiming={claimingId === openRow.shift.id}
+          canClaim={openRow.shift.status === 'open' && !openRow.createdByMe}
+        />
+      )}
     </div>
   );
 }
