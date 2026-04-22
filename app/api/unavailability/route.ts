@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { caregiverUnavailability, users } from '@/lib/db/schema';
+import { caregiverUnavailability } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
+import { apiError } from '@/lib/api-error';
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
       .orderBy(desc(caregiverUnavailability.startsAt));
     return NextResponse.json({ unavailability: rows });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return apiError(err, 'Request failed', 500, 'unavailability');
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     }).returning();
     return NextResponse.json({ unavailability: row });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return apiError(err, 'Request failed', 500, 'unavailability');
   }
 }
 
@@ -54,6 +55,6 @@ export async function DELETE(req: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return apiError(err, 'Request failed', 500, 'unavailability');
   }
 }
