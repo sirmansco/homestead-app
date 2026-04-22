@@ -80,7 +80,7 @@ const GROUP_CYCLE: VillageGroup[] = ['inner', 'family', 'sitter'];
 const GROUP_LABEL: Record<VillageGroup, string> = { inner: 'IC', family: 'FC', sitter: 'TS' };
 const GROUP_TITLE: Record<VillageGroup, string> = { inner: 'Inner Circle', family: 'Family & Close', sitter: 'Trusted Sitter' };
 
-function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange, draggableId, onDragStart, onDragEnd }: {
+function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange, draggableId, onPointerDownDrag, isDragging }: {
   name: string;
   role: string;
   isMe?: boolean;
@@ -94,8 +94,8 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   targetId?: string;
   onPhotoChange?: (url: string) => void;
   draggableId?: string;
-  onDragStart?: (id: string) => void;
-  onDragEnd?: () => void;
+  onPointerDownDrag?: (id: string, e: React.PointerEvent) => void;
+  isDragging?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -116,20 +116,24 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
   }
 
   const size = 40;
-  const isDraggable = !!(draggableId && onDragStart);
+  const isDraggable = !!(draggableId && onPointerDownDrag);
   return (
     <div
-      draggable={isDraggable}
-      onDragStart={isDraggable ? (e) => {
-        e.dataTransfer.setData('text/plain', draggableId!);
-        e.dataTransfer.effectAllowed = 'move';
-        onDragStart!(draggableId!);
+      data-draggable-id={draggableId}
+      onPointerDown={isDraggable ? (e) => {
+        // Don't start drag if touching an interactive child (buttons, inputs)
+        const target = e.target as HTMLElement;
+        if (target.closest('button, input, label')) return;
+        onPointerDownDrag!(draggableId!, e);
       } : undefined}
-      onDragEnd={isDraggable ? () => onDragEnd?.() : undefined}
       style={{
         background: G.bg, border: `1px solid ${G.hairline}`,
         borderRadius: 8, padding: 12, position: 'relative',
         cursor: isDraggable ? 'grab' : 'default',
+        opacity: isDragging ? 0.4 : 1,
+        touchAction: isDraggable ? 'pan-y' : 'auto',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
       }}>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -717,21 +721,120 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverGroup, setDragOverGroup] = useState<VillageGroup | null>(null);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number; name: string } | null>(null);
   // Stable refs for drop zone containers — keyed by group
   const groupRefs = useRef<Record<VillageGroup, HTMLDivElement | null>>({ inner: null, family: null, sitter: null });
+  const dragStateRef = useRef<{ id: string; startX: number; startY: number; active: boolean; name: string } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hit-test pointer position against group containers
+  const hitTestGroup = useCallback((x: number, y: number): VillageGroup | null => {
+    for (const g of ['inner', 'family', 'sitter'] as VillageGroup[]) {
+      const el = groupRefs.current[g];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return g;
+    }
+    return null;
+  }, []);
+
+  const endDrag = useCallback(() => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    dragStateRef.current = null;
+    setDraggingId(null);
+    setDragOverGroup(null);
+    setGhostPos(null);
+  }, []);
+
+  useEffect(() => {
+    if (!draggingId) return;
+    const onMove = (e: PointerEvent) => {
+      if (!dragStateRef.current?.active) return;
+      e.preventDefault();
+      setGhostPos({ x: e.clientX, y: e.clientY, name: dragStateRef.current.name });
+      const g = hitTestGroup(e.clientX, e.clientY);
+      setDragOverGroup(g);
+    };
+    const onUp = (e: PointerEvent) => {
+      const state = dragStateRef.current;
+      if (!state?.active) { endDrag(); return; }
+      const g = hitTestGroup(e.clientX, e.clientY);
+      if (g) {
+        const member = adults.find(a => a.id === state.id);
+        if (member && member.villageGroup !== g) changeGroup(state.id, g);
+      }
+      endDrag();
+    };
+    const onCancel = () => endDrag();
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+    };
+  }, [draggingId, adults, hitTestGroup, endDrag]);
+
+  const handlePointerDownDrag = useCallback((id: string, e: React.PointerEvent) => {
+    const member = adults.find(a => a.id === id);
+    if (!member) return;
+    const startX = e.clientX, startY = e.clientY;
+    dragStateRef.current = { id, startX, startY, active: false, name: member.name };
+    // Start drag after short hold (200ms on touch, instant movement on mouse)
+    const isTouch = e.pointerType === 'touch';
+    const activate = () => {
+      if (!dragStateRef.current) return;
+      dragStateRef.current.active = true;
+      setDraggingId(id);
+      setGhostPos({ x: startX, y: startY, name: member.name });
+      // Haptic feedback on mobile
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { (navigator as Navigator & { vibrate: (p: number) => void }).vibrate(15); } catch { /* ignore */ }
+      }
+    };
+    if (isTouch) {
+      longPressTimer.current = setTimeout(activate, 220);
+      // If user moves before long-press fires, cancel (treat as scroll)
+      const onEarlyMove = (me: PointerEvent) => {
+        const dx = Math.abs(me.clientX - startX), dy = Math.abs(me.clientY - startY);
+        if (dx > 8 || dy > 8) {
+          if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+          dragStateRef.current = null;
+          window.removeEventListener('pointermove', onEarlyMove);
+        }
+      };
+      const onEarlyUp = () => {
+        if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+        dragStateRef.current = null;
+        window.removeEventListener('pointermove', onEarlyMove);
+        window.removeEventListener('pointerup', onEarlyUp);
+      };
+      window.addEventListener('pointermove', onEarlyMove);
+      window.addEventListener('pointerup', onEarlyUp, { once: true });
+    } else {
+      // Mouse: activate on first movement > 4px
+      const onEarlyMove = (me: PointerEvent) => {
+        const dx = Math.abs(me.clientX - startX), dy = Math.abs(me.clientY - startY);
+        if (dx > 4 || dy > 4) {
+          window.removeEventListener('pointermove', onEarlyMove);
+          window.removeEventListener('pointerup', onEarlyUp);
+          activate();
+        }
+      };
+      const onEarlyUp = () => {
+        window.removeEventListener('pointermove', onEarlyMove);
+        dragStateRef.current = null;
+      };
+      window.addEventListener('pointermove', onEarlyMove);
+      window.addEventListener('pointerup', onEarlyUp, { once: true });
+    }
+  }, [adults]);
 
   if (!loading && myRole === 'caregiver') return <CaregiverVillage />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
   const total = adults.length + kids.length;
-
-  const handleDropOnGroup = (g: VillageGroup) => {
-    if (!draggingId) return;
-    const member = adults.find(a => a.id === draggingId);
-    if (member && member.villageGroup !== g) changeGroup(draggingId, g);
-    setDraggingId(null);
-    setDragOverGroup(null);
-  };
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -779,18 +882,6 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
               const isOver = dragOverGroup === g;
               const groupProps = myRole === 'parent' ? {
                 ref: (el: HTMLDivElement | null) => { groupRefs.current[g] = el; },
-                onDragOver: (e: React.DragEvent) => {
-                  if (!draggingId) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.dataTransfer.dropEffect = 'move';
-                  setDragOverGroup(g);
-                },
-                onDragLeave: (e: React.DragEvent) => {
-                  const related = e.relatedTarget as Node | null;
-                  if (!groupRefs.current[g]?.contains(related)) setDragOverGroup(null);
-                },
-                onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); handleDropOnGroup(g); },
               } : {};
               return (
                 <div key={g} {...groupProps}>
@@ -834,8 +925,8 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
                               targetId={m.id}
                               onPhotoChange={() => load()}
                               draggableId={canManage ? m.id : undefined}
-                              onDragStart={canManage ? setDraggingId : undefined}
-                              onDragEnd={canManage ? () => { setDraggingId(null); setDragOverGroup(null); } : undefined}
+                              onPointerDownDrag={canManage ? handlePointerDownDrag : undefined}
+                              isDragging={draggingId === m.id}
                             />
                           );
                         })}
@@ -880,6 +971,22 @@ export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver
           </>
         )}
       </div>
+
+      {ghostPos && draggingId && (
+        <div style={{
+          position: 'fixed',
+          left: ghostPos.x, top: ghostPos.y,
+          transform: 'translate(-50%, -50%) scale(1.05)',
+          pointerEvents: 'none', zIndex: 2000,
+          background: G.bg, border: `1px solid ${G.ink}`,
+          borderRadius: 8, padding: '8px 14px',
+          fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink,
+          boxShadow: '0 12px 32px rgba(27,23,19,0.35)',
+          whiteSpace: 'nowrap',
+        }}>
+          {shortName(ghostPos.name)}
+        </div>
+      )}
 
       {showInvite && <InviteSheet onClose={() => setShowInvite(false)} onInvited={load} />}
 
