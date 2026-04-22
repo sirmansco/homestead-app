@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, users, bellResponses } from '@/lib/db/schema';
-import { requireHousehold } from '@/lib/auth/household';
 import { auth } from '@clerk/nextjs/server';
-import { apiError, authError } from '@/lib/api-error';
+import { apiError } from '@/lib/api-error';
 
 // GET /api/bell/active
-// Returns ringing bells visible to this user:
+// Returns RINGING bells visible to this user:
 //   - parent: bells from own household
 //   - caregiver/dual-role: bells from any household they belong to as caregiver
+// Only returns bells with status='ringing' — handled/cancelled bells are excluded.
 export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // All households this Clerk user belongs to
+    // All households this Clerk user belongs to (across all orgs, no active-org requirement)
     const myRows = await db.select({
       householdId: users.householdId,
       role: users.role,
@@ -26,8 +26,9 @@ export async function GET() {
 
     const hhIds = myRows.map(r => r.householdId);
 
+    // Only fetch ringing bells — do not surface handled/cancelled ones
     const activeBells = await db.select().from(bells)
-      .where(inArray(bells.householdId, hhIds))
+      .where(and(inArray(bells.householdId, hhIds), eq(bells.status, 'ringing')))
       .orderBy(bells.createdAt);
 
     // For each bell, attach who has responded
@@ -36,7 +37,7 @@ export async function GET() {
       ? await db.select().from(bellResponses).where(inArray(bellResponses.bellId, bellIds))
       : [];
 
-    // My user IDs per household
+    // My user IDs across all households
     const myUserIds = new Set(myRows.map(r => r.id));
 
     const result = activeBells.map(b => ({

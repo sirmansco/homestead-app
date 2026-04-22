@@ -111,7 +111,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const orderBy = (scope === 'village' || scope === 'all') ? asc(shifts.startsAt) : desc(shifts.startsAt);
+    // village/all/mine = ascending (soonest first); household = descending (most recent first)
+    const orderBy = (scope === 'village' || scope === 'all' || scope === 'mine') ? asc(shifts.startsAt) : desc(shifts.startsAt);
 
     const rows = await db.select({
       shift: shifts,

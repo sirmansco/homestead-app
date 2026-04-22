@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells, bellResponses, users } from '@/lib/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { bells, bellResponses, users, households } from '@/lib/db/schema';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { apiError } from '@/lib/api-error';
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
@@ -22,11 +22,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
     if (!bell) return NextResponse.json({ error: 'Bell not found' }, { status: 404 });
 
-    // Find this user's DB record for the bell's household
-    const [userRow] = await db.select().from(users)
+    // Don't allow responses to bells that are no longer ringing
+    if (bell.status !== 'ringing') {
+      return NextResponse.json({ error: 'Bell is no longer active' }, { status: 409 });
+    }
+
+    // Find this user's DB record for the bell's household.
+    // Auto-create it if missing (caregiver who was invited via link may not have a row yet).
+    let [userRow] = await db.select().from(users)
       .where(and(eq(users.clerkUserId, userId), eq(users.householdId, bell.householdId)))
       .limit(1);
-    if (!userRow) return NextResponse.json({ error: 'Not a member of this household' }, { status: 403 });
+
+    if (!userRow) {
+      // Verify the user is actually a member of this household via Clerk org membership
+      const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
+      if (!household) return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+
+      const client = await clerkClient();
+      const memberships = await client.users.getOrganizationMembershipList({ userId });
+      const isMember = memberships.data.some(m => m.organization.id === household.clerkOrgId);
+      if (!isMember) return NextResponse.json({ error: 'Not a member of this household' }, { status: 403 });
+
+      const cu = await client.users.getUser(userId);
+      const email = cu.primaryEmailAddress?.emailAddress ?? '';
+      const name = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || email;
+      [userRow] = await db.insert(users).values({
+        clerkUserId: userId,
+        householdId: bell.householdId,
+        email,
+        name,
+        role: 'caregiver',
+        villageGroup: 'family',
+      }).returning();
+    }
 
     // Upsert response (one per user per bell)
     const existing = await db.select().from(bellResponses)
