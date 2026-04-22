@@ -371,7 +371,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
 
         <label style={{ display: 'block', marginBottom: 14 }}>
           <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Name</div>
-          <input value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
+          <input value={name} onChange={e => setName(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box' }} />
         </label>
 
         {kind === 'adult' ? (
@@ -615,13 +615,13 @@ function CaregiverVillage() {
 
 // ── Parent view ───────────────────────────────────────────────────────────
 
-export function ScreenVillage() {
+export function ScreenVillage({ role: roleProp }: { role?: 'parent' | 'caregiver' }) {
   const { refresh: refreshHousehold } = useHousehold();
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
-  const [myRole, setMyRole] = useState<AppRole>('caregiver');
+  const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -637,7 +637,8 @@ export function ScreenVillage() {
       }
       if (meRes.ok) {
         const me = await meRes.json();
-        if (me.user?.role) setMyRole(me.user.role);
+        // Only use API role if no prop was passed (don't override dev switcher)
+        if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
     } finally {
@@ -709,6 +710,8 @@ export function ScreenVillage() {
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverGroup, setDragOverGroup] = useState<VillageGroup | null>(null);
+  // Stable refs for drop zone containers — keyed by group
+  const groupRefs = useRef<Record<VillageGroup, HTMLDivElement | null>>({ inner: null, family: null, sitter: null });
 
   if (!loading && myRole === 'caregiver') return <CaregiverVillage />;
 
@@ -767,9 +770,8 @@ export function ScreenVillage() {
               const members = byGroup(g);
               const meta = GROUP_META[g];
               const isOver = dragOverGroup === g;
-              const groupRef = React.createRef<HTMLDivElement>();
               const groupProps = myRole === 'parent' ? {
-                ref: groupRef,
+                ref: (el: HTMLDivElement | null) => { groupRefs.current[g] = el; },
                 onDragOver: (e: React.DragEvent) => {
                   if (!draggingId) return;
                   e.preventDefault();
@@ -778,9 +780,8 @@ export function ScreenVillage() {
                   setDragOverGroup(g);
                 },
                 onDragLeave: (e: React.DragEvent) => {
-                  // Only clear if leaving the group container entirely (not entering a child)
                   const related = e.relatedTarget as Node | null;
-                  if (!groupRef.current?.contains(related)) setDragOverGroup(null);
+                  if (!groupRefs.current[g]?.contains(related)) setDragOverGroup(null);
                 },
                 onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); handleDropOnGroup(g); },
               } : {};
