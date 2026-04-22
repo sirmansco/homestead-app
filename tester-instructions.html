@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homestead — Beta Tester Instructions</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #FAFAF8;
+      color: #1C1C1E;
+      padding: 0;
+    }
+
+    .email-wrap {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+    }
+
+    /* Header */
+    .header {
+      background: #2D5016;
+      padding: 40px 32px 32px;
+      text-align: center;
+    }
+    .header-wordmark {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .header-sub {
+      margin-top: 6px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.72);
+      font-weight: 400;
+    }
+
+    /* Body */
+    .body {
+      padding: 36px 32px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1C1C1E;
+      margin-bottom: 10px;
+      margin-top: 32px;
+    }
+    h2:first-child { margin-top: 0; }
+
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #3A3A3C;
+      margin-bottom: 12px;
+    }
+
+    /* Step cards */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #F5F5F0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: #2D5016;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-body { flex: 1; }
+    .step-body strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1C1C1E;
+      margin-bottom: 4px;
+    }
+    .step-body span {
+      font-size: 13px;
+      color: #3A3A3C;
+      line-height: 1.5;
+    }
+    .step-body a {
+      color: #2D5016;
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    /* Callout */
+    .callout {
+      background: #F0F5EA;
+      border-left: 3px solid #2D5016;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 16px;
+      margin: 16px 0;
+    }
+    .callout p {
+      margin: 0;
+      font-size: 14px;
+      color: #2D5016;
+      font-weight: 500;
+    }
+
+    /* Feature list */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    @media (max-width: 480px) {
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+    .feature-card {
+      background: #F5F5F0;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .feature-card .icon { font-size: 22px; margin-bottom: 6px; }
+    .feature-card strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1C1C1E;
+      margin-bottom: 3px;
+    }
+    .feature-card span {
+      font-size: 12px;
+      color: #6C6C70;
+      line-height: 1.4;
+    }
+
+    /* Known limits */
+    .limit-list {
+      list-style: none;
+      margin-top: 8px;
+    }
+    .limit-list li {
+      font-size: 14px;
+      color: #3A3A3C;
+      line-height: 1.5;
+      padding: 8px 0;
+      border-bottom: 1px solid #F0F0EC;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .limit-list li:last-child { border-bottom: none; }
+    .limit-bullet {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      background: #FFE066;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    /* CTA */
+    .cta-wrap {
+      text-align: center;
+      margin: 28px 0 8px;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: #2D5016;
+      color: #fff !important;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 999px;
+      letter-spacing: -0.2px;
+    }
+
+    /* Install tip */
+    .install-tip {
+      background: #EDF3E8;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .install-tip p {
+      margin: 0;
+      font-size: 13px;
+      color: #2D5016;
+      line-height: 1.5;
+    }
+    .install-tip strong { color: #1A3A08; }
+
+    /* Footer */
+    .footer {
+      padding: 24px 32px;
+      border-top: 1px solid #F0F0EC;
+      text-align: center;
+    }
+    .footer p {
+      font-size: 12px;
+      color: #8E8E93;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .footer a { color: #8E8E93; }
+
+    hr.divider {
+      border: none;
+      border-top: 1px solid #F0F0EC;
+      margin: 28px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrap">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-wordmark">🌿 Homestead</div>
+      <div class="header-sub">Private early access — thanks for testing</div>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+
+      <p>Hey! I'm testing a new app called <strong>Homestead</strong> — it's a private coordination tool for families who rely on a small circle of caregivers (grandparents, trusted sitters, family friends). Think of it as a shared calendar + bell system just for your care team, without the group-chat chaos.</p>
+
+      <p>I'd love your honest feedback as a real-world user. Here's how to get started:</p>
+
+      <hr class="divider" />
+
+      <h2>Get started in 3 steps</h2>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Open the app</strong>
+            <span>
+              Visit <a href="https://homestead-app-six.vercel.app" target="_blank">homestead-app-six.vercel.app</a> on your phone. It works best in Safari on iPhone or Chrome on Android.
+            </span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Sign in with Google</strong>
+            <span>
+              Tap "Continue with Google" (or email) and create your account. It takes about 30 seconds. Use whichever email you'd want for this kind of app.
+            </span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Add to your home screen (optional but recommended)</strong>
+            <span>
+              In Safari: tap the Share icon → "Add to Home Screen." In Chrome: tap the three-dot menu → "Add to Home Screen." This makes it feel like a real app.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="install-tip">
+        <p><strong>First time tip:</strong> After signing in you'll land on a household setup screen. Go ahead and create your household — give it a name (e.g. "The Smith House") and add a couple of kids. You can invite caregivers later from the Village tab.</p>
+      </div>
+
+      <hr class="divider" />
+
+      <h2>What to poke around</h2>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon">📅</div>
+          <strong>Almanac</strong>
+          <span>Your shift calendar. See open needs, claimed shifts, and who's covering.</span>
+        </div>
+        <div class="feature-card">
+          <div class="icon">➕</div>
+          <strong>Post a Need</strong>
+          <span>Request coverage for a specific date/time. Add notes, pick which kids.</span>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🔔</div>
+          <strong>Ring the Bell</strong>
+          <span>One-tap SOS to your inner circle when you need help right now.</span>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🏘️</div>
+          <strong>Village</strong>
+          <span>Your care circle — Inner, Family, and Sitters. Tap a person to move them between circles.</span>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🗓️</div>
+          <strong>My Shifts</strong>
+          <span>If you join as a caregiver, see the shifts you've claimed and your schedule.</span>
+        </div>
+        <div class="feature-card">
+          <div class="icon">⏸️</div>
+          <strong>Not Available</strong>
+          <span>Block out dates you're unavailable so parents can plan around you.</span>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <h2>Known limitations right now</h2>
+
+      <p>This is an early build. A few things are intentionally simple:</p>
+
+      <ul class="limit-list">
+        <li>
+          <div class="limit-bullet">⚠</div>
+          <div><strong>Caregiver preference in Post a Need</strong> — the "Notify" selector only appears once someone has joined your Village as a caregiver. If your Village is empty it won't show — that's expected.</div>
+        </li>
+        <li>
+          <div class="limit-bullet">⚠</div>
+          <div><strong>Push notifications</strong> — not yet enabled. You'll need to open the app to see updates. The bell refreshes every 30 seconds while the app is open.</div>
+        </li>
+        <li>
+          <div class="limit-bullet">⚠</div>
+          <div><strong>Village — moving people between circles</strong> — tap any person's name card, then use the circle selector that slides up from the bottom. (Full drag-and-drop is coming.)</div>
+        </li>
+      </ul>
+
+      <div class="callout">
+        <p>💡 <strong>Testing the caregiver side:</strong> open an incognito window, sign in with a second email, and accept the invite from your Village tab on your parent account. That gives you a real caregiver view alongside your parent view.</p>
+      </div>
+
+      <hr class="divider" />
+
+      <h2>How to share feedback</h2>
+
+      <p>The most useful feedback right now:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li style="font-size:14px; color:#3A3A3C; margin-bottom:6px; line-height:1.5;">Anything that <strong>didn't work</strong> or left you confused</li>
+        <li style="font-size:14px; color:#3A3A3C; margin-bottom:6px; line-height:1.5;">Anything that felt <strong>unclear</strong> in the wording or flow</li>
+        <li style="font-size:14px; color:#3A3A3C; margin-bottom:6px; line-height:1.5;">A screenshot if you see a red error toast</li>
+        <li style="font-size:14px; color:#3A3A3C; line-height:1.5;">Whether the <strong>overall concept</strong> resonates — does it solve a real problem for you?</li>
+      </ul>
+
+      <p>Just reply to this email with whatever you notice. No format required.</p>
+
+      <div class="callout">
+        <p>🔒 This is a private build. Please don't share the link publicly — it's just for people I trust to give me honest feedback at this stage.</p>
+      </div>
+
+      <div class="cta-wrap">
+        <a class="cta-btn" href="https://homestead-app-six.vercel.app" target="_blank">Open Homestead →</a>
+      </div>
+
+      <p style="text-align:center; font-size:13px; color:#8E8E93; margin-top:16px;">
+        Thanks for taking the time. I genuinely appreciate it. 🙏
+      </p>
+
+    </div><!-- /body -->
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Homestead is in private beta. Your data is stored securely and is never shared.<br />
+      Questions? Reply to this email.</p>
+    </div>
+
+  </div><!-- /email-wrap -->
+</body>
+</html>
