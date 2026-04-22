@@ -55,7 +55,14 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
 }
 
 function shortName(full: string): string {
-  const parts = full.trim().split(/\s+/);
+  const trimmed = full.trim();
+  // If the stored name looks like an email, use the local part before @
+  if (trimmed.includes('@')) {
+    const local = trimmed.split('@')[0];
+    // Capitalise first letter of each segment split by . or _
+    return local.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  }
+  const parts = trimmed.split(/\s+/);
   if (parts.length === 1) return parts[0];
   const first = parts[0];
   const lastInitial = parts[parts.length - 1][0]?.toUpperCase();
@@ -166,7 +173,9 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
               }}>· you</span>
             )}
           </div>
-          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10.5, color: G.muted, marginTop: 2, lineHeight: 1.3 }}>{role}</div>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10.5, color: G.muted, marginTop: 2, lineHeight: 1.3 }}>
+            {role === 'parent' ? 'parent' : role === 'caregiver' ? 'caregiver' : role}
+          </div>
         </div>
         {villageGroup && onChangeGroup && (
           <button
@@ -258,7 +267,8 @@ function EmptyGroup({ label }: { label: string }) {
 }
 
 function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => void; onInvited: () => void; caregiverMode?: boolean }) {
-  const [kind, setKind] = useState<'adult' | 'kid'>('adult');
+  // Caregivers can only invite families (adults), never add kids
+  const [kind, setKind] = useState<'adult' | 'kid'>(caregiverMode ? 'adult' : 'adult');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AppRole>('caregiver');
@@ -445,7 +455,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px',
+  width: '100%', padding: '10px 12px', boxSizing: 'border-box',
   background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 8,
   fontFamily: G.sans, fontSize: 14, color: G.ink,
   outline: 'none',
@@ -757,15 +767,22 @@ export function ScreenVillage() {
               const members = byGroup(g);
               const meta = GROUP_META[g];
               const isOver = dragOverGroup === g;
+              const groupRef = React.createRef<HTMLDivElement>();
               const groupProps = myRole === 'parent' ? {
+                ref: groupRef,
                 onDragOver: (e: React.DragEvent) => {
                   if (!draggingId) return;
                   e.preventDefault();
+                  e.stopPropagation();
                   e.dataTransfer.dropEffect = 'move';
-                  if (dragOverGroup !== g) setDragOverGroup(g);
+                  setDragOverGroup(g);
                 },
-                onDragLeave: () => { if (dragOverGroup === g) setDragOverGroup(null); },
-                onDrop: (e: React.DragEvent) => { e.preventDefault(); handleDropOnGroup(g); },
+                onDragLeave: (e: React.DragEvent) => {
+                  // Only clear if leaving the group container entirely (not entering a child)
+                  const related = e.relatedTarget as Node | null;
+                  if (!groupRef.current?.contains(related)) setDragOverGroup(null);
+                },
+                onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); handleDropOnGroup(g); },
               } : {};
               return (
                 <div key={g} {...groupProps}>

@@ -38,7 +38,11 @@ export async function GET(req: NextRequest) {
       db.select().from(kids).where(eq(kids.householdId, household.id)),
     ]);
 
-    return NextResponse.json({ adults, kids: kidsList });
+    const normalised = adults.map(a => ({
+      ...a,
+      name: a.name.includes('@') ? a.name.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : a.name,
+    }));
+    return NextResponse.json({ adults: normalised, kids: kidsList });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 401 });

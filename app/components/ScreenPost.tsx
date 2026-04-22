@@ -5,6 +5,17 @@ import { GMasthead, GLabel } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
 
 type Kid = { id: string; name: string };
+type Caregiver = { id: string; name: string; role: string };
+
+function shortName(full: string): string {
+  if (full.includes('@')) {
+    const local = full.split('@')[0];
+    return local.split(/[._]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  }
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase() ?? ''}.`;
+}
 
 function toLocalInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -31,10 +42,13 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [forWhom, setForWhom] = useState('');
   const [selectedKidIds, setSelectedKidIds] = useState<string[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
+  const [preferredCaregiverId, setPreferredCaregiverId] = useState<string>('');
 
   useEffect(() => {
     fetch('/api/village').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.kids) setKids(d.kids);
+      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'caregiver'));
     }).catch(() => {});
   }, [active?.id]);
 
@@ -93,6 +107,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           endsAt: e.toISOString(),
           rateCents: Number.isFinite(rateCents as number) ? rateCents : null,
           recurrence,
+          preferredCaregiverId: preferredCaregiverId || undefined,
         }),
       });
       if (!res.ok) {
@@ -188,6 +203,42 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
             style={{ ...inputStyle, marginTop: 10, fontSize: 14, fontFamily: G.serif, fontStyle: 'italic' }}
           />
         </div>
+
+        {caregivers.length > 0 && (
+          <div style={{ marginTop: 22 }}>
+            <GLabel>Notify</GLabel>
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 3, marginBottom: 8 }}>
+              Send to everyone, or pick one person.
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => setPreferredCaregiverId('')}
+                style={{
+                  padding: '7px 12px', borderRadius: 100,
+                  background: !preferredCaregiverId ? G.ink : 'transparent',
+                  color: !preferredCaregiverId ? '#FBF7F0' : G.ink,
+                  border: `1px solid ${!preferredCaregiverId ? G.ink : G.hairline2}`,
+                  fontFamily: G.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Everyone</button>
+              {caregivers.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setPreferredCaregiverId(c.id)}
+                  style={{
+                    padding: '7px 12px', borderRadius: 100,
+                    background: preferredCaregiverId === c.id ? G.ink : 'transparent',
+                    color: preferredCaregiverId === c.id ? '#FBF7F0' : G.ink,
+                    border: `1px solid ${preferredCaregiverId === c.id ? G.ink : G.hairline2}`,
+                    fontFamily: G.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >{shortName(c.name)}</button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>

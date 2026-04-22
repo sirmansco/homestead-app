@@ -29,7 +29,7 @@ function fmt(iso: Date) {
   });
 }
 
-export async function notifyNewShift(shiftId: string) {
+export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string) {
   const [row] = await db.select({
     shift: shifts,
     household: households,
@@ -42,23 +42,37 @@ export async function notifyNewShift(shiftId: string) {
     .limit(1);
   if (!row?.shift || !row.household) return;
 
-  const recipients = await db.select().from(users).where(and(
-    eq(users.householdId, row.shift.householdId),
-    ne(users.id, row.shift.createdByUserId),
-  ));
+  // If a preferred caregiver is set, only notify that one person
+  let recipients;
+  if (preferredCaregiverId) {
+    recipients = await db.select().from(users).where(eq(users.id, preferredCaregiverId));
+  } else {
+    recipients = await db.select().from(users).where(and(
+      eq(users.householdId, row.shift.householdId),
+      ne(users.id, row.shift.createdByUserId),
+    ));
+  }
   const emails = recipients.map(r => r.email).filter(Boolean);
 
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Push notification (fire-and-forget)
-  import('@/lib/push').then(({ pushToHousehold }) =>
-    pushToHousehold(row.household!.id, row.shift.createdByUserId, {
+  // Push notification — targeted or broadcast
+  import('@/lib/push').then(({ pushToUser, pushToHousehold }) => {
+    if (preferredCaregiverId) {
+      return pushToUser(preferredCaregiverId, {
+        title: `📋 ${row.household!.name} needs you`,
+        body: `${row.shift.title} · ${when}`,
+        url: '/',
+        tag: `shift-${shiftId}`,
+      });
+    }
+    return pushToHousehold(row.household!.id, row.shift.createdByUserId, {
       title: `📋 New shift — ${row.household!.name}`,
       body: `${row.shift.title} · ${when}`,
       url: '/',
       tag: `shift-${shiftId}`,
-    })
-  ).catch(() => {});
+    });
+  }).catch(() => {});
 
   if (!emails.length) return;
 

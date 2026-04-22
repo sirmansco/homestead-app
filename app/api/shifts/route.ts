@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
       startsAt?: string;
       endsAt?: string;
       rateCents?: number | null;
+      preferredCaregiverId?: string;
     };
 
     if (!body.title || !body.startsAt || !body.endsAt) {
@@ -134,8 +135,8 @@ export async function POST(req: NextRequest) {
       rateCents: body.rateCents ?? null,
     }).returning();
 
-    // Fire-and-forget notification
-    notifyShiftPosted(created.id).catch(() => {});
+    // Fire-and-forget notification (targeted if preferredCaregiverId set)
+    notifyShiftPosted(created.id, body.preferredCaregiverId).catch(() => {});
 
     return NextResponse.json({ shift: created });
   } catch (err) {
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function notifyShiftPosted(shiftId: string) {
+async function notifyShiftPosted(shiftId: string, preferredCaregiverId?: string) {
   const { notifyNewShift } = await import('@/lib/notify');
-  await notifyNewShift(shiftId);
+  await notifyNewShift(shiftId, preferredCaregiverId);
 }

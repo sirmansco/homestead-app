@@ -97,6 +97,15 @@ export const familyInvites = pgTable('family_invites', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const caregiverUnavailability = pgTable('caregiver_unavailability', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  startsAt: timestamp('starts_at').notNull(),
+  endsAt: timestamp('ends_at').notNull(),
+  note: text('note'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export const bellResponses = pgTable('bell_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
   bellId: uuid('bell_id').notNull().references(() => bells.id, { onDelete: 'cascade' }),

@@ -52,6 +52,22 @@ export async function pushToHousehold(
   );
 }
 
+// Send push to a single user by their users.id
+export async function pushToUser(userId: string, payload: PushPayload) {
+  const subs = await db.select().from(pushSubscriptions)
+    .where(eq(pushSubscriptions.userId, userId));
+  if (subs.length === 0) return;
+  const message = JSON.stringify(payload);
+  await Promise.allSettled(
+    subs.map(sub =>
+      webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        message,
+      ).catch(() => {})
+    )
+  );
+}
+
 // Send push to all caregivers across a set of household IDs (for bell alerts)
 export async function pushToHouseholdCaregivers(
   householdId: string,

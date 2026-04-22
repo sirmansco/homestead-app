@@ -4,6 +4,13 @@ import { G } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 
+type UnavailRow = {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  note: string | null;
+};
+
 type ShiftRow = {
   shift: {
     id: string;
@@ -297,10 +304,10 @@ function BellButton({ onRing }: { onRing: () => void }) {
       aria-label="Ring the bell"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 38, height: 38, borderRadius: 38,
+        width: 26, height: 26, borderRadius: 26,
         background: G.clay, border: 'none', cursor: 'pointer',
         padding: 0, color: '#FBF7F0',
-        boxShadow: '0 2px 6px rgba(181,52,43,0.35)',
+        boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
       }}
     >
       {Icons.bell('#FBF7F0')}
@@ -321,6 +328,12 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
+  const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
+  const [showUnavailForm, setShowUnavailForm] = useState(false);
+  const [unavailStart, setUnavailStart] = useState('');
+  const [unavailEnd, setUnavailEnd] = useState('');
+  const [unavailNote, setUnavailNote] = useState('');
+  const [savingUnavail, setSavingUnavail] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -338,6 +351,43 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
   }, [role, isDualRole, multiHousehold]);
 
   useEffect(() => { load(); }, [load, active?.id]);
+
+  const loadUnavail = useCallback(async () => {
+    if (role !== 'caregiver' && !isDualRole) return;
+    try {
+      const res = await fetch('/api/unavailability');
+      if (res.ok) {
+        const data = await res.json();
+        setUnavailability(data.unavailability || []);
+      }
+    } catch { /* ignore */ }
+  }, [role, isDualRole]);
+
+  useEffect(() => { loadUnavail(); }, [loadUnavail]);
+
+  async function saveUnavail() {
+    if (!unavailStart || !unavailEnd) return;
+    setSavingUnavail(true);
+    try {
+      const res = await fetch('/api/unavailability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startsAt: new Date(unavailStart).toISOString(), endsAt: new Date(unavailEnd).toISOString(), note: unavailNote || undefined }),
+      });
+      if (res.ok) {
+        setShowUnavailForm(false);
+        setUnavailStart(''); setUnavailEnd(''); setUnavailNote('');
+        await loadUnavail();
+      }
+    } finally {
+      setSavingUnavail(false);
+    }
+  }
+
+  async function deleteUnavail(id: string) {
+    await fetch(`/api/unavailability?id=${id}`, { method: 'DELETE' });
+    await loadUnavail();
+  }
 
   async function cancelShift(id: string) {
     setCancellingId(id);
@@ -580,6 +630,85 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
               ))}
             </>}
           </>
+        )}
+
+        {/* ── Not Available section (caregiver only) ── */}
+        {(role === 'caregiver' || isDualRole) && (
+          <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${G.hairline2}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div>
+                <GLabel>Not Available</GLabel>
+                <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 2 }}>
+                  Block time so families know not to expect you.
+                </div>
+              </div>
+              <button onClick={() => setShowUnavailForm(v => !v)} style={{
+                background: 'transparent', border: `1px solid ${G.hairline2}`, borderRadius: 100,
+                padding: '5px 12px', cursor: 'pointer',
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+                textTransform: 'uppercase', color: G.ink,
+              }}>{showUnavailForm ? 'Cancel' : '+ Add'}</button>
+            </div>
+
+            {showUnavailForm && (
+              <div style={{
+                padding: 14, borderRadius: 8, border: `1px solid ${G.hairline2}`,
+                background: G.paper, marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label>
+                    <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>From</div>
+                    <input type="datetime-local" value={unavailStart} onChange={e => setUnavailStart(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 13, color: G.ink, outline: 'none' }} />
+                  </label>
+                  <label>
+                    <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Until</div>
+                    <input type="datetime-local" value={unavailEnd} onChange={e => setUnavailEnd(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 13, color: G.ink, outline: 'none' }} />
+                  </label>
+                </div>
+                <input value={unavailNote} onChange={e => setUnavailNote(e.target.value)}
+                  placeholder="Optional note (vacation, work trip…)"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink, outline: 'none' }} />
+                <button onClick={saveUnavail} disabled={savingUnavail || !unavailStart || !unavailEnd} style={{
+                  padding: '10px', background: G.ink, color: '#FBF7F0', border: 'none', borderRadius: 6,
+                  fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase',
+                  cursor: (savingUnavail || !unavailStart || !unavailEnd) ? 'not-allowed' : 'pointer',
+                  opacity: (savingUnavail || !unavailStart || !unavailEnd) ? 0.5 : 1,
+                }}>{savingUnavail ? 'Saving…' : 'Block this time'}</button>
+              </div>
+            )}
+
+            {unavailability.length === 0 && !showUnavailForm && (
+              <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
+                No blocked times — you&rsquo;re wide open.
+              </div>
+            )}
+
+            {unavailability.map(u => {
+              const s = new Date(u.startsAt);
+              const e = new Date(u.endsAt);
+              const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+              return (
+                <div key={u.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 12px', borderRadius: 8, background: G.paper,
+                  border: `1px solid ${G.hairline2}`, marginBottom: 8,
+                }}>
+                  <div>
+                    <div style={{ fontFamily: G.sans, fontSize: 12, fontWeight: 600, color: G.ink }}>
+                      {fmt(s)} – {fmt(e)}
+                    </div>
+                    {u.note && <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted, marginTop: 2 }}>{u.note}</div>}
+                  </div>
+                  <button onClick={() => deleteUnavail(u.id)} style={{
+                    background: 'transparent', border: 'none', color: G.muted,
+                    fontSize: 18, cursor: 'pointer', padding: 4, lineHeight: 1,
+                  }}>×</button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
       {openRow && (
