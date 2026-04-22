@@ -53,12 +53,14 @@ export async function POST(req: NextRequest) {
           villageGroup,
           targetOrgId: orgId,
         },
-        redirectUrl: `${origin}/accept-invite?org=${orgId}`,
+        // Redirect to sign-up — Clerk will embed the ticket in the URL automatically.
+        // After sign-up, Clerk redirects to NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL (/).
+        redirectUrl: `${origin}/sign-up`,
         notify: false,
         ignoreExisting: true,
       });
-      const url = `${origin}/sign-up?__clerk_ticket=${ticket.url?.split('__clerk_ticket=')[1] ?? ''}`;
-      return NextResponse.json({ ok: true, inviteUrl: ticket.url || url });
+      // ticket.url is the full sign-up URL with __clerk_ticket embedded
+      return NextResponse.json({ ok: true, inviteUrl: ticket.url || `${origin}/sign-up` });
     }
 
     return NextResponse.json({ error: 'mode must be "email" or "link"' }, { status: 400 });

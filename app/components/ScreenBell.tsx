@@ -359,6 +359,7 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
   const [members, setMembers] = useState<VillageMember[] | null>(null);
   const [marking, setMarking] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [bellError, setBellError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/village')
@@ -377,25 +378,40 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
   async function handleMarkDone() {
     if (!bellId || marking) return;
     setMarking(true);
-    await fetch(`/api/bell/${bellId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'handled' }),
-    }).catch(() => {});
-    onBack?.();
+    setBellError(null);
+    try {
+      const res = await fetch(`/api/bell/${bellId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'handled' }),
+      });
+      if (!res.ok) throw new Error('Could not mark as handled');
+      onBack?.();
+    } catch {
+      setBellError('Something went wrong. Try again.');
+      setMarking(false);
+    }
   }
 
   async function handleCancel() {
     if (!confirmingCancel) { setConfirmingCancel(true); return; }
     setConfirmingCancel(false);
+    setBellError(null);
     if (bellId) {
-      await fetch(`/api/bell/${bellId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'cancelled' }),
-      }).catch(() => {});
+      try {
+        const res = await fetch(`/api/bell/${bellId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'cancelled' }),
+        });
+        if (!res.ok) throw new Error('Could not cancel bell');
+        onBack?.();
+      } catch {
+        setBellError('Could not cancel the bell. Try again.');
+      }
+    } else {
+      onBack?.();
     }
-    onBack?.();
   }
 
   return (
@@ -443,6 +459,13 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
           </>
         )}
 
+        {bellError && (
+          <div style={{
+            marginTop: 16, padding: '10px 14px', borderRadius: 8,
+            background: '#FFE6DA', border: `1px solid ${RED}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
+          }}>{bellError}</div>
+        )}
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleMarkDone} disabled={marking} style={{
             width: '100%', padding: '14px 12px',
