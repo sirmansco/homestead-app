@@ -126,12 +126,13 @@ export async function GET(req: NextRequest) {
       .where(where)
       .orderBy(orderBy);
 
-    // For enrichment, include all users rows across all households so claimedByMe
-    // is accurate even when the caregiver's active org differs from the shift's household.
-    const allMyUserRowsForEnrich = myUserIds.length
-      ? myUserRows
-      : await db.select({ id: users.id }).from(users).where(eq(users.clerkUserId, userId));
-    const myUserIdSet = new Set([...myUserIds, ...allMyUserRowsForEnrich.map(u => u.id)]);
+    // Always build enrichment set from ALL users rows for this Clerk user across every
+    // household — not just the active org — so claimedByMe is correct for caregivers
+    // who claimed a shift in a household different from their current active org.
+    const allMyUserRowsForEnrich = await db.select({ id: users.id })
+      .from(users)
+      .where(eq(users.clerkUserId, userId));
+    const myUserIdSet = new Set(allMyUserRowsForEnrich.map(u => u.id));
     const enriched = rows.map(r => ({
       ...r,
       claimedByMe: r.shift.claimedByUserId ? myUserIdSet.has(r.shift.claimedByUserId) : false,
