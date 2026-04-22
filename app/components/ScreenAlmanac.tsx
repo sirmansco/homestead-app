@@ -274,21 +274,72 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
   );
 }
 
-function EmptyAlmanac({ onRing, onPost, role }: { onRing?: () => void; onPost?: () => void; role: 'parent' | 'caregiver' }) {
+function OnboardStep({ num, done, title, sub, action }: {
+  num: number; done: boolean; title: string; sub: string; action?: React.ReactNode;
+}) {
   return (
-    <div style={{
-      margin: '18px 0', padding: '26px 20px', textAlign: 'center',
-      border: `1px dashed ${G.hairline2}`, borderRadius: 10, background: G.paper,
-    }}>
-      <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, lineHeight: 1.3 }}>
-        {role === 'parent' ? 'Nothing on the books yet.' : 'No shifts yet.'}
+    <div style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: `1px solid ${G.hairline}` }}>
+      <div style={{
+        flexShrink: 0, width: 28, height: 28, borderRadius: 28,
+        background: done ? G.green : G.ink, color: '#FBF7F0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: G.display, fontSize: 13, fontWeight: 500,
+      }}>
+        {done ? '✓' : num}
       </div>
-      <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-        {role === 'parent'
-          ? 'Post a need or ring the bell for something urgent.'
-          : 'Open shifts from your villages will appear on the Shifts tab.'}
+      <div style={{ flex: 1 }}>
+        <div style={{
+          fontFamily: G.display, fontSize: 16, fontWeight: 500,
+          color: done ? G.muted : G.ink,
+          textDecoration: done ? 'line-through' : 'none', lineHeight: 1.2,
+        }}>{title}</div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 3, lineHeight: 1.4 }}>
+          {sub}
+        </div>
+        {!done && action && <div style={{ marginTop: 10 }}>{action}</div>}
       </div>
-      {role === 'parent' && (
+    </div>
+  );
+}
+
+function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize }: {
+  onRing?: () => void;
+  onPost?: () => void;
+  onVillage?: () => void;
+  role: 'parent' | 'caregiver';
+  villageSize: number;
+}) {
+  if (role === 'caregiver') {
+    return (
+      <div style={{
+        margin: '18px 0', padding: '26px 20px', textAlign: 'center',
+        border: `1px dashed ${G.hairline2}`, borderRadius: 10, background: G.paper,
+      }}>
+        <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink }}>
+          All clear.
+        </div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
+          No shifts posted yet. Check the Shifts tab for open needs from your village.
+        </div>
+      </div>
+    );
+  }
+
+  const hasVillage = villageSize > 0;
+
+  // Once there are village members, show the familiar quick-action buttons
+  if (hasVillage) {
+    return (
+      <div style={{
+        margin: '18px 0', padding: '26px 20px', textAlign: 'center',
+        border: `1px dashed ${G.hairline2}`, borderRadius: 10, background: G.paper,
+      }}>
+        <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, lineHeight: 1.3 }}>
+          Nothing on the books yet.
+        </div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
+          Post a need or ring the bell for something urgent.
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 24 }}>
           {onPost && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -323,7 +374,51 @@ function EmptyAlmanac({ onRing, onPost, role }: { onRing?: () => void; onPost?: 
             </div>
           )}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  // First-time onboarding checklist — empty village means they're brand new
+  return (
+    <div style={{ margin: '18px 0' }}>
+      <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 22, color: G.ink, lineHeight: 1.2, marginBottom: 4 }}>
+        Let&apos;s get set up.
+      </div>
+      <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 16 }}>
+        Two steps and your village is ready.
+      </div>
+      <OnboardStep
+        num={1}
+        done={true}
+        title="Name your homestead"
+        sub="Your household has a name. Good start."
+      />
+      <OnboardStep
+        num={2}
+        done={false}
+        title="Invite your village"
+        sub="Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the bell."
+        action={
+          <button onClick={onVillage} style={{
+            padding: '8px 16px',
+            background: G.ink, color: '#FBF7F0',
+            border: 'none', borderRadius: 6,
+            fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+            textTransform: 'uppercase', cursor: 'pointer',
+          }}>Go to Village →</button>
+        }
+      />
+      <OnboardStep
+        num={3}
+        done={false}
+        title="Post your first need"
+        sub="Pick a date, a time, and who it's for. Invite your village first so they get notified."
+        action={
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
+            Invite someone first, then post a need.
+          </div>
+        }
+      />
     </div>
   );
 }
@@ -346,11 +441,12 @@ function BellButton({ onRing }: { onRing: () => void }) {
   );
 }
 
-export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onPost }: {
+export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onPost, onVillage }: {
   role?: 'parent' | 'caregiver';
   isDualRole?: boolean;
   onRing?: () => void;
   onPost?: () => void;
+  onVillage?: () => void;
 }) {
   const { active, all, rolesByHousehold } = useHousehold();
   const multiHousehold = all.length > 1;
@@ -359,6 +455,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
+  const [villageSize, setVillageSize] = useState(0);
   const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
   const [showUnavailForm, setShowUnavailForm] = useState(false);
   const [unavailDate, setUnavailDate] = useState('');
@@ -376,16 +473,23 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
     try {
       // Dual-role and multi-household users always get the unified scope
       const scope = (isDualRole || multiHousehold) ? 'all' : role === 'caregiver' ? 'village' : 'household';
-      const res = await fetch(`/api/shifts?scope=${scope}`);
-      if (res.status === 409 || res.status === 401) {
+      const [shiftsRes, villageRes] = await Promise.all([
+        fetch(`/api/shifts?scope=${scope}`),
+        role === 'parent' ? fetch('/api/village') : Promise.resolve(null),
+      ]);
+      if (shiftsRes.status === 409 || shiftsRes.status === 401) {
         // No active household yet (Clerk still hydrating, or user has no household).
         // Render empty state, not an error.
         setRows([]);
         return;
       }
-      if (!res.ok) throw new Error('Couldn\u2019t load shifts');
-      const data = await res.json() as { shifts: ShiftRow[] };
+      if (!shiftsRes.ok) throw new Error('Couldn\u2019t load shifts');
+      const data = await shiftsRes.json() as { shifts: ShiftRow[] };
       setRows(data.shifts);
+      if (villageRes?.ok) {
+        const v = await villageRes.json();
+        setVillageSize((v.adults?.length ?? 0) + (v.kids?.length ?? 0));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
@@ -537,7 +641,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
           </div>
         )}
         {rows && ownShifts.length === 0 && helpNeeded.length === 0 && myCaregiverClaimed.length === 0 && (
-          <EmptyAlmanac onRing={onRing} onPost={onPost} role={role} />
+          <EmptyAlmanac onRing={onRing} onPost={onPost} onVillage={onVillage} role={role} villageSize={villageSize} />
         )}
 
         {today.length > 0 && <>
