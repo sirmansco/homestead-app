@@ -239,8 +239,8 @@ export function ScreenShifts() {
   }
 
   async function unclaim(id: string, reason: string) {
-    // First tap (empty reason string) → show the release form
-    if (!releasingId) {
+    // First tap (no reason) → show the release form for this shift
+    if (releasingId !== id) {
       setReleasingId(id);
       return;
     }
