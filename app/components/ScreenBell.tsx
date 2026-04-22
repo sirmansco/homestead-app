@@ -355,8 +355,11 @@ type ActiveBell = {
   myResponse: string | null;
 };
 
+type BellResponse = { userId: string; response: string };
+
 function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?: string; reason?: string }) {
   const [members, setMembers] = useState<VillageMember[] | null>(null);
+  const [responses, setResponses] = useState<BellResponse[]>([]);
   const [marking, setMarking] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [bellError, setBellError] = useState<string | null>(null);
@@ -367,6 +370,42 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
       .then(d => setMembers((d.adults as VillageMember[]) || []))
       .catch(() => setMembers([]));
   }, []);
+
+  // Poll for real caregiver responses so parent sees who said "on my way"
+  useEffect(() => {
+    if (!bellId) return;
+    const poll = () => {
+      fetch('/api/bell/active')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.bells) return;
+          const bell = data.bells.find((b: { id: string; responses: BellResponse[] }) => b.id === bellId);
+          if (bell) setResponses(bell.responses || []);
+        })
+        .catch(() => {});
+    };
+    poll();
+    const interval = setInterval(poll, 10_000);
+    return () => clearInterval(interval);
+  }, [bellId]);
+
+  // Map a village member ID to their response state
+  function memberState(memberId: string): string {
+    const r = responses.find(resp => resp.userId === memberId);
+    if (!r) return 'queued';
+    if (r.response === 'on_my_way') return 'coming';
+    if (r.response === 'cannot') return 'no-answer';
+    return 'read'; // in_thirty = acknowledged but not confirmed
+  }
+
+  function memberSub(memberId: string): string {
+    const r = responses.find(resp => resp.userId === memberId);
+    if (!r) return 'notified';
+    if (r.response === 'on_my_way') return 'on the way ✓';
+    if (r.response === 'in_thirty') return 'can in 30 min';
+    if (r.response === 'cannot') return 'can\'t make it';
+    return 'notified';
+  }
 
   const byGroup = (g: 'inner' | 'family' | 'sitter') =>
     (members || []).filter(m => m.villageGroup === g);
@@ -449,11 +488,11 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
             <div style={{ marginTop: 10, position: 'relative' }}>
               <div style={{ position: 'absolute', left: 14, top: 12, bottom: 12, width: 1, background: G.hairline2 }} />
               <Rung ring={1} label="Inner Circle" status={inner.length > 0 ? 'rung' : 'pending'} time="Now"
-                people={inner.map(m => ({ name: shortName(m.name), state: 'queued', sub: 'notified' }))} />
+                people={inner.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
               <Rung ring={2} label="Family & close friends" status={family.length > 0 ? 'queued' : 'pending'} time="+2 min if no answer"
-                people={family.map(m => ({ name: shortName(m.name), state: 'queued', sub: 'standing by' }))} />
+                people={family.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
               <Rung ring={3} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="+5 min"
-                people={sitter.map(m => ({ name: shortName(m.name), state: 'queued', sub: 'standing by' }))} />
+                people={sitter.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
             </div>
           </>
         )}

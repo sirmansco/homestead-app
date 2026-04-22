@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, and, gte } from 'drizzle-orm';
+import { eq, and, gte, inArray, or } from 'drizzle-orm';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import {
@@ -24,15 +24,15 @@ export async function GET() {
 
     const myUserIds = myRows.map(u => u.id);
 
+    // Use inArray across all user IDs so multi-household users get complete exports
     const [myShifts, myBells, mySubs, myUnavail, myBellResponses] = await Promise.all([
       db.select().from(shifts).where(
-        // Shifts they created OR claimed
-        eq(shifts.createdByUserId, myUserIds[0]), // drizzle inArray limit — loop below
+        or(inArray(shifts.createdByUserId, myUserIds), inArray(shifts.claimedByUserId, myUserIds))
       ),
-      db.select().from(bells).where(eq(bells.createdByUserId, myUserIds[0])),
-      db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, myUserIds[0])),
-      db.select().from(caregiverUnavailability).where(eq(caregiverUnavailability.userId, myUserIds[0])),
-      db.select().from(bellResponses).where(eq(bellResponses.userId, myUserIds[0])),
+      db.select().from(bells).where(inArray(bells.createdByUserId, myUserIds)),
+      db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, myUserIds)),
+      db.select().from(caregiverUnavailability).where(inArray(caregiverUnavailability.userId, myUserIds)),
+      db.select().from(bellResponses).where(inArray(bellResponses.userId, myUserIds)),
     ]);
 
     return NextResponse.json({

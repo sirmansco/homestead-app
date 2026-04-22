@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { shifts, users, pushSubscriptions } from '@/lib/db/schema';
+import { shifts } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { apiError, authError } from '@/lib/api-error';
 
@@ -32,29 +32,16 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     if (!cancelled) return NextResponse.json({ error: 'cancel failed' }, { status: 500 });
 
     // Notify the caregiver who claimed this shift (if any)
+    // ?tab=shifts routes them to their Schedule tab so they can see the shift is gone
     if (claimedByUserId) {
-      import('@/lib/push').then(async ({ pushToHousehold: _ }) => {
-        const webpush = await import('web-push');
-        webpush.default.setVapidDetails(
-          process.env.VAPID_SUBJECT!,
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-          process.env.VAPID_PRIVATE_KEY!,
-        );
-        const subs = await db.select().from(pushSubscriptions)
-          .where(eq(pushSubscriptions.userId, claimedByUserId));
-        const payload = JSON.stringify({
+      import('@/lib/push').then(({ pushToUser }) =>
+        pushToUser(claimedByUserId, {
           title: '❌ Shift cancelled',
           body: `"${shift.title}" has been cancelled.`,
-          url: '/',
+          url: '/?tab=shifts',
           tag: `cancel-${id}`,
-        });
-        await Promise.allSettled(subs.map(s =>
-          webpush.default.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            payload,
-          ).catch(() => {})
-        ));
-      }).catch(() => {});
+        })
+      ).catch(() => {});
     }
 
     return NextResponse.json({ shift: cancelled });
