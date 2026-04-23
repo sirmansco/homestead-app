@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How Homestead Works</title>
+  <meta name="description" content="A guide for parents and caregivers using Homestead." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #FBF7F0;
+      --paper:    #FFFFFF;
+      --ink:      #1B1713;
+      --ink2:     #3D3830;
+      --muted:    #8C8070;
+      --clay:     #B5342B;
+      --green:    #2D6A4F;
+      --hairline: #E8E0D5;
+      --serif:    Georgia, 'Times New Roman', serif;
+      --sans:     'Inter', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--serif);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    /* ── Masthead ── */
+    .masthead {
+      border-bottom: 2px solid var(--ink);
+      padding: 28px 24px 20px;
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .masthead-kicker {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .masthead h1 {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .masthead-sub {
+      font-style: italic;
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .masthead-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+    .masthead-nav a { text-decoration: none; padding-bottom: 1px; border-bottom-width: 1px; border-bottom-style: solid; }
+    .masthead-nav .sep { color: var(--muted); }
+    .nav-parent { color: var(--clay); border-color: var(--clay); }
+    .nav-cg     { color: var(--green); border-color: var(--green); }
+
+    /* ── Body ── */
+    .body {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    /* ── Role headers ── */
+    .role-header {
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding-bottom: 8px;
+      border-bottom-width: 2px;
+      border-bottom-style: solid;
+      margin-bottom: 20px;
+    }
+    .role-parent { color: var(--clay); border-color: var(--clay); }
+    .role-cg     { color: var(--green); border-color: var(--green); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 40px; }
+    .section-kicker {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .section h2 {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 14px;
+      line-height: 1.2;
+    }
+    .section p {
+      font-size: 14px;
+      color: var(--ink2);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── Rule ── */
+    .rule {
+      border: none;
+      border-top: 1px solid var(--hairline);
+      margin: 32px 0;
+    }
+
+    /* ── Step ── */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--serif);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .step-title {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .step-body {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.6;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      border-width: 1px;
+      border-style: solid;
+    }
+    .callout-clay  { border-color: rgba(181,52,43,0.2);  background: rgba(181,52,43,0.06);  }
+    .callout-green { border-color: rgba(45,106,79,0.2);  background: rgba(45,106,79,0.06);  }
+    .callout-muted { border-color: rgba(140,128,112,0.2); background: rgba(140,128,112,0.06); }
+    .callout-label {
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .callout-clay  .callout-label { color: var(--clay);  }
+    .callout-green .callout-label { color: var(--green); }
+    .callout-muted .callout-label { color: var(--muted); }
+    .callout-body {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.6;
+    }
+
+    /* ── Tab row ── */
+    .tab-row {
+      display: flex;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--hairline);
+      align-items: flex-start;
+    }
+    .tab-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+    .tab-label {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .tab-desc {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+
+    /* ── Circle rows ── */
+    .circle-row {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .circle-name {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .circle-desc {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+
+    /* ── Status chips ── */
+    .status-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--paper);
+      border: 1px solid var(--hairline);
+    }
+    .status-bar {
+      width: 4px;
+      height: 32px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .status-label {
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .status-sub {
+      font-style: italic;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Tips ── */
+    .tip-row {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .tip-title {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .tip-body {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 2px solid var(--ink);
+      text-align: center;
+    }
+    .footer-quote {
+      font-style: italic;
+      font-size: 18px;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .footer-sub {
+      font-style: italic;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .footer a {
+      display: inline-block;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 2px;
+    }
+
+    @media (max-width: 480px) {
+      .masthead { padding: 20px 16px 16px; }
+      .body { padding: 24px 16px 60px; }
+      .status-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="masthead">
+    <div class="masthead-kicker">Homestead Press &middot; Est. 2025</div>
+    <h1>How Homestead Works</h1>
+    <div class="masthead-sub">A guide for parents and caregivers</div>
+    <nav class="masthead-nav">
+      <a href="#parents" class="nav-parent">For Parents</a>
+      <span class="sep">&middot;</span>
+      <a href="#caregivers" class="nav-cg">For Caregivers</a>
+    </nav>
+  </div>
+
+  <div class="body">
+
+    <!-- What is Homestead -->
+    <section class="section">
+      <div class="section-kicker">The big picture</div>
+      <h2>What is Homestead?</h2>
+      <p>Homestead is a private coordination app for families who rely on a village of caregivers &mdash; grandparents, sitters, close friends &mdash; to keep life running. It&rsquo;s not a marketplace. Everyone here already knows each other.</p>
+      <p>Parents post what they need. Caregivers claim it or respond to urgent bells. No group texts, no scheduling back-and-forth.</p>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- PARENTS -->
+    <div id="parents" class="role-header role-parent">For Parents</div>
+
+    <section class="section">
+      <div class="section-kicker">Navigation</div>
+      <h2>Your four tabs</h2>
+      <div class="tab-row"><div class="tab-icon">📋</div><div><div class="tab-label">Almanac</div><div class="tab-desc">Your household&rsquo;s full schedule &mdash; every shift, color-coded by status. Green&nbsp;=&nbsp;covered. Terracotta&nbsp;=&nbsp;still open. This is your command center.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">✚</div><div><div class="tab-label">Post</div><div class="tab-desc">Create a new shift request. Set the date, time, who it&rsquo;s for, and optionally choose a specific caregiver. Recurring shifts supported.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">🔔</div><div><div class="tab-label">Bell</div><div class="tab-desc">For urgent situations. Ring the bell and your inner circle is notified immediately &mdash; then it widens every two minutes until someone responds.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">🏘️</div><div><div class="tab-label">Village</div><div class="tab-desc">Manage your circle. Move people between Inner Circle, Family, and Sitters to control the bell escalation order.</div></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Step by step</div>
+      <h2>Posting a shift</h2>
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Tap Post (the + tab)</div><div class="step-body">Fill in the shift title, date, start and end time, and optionally who it&rsquo;s for (e.g. &ldquo;Ellie &mdash; pickup and dinner&rdquo;).</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Set a rate (optional)</div><div class="step-body">If you pay your caregivers, add an hourly rate. It shows on the shift card so everyone knows what to expect.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">Choose who to notify</div><div class="step-body">Leave it open to your whole village, or tap &ldquo;Request someone specific&rdquo; to send it directly to one caregiver.</div></div></div>
+      <div class="step"><div class="step-num">4</div><div><div class="step-title">Recurring? Toggle it on</div><div class="step-body">For a weekly standing arrangement, toggle Recurring and pick the days and how many weeks. All instances post at once.</div></div></div>
+      <div class="step"><div class="step-num">5</div><div><div class="step-title">Tap Post</div><div class="step-body">Your village is notified immediately by push notification. You&rsquo;ll get a push back when someone claims it.</div></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">For urgent situations</div>
+      <h2>Ringing the bell</h2>
+      <div class="callout callout-clay"><div class="callout-label">When to ring</div><div class="callout-body">The bell is for time-sensitive situations &mdash; sick kid, last-minute conflict, pickup emergency. It&rsquo;s not for advance planning (use Post for that).</div></div>
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Tap the bell icon (top right of Almanac)</div><div class="step-body">Or navigate to the Bell tab directly.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Select what&rsquo;s happening</div><div class="step-body">Pick from: Sick kid, Last-minute conflict, Pickup mixup, Emergency, or Other.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">Set the window</div><div class="step-body">When do you need someone, and until when? Defaults to now + 3 hours.</div></div></div>
+      <div class="step"><div class="step-num">4</div><div><div class="step-title">Add a note (optional)</div><div class="step-body">Any context that helps &mdash; &ldquo;fever of 101, can&rsquo;t leave work&rdquo; or &ldquo;school calls at 2:30&rdquo;.</div></div></div>
+      <div class="step"><div class="step-num">5</div><div><div class="step-title">Ring</div><div class="step-body">Your inner circle is notified instantly. If no one responds in 2 minutes, family and close friends are notified. After 5 minutes, trusted sitters.</div></div></div>
+      <div class="callout callout-green"><div class="callout-label">When it&rsquo;s resolved</div><div class="callout-body">Once someone is on the way, tap &ldquo;Someone is on the way &middot; Mark handled&rdquo; to silence the bell and notify everyone it&rsquo;s covered.</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Village tab</div>
+      <h2>Managing your village</h2>
+      <p>The Village tab shows three circles that control bell escalation order:</p>
+      <div class="circle-row"><div class="circle-name">Inner Circle</div><div class="circle-desc">Notified first, immediately. Your most reliable person &mdash; a grandparent, your partner&rsquo;s sister, whoever picks up every time.</div></div>
+      <div class="circle-row"><div class="circle-name">Family &amp; Close Friends</div><div class="circle-desc">Notified 2 minutes after the inner circle if no one responds.</div></div>
+      <div class="circle-row"><div class="circle-name">Trusted Sitters</div><div class="circle-desc">Notified 5 minutes in. Paid help or neighbors you trust but call less often.</div></div>
+      <p style="margin-top:14px; font-style:italic; font-size:13px; color:var(--muted); line-height:1.6;">Tap a person to move them between circles. Changes take effect immediately for future bells.</p>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Status at a glance</div>
+      <h2>Reading the Almanac</h2>
+      <div class="status-row">
+        <div class="status-chip"><div class="status-bar" style="background:var(--clay)"></div><div><div class="status-label">Terracotta bar</div><div class="status-sub">Open &mdash; needs someone</div></div></div>
+        <div class="status-chip"><div class="status-bar" style="background:var(--green)"></div><div><div class="status-label">Green bar</div><div class="status-sub">Claimed &mdash; covered</div></div></div>
+      </div>
+      <p style="font-style:italic; font-size:13px; color:var(--ink2); line-height:1.6;">Tap any shift card to open the detail sheet &mdash; full date, time, rate, notes, and who posted it. Parents can cancel from there; caregivers can claim.</p>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- CAREGIVERS -->
+    <div id="caregivers" class="role-header role-cg">For Caregivers</div>
+
+    <section class="section">
+      <div class="section-kicker">Navigation</div>
+      <h2>Your four tabs</h2>
+      <div class="tab-row"><div class="tab-icon">📋</div><div><div class="tab-label">Open Shifts</div><div class="tab-desc">All open shift requests from families in your village. Claim one to lock it in &mdash; you&rsquo;ll be the only person assigned.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">📅</div><div><div class="tab-label">My Schedule</div><div class="tab-desc">Shifts you&rsquo;ve claimed, plus other available shifts below. Release a shift here if you can&rsquo;t make it &mdash; the family will be notified.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">🔔</div><div><div class="tab-label">Alerts</div><div class="tab-desc">Where urgent bell requests appear. When a family rings the bell, it shows up here immediately with the situation and response options.</div></div></div>
+      <div class="tab-row"><div class="tab-icon">🏘️</div><div><div class="tab-label">Village</div><div class="tab-desc">See who else is in the household&rsquo;s circle.</div></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Step by step</div>
+      <h2>Claiming a shift</h2>
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Open the &ldquo;Open Shifts&rdquo; tab</div><div class="step-body">You&rsquo;ll see all available shifts from families you&rsquo;re connected to, sorted by soonest first.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Tap a shift card to read the details</div><div class="step-body">Full date, time, duration, rate (if any), who it&rsquo;s for, and any notes from the parent.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">Tap &ldquo;Claim this shift&rdquo;</div><div class="step-body">The shift is now yours. The parent gets a push notification: &ldquo;Your name is on it.&rdquo;</div></div></div>
+      <div class="step"><div class="step-num">4</div><div><div class="step-title">It moves to My Schedule</div><div class="step-body">Switch to the Schedule tab to see everything you&rsquo;ve committed to, sorted by date.</div></div></div>
+      <div class="callout callout-green"><div class="callout-label">Can&rsquo;t make it after all?</div><div class="callout-body">Open My Schedule, tap the shift, and tap Release. You&rsquo;ll be asked for a reason &mdash; optional but appreciated. The parent is notified and the shift reopens for others.</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Alerts tab</div>
+      <h2>Responding to the bell</h2>
+      <div class="callout callout-clay"><div class="callout-label">When the bell rings</div><div class="callout-body">You&rsquo;ll get a push notification instantly. Open the Alerts tab &mdash; you&rsquo;ll see the situation, the time window needed, and any note from the family.</div></div>
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Read what&rsquo;s happening</div><div class="step-body">The card shows the reason (e.g. &ldquo;Sick kid&rdquo;), any note, and the time they need coverage.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Choose your response</div><div class="step-body">Three options: &ldquo;I&rsquo;m on my way&rdquo; (going now), &ldquo;Available in 30 min&rdquo; (can help but need 30 minutes), or &ldquo;Can&rsquo;t &mdash; pass to next circle&rdquo;.</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">The family sees your response immediately</div><div class="step-body">If you said you&rsquo;re on the way, the bell stops widening and the family is told. If you can&rsquo;t, it moves to the next group automatically.</div></div></div>
+      <div class="callout callout-muted"><div class="callout-label">No guilt for &ldquo;Can&rsquo;t&rdquo;</div><div class="callout-body">That&rsquo;s exactly how the bell is designed. Pass it on &mdash; the system finds someone who can.</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-kicker">Not Available</div>
+      <h2>Blocking time off</h2>
+      <p>If you have a stretch of time when you&rsquo;re unavailable &mdash; vacation, work trip, medical &mdash; you can block it so families know not to expect you.</p>
+      <div class="step"><div class="step-num">1</div><div><div class="step-title">Open Open Shifts and scroll to the bottom</div><div class="step-body">You&rsquo;ll see a &ldquo;Not Available&rdquo; section.</div></div></div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">Tap &ldquo;+ Add&rdquo;</div><div class="step-body">Set a from date/time and an until date/time. Add an optional note (e.g. &ldquo;In Seattle for the week&rdquo;).</div></div></div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">Tap &ldquo;Block this time&rdquo;</div><div class="step-body">It&rsquo;s saved. Families can see your blocked times when reviewing who&rsquo;s available.</div></div></div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- Tips -->
+    <section class="section">
+      <div class="section-kicker">Getting the most out of Homestead</div>
+      <h2>Tips for everyone</h2>
+      <div class="tip-row"><div class="tip-title">Enable push notifications</div><div class="tip-body">The app is significantly less useful without them. When asked, tap Allow. You can manage notification settings in your phone&rsquo;s Settings app.</div></div>
+      <div class="tip-row"><div class="tip-title">Add it to your home screen</div><div class="tip-body">On iPhone: tap the Share button in Safari &rarr; Add to Home Screen. On Android: tap the menu &rarr; Add to Home Screen. It behaves like a native app.</div></div>
+      <div class="tip-row"><div class="tip-title">Updates happen automatically</div><div class="tip-body">When Homestead is updated, your app refreshes silently in the background. No App Store, no manual update required.</div></div>
+      <div class="tip-row"><div class="tip-title">It&rsquo;s private &mdash; always</div><div class="tip-body">Your household is invitation-only. Nothing is public. Caregivers only see what&rsquo;s relevant to them.</div></div>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-quote">&ldquo;It takes a village.&rdquo;</div>
+      <div class="footer-sub">Homestead &mdash; built for the people who keep your family running.</div>
+      <a href="/">Back to the app &rarr;</a>
+    </div>
+
+  </div>
+</body>
+</html>

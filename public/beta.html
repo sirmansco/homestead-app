@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Homestead Beta — Tester Briefing</title>
+  <meta name="description" content="Instructions for Homestead beta testers." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #FBF7F0;
+      --paper:    #FFFFFF;
+      --ink:      #1B1713;
+      --ink2:     #3D3830;
+      --muted:    #8C8070;
+      --clay:     #B5342B;
+      --green:    #2D6A4F;
+      --amber:    #92600A;
+      --hairline: #E8E0D5;
+      --serif:    Georgia, 'Times New Roman', serif;
+      --sans:     'Inter', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--ink); font-family: var(--serif); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+
+    /* Masthead */
+    .masthead {
+      border-bottom: 2px solid var(--ink);
+      padding: 28px 24px 20px;
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .kicker { font-family: var(--sans); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .masthead h1 { font-style: italic; font-size: clamp(26px, 6vw, 38px); font-weight: 500; line-height: 1.1; margin-bottom: 8px; }
+    .masthead-sub { font-style: italic; font-size: 14px; color: var(--muted); }
+    .badge {
+      display: inline-block; margin-top: 12px;
+      background: var(--clay); color: #FBF7F0;
+      font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 4px 12px; border-radius: 100px;
+    }
+
+    /* Body */
+    .body { max-width: 680px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* Section */
+    .section { margin-bottom: 40px; }
+    .section-kicker { font-family: var(--sans); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .section h2 { font-style: italic; font-size: 26px; font-weight: 500; margin-bottom: 14px; line-height: 1.2; }
+    .section p { font-size: 14px; color: var(--ink2); line-height: 1.7; margin-bottom: 12px; }
+
+    hr.rule { border: none; border-top: 1px solid var(--hairline); margin: 32px 0; }
+
+    /* Step */
+    .step { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--ink); color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 500;
+    }
+    .step-title { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+    .step-body { font-style: italic; font-size: 13px; color: var(--ink2); line-height: 1.6; }
+
+    /* Callout */
+    .callout { padding: 14px 16px; border-radius: 8px; margin-bottom: 14px; border-width: 1px; border-style: solid; }
+    .callout-label { font-family: var(--sans); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+    .callout-body { font-style: italic; font-size: 13px; color: var(--ink2); line-height: 1.6; }
+    .callout-clay  { border-color: rgba(181,52,43,0.2);  background: rgba(181,52,43,0.06);  }
+    .callout-clay  .callout-label { color: var(--clay); }
+    .callout-green { border-color: rgba(45,106,79,0.2);  background: rgba(45,106,79,0.06);  }
+    .callout-green .callout-label { color: var(--green); }
+    .callout-amber { border-color: rgba(146,96,10,0.2);  background: rgba(146,96,10,0.06);  }
+    .callout-amber .callout-label { color: var(--amber); }
+    .callout-ink   { border-color: rgba(27,23,19,0.15);  background: rgba(27,23,19,0.04);   }
+    .callout-ink   .callout-label { color: var(--ink); }
+
+    /* Scenario card */
+    .scenario {
+      background: var(--paper);
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .scenario-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .scenario-num { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .scenario-role {
+      font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 100px;
+    }
+    .role-parent { background: rgba(181,52,43,0.1); color: var(--clay); }
+    .role-cg     { background: rgba(45,106,79,0.1);  color: var(--green); }
+    .role-both   { background: rgba(27,23,19,0.07);  color: var(--ink); }
+    .scenario-title { font-style: italic; font-size: 17px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.2; }
+    .scenario-body { font-style: italic; font-size: 13px; color: var(--ink2); line-height: 1.6; margin-bottom: 10px; }
+    .scenario-expect { font-family: var(--sans); font-size: 11px; color: var(--muted); }
+    .scenario-expect strong { color: var(--ink); font-weight: 700; }
+
+    /* Bug report */
+    .bug-field { margin-bottom: 14px; }
+    .bug-label { font-family: var(--sans); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .bug-box {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--hairline); border-radius: 8px;
+      background: var(--paper); font-family: var(--serif); font-size: 13px; color: var(--ink2);
+      font-style: italic; line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer { margin-top: 48px; padding-top: 24px; border-top: 2px solid var(--ink); text-align: center; }
+    .footer-quote { font-style: italic; font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+    .footer-sub { font-style: italic; font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .footer a {
+      display: inline-block; margin: 0 8px;
+      font-family: var(--sans); font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink);
+      text-decoration: none; border-bottom: 1px solid var(--ink); padding-bottom: 2px;
+    }
+
+    @media (max-width: 480px) {
+      .masthead { padding: 20px 16px 16px; }
+      .body { padding: 24px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="masthead">
+    <div class="kicker">Homestead &middot; Confidential</div>
+    <h1>Beta Tester Briefing</h1>
+    <div class="masthead-sub">Thank you for helping make this better.</div>
+    <div class="badge">Private Beta</div>
+  </div>
+
+  <div class="body">
+
+    <!-- Welcome -->
+    <section class="section">
+      <div class="section-kicker">What you&rsquo;re testing</div>
+      <h2>Welcome, and thank you.</h2>
+      <p>Homestead is a private coordination app for families and the caregivers they trust &mdash; grandparents, sitters, close friends. The goal: replace group texts and scheduling back-and-forth with something quiet, reliable, and built around how real help actually works.</p>
+      <p>You&rsquo;re one of the first people outside the immediate family to use it. Your job is to break things, get confused, and tell us about it. That&rsquo;s exactly what this phase is for.</p>
+      <div class="callout callout-ink">
+        <div class="callout-label">Before you start</div>
+        <div class="callout-body">Read this whole document. It takes 3 minutes and will make your testing much more useful. Then open the app and follow the scenarios below.</div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- Getting set up -->
+    <section class="section">
+      <div class="section-kicker">First-time setup</div>
+      <h2>Getting into the app</h2>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Open the link you were sent</div>
+          <div class="step-body">The app lives at <strong>homestead-app-six.vercel.app</strong>. Open it in Safari (iPhone) or Chrome (Android) &mdash; not a third-party browser.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Add it to your home screen</div>
+          <div class="step-body"><strong>iPhone:</strong> tap the Share button &rarr; &ldquo;Add to Home Screen.&rdquo; &nbsp; <strong>Android:</strong> tap the menu &rarr; &ldquo;Add to Home Screen.&rdquo; Open it from your home screen for the full experience &mdash; it behaves like a native app.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Sign in or create an account</div>
+          <div class="step-body">Use Google or your email. The account is free &mdash; no payment info needed.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Accept the invite from your household</div>
+          <div class="step-body">You should have received an invite link separately. Tap it &mdash; it will connect you to the right household automatically.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">Allow push notifications when asked</div>
+          <div class="step-body">The bell and shift claim features send real push notifications. Without them, you&rsquo;ll miss the core experience. Tap Allow.</div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- What to test -->
+    <section class="section">
+      <div class="section-kicker">Your mission</div>
+      <h2>Test scenarios</h2>
+      <p>Work through as many of these as you can. They&rsquo;re ordered by priority &mdash; the first five are the most important.</p>
+    </section>
+
+    <!-- Scenarios -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 1</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Find and claim an open shift</div>
+      <div class="scenario-body">Open the app. Tap the &ldquo;Open Shifts&rdquo; tab (first tab). You should see at least one shift from the household. Tap it to read the details, then tap &ldquo;Claim this shift.&rdquo;</div>
+      <div class="scenario-expect"><strong>Expected:</strong> A confirmation, the shift moves to My Schedule, and the parent receives a push notification.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 2</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Release a shift you claimed</div>
+      <div class="scenario-body">Open &ldquo;My Schedule.&rdquo; Find the shift you just claimed. Tap it, then tap &ldquo;Release.&rdquo; Add a reason (optional) and confirm.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> Shift removed from your schedule, reopened for others, parent notified.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 3</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Respond to a bell alert</div>
+      <div class="scenario-body">Wait for a test bell from the parent (they&rsquo;ll send one). Open the Alerts tab when you receive the push notification. Read the situation and tap one of the three response options.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> Your response is recorded immediately. The bell status updates on the parent&rsquo;s screen.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 4</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Block time off</div>
+      <div class="scenario-body">Open the &ldquo;Open Shifts&rdquo; tab and scroll to the bottom. Tap &ldquo;+ Add&rdquo; under &ldquo;Not Available.&rdquo; Set a date range and an optional note, then tap &ldquo;Block this time.&rdquo;</div>
+      <div class="scenario-expect"><strong>Expected:</strong> Your blocked time appears in the list. No error.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 5</div>
+        <div class="scenario-role role-both">Both roles</div>
+      </div>
+      <div class="scenario-title">Push notifications arrive correctly</div>
+      <div class="scenario-body">Have the parent post a shift (or ring the bell). Confirm you receive a push notification on your locked screen. Tap it &mdash; confirm it opens the right screen in the app.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> Notification arrives within 5 seconds. Tapping it opens Open Shifts or Alerts, not the home screen.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 6</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Close the app and reopen it</div>
+      <div class="scenario-body">Force-close the app from your phone&rsquo;s app switcher. Wait 30 seconds. Reopen it from your home screen. Navigate around all four tabs.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> App loads cleanly, shows your current shift/schedule, no error banners.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 7</div>
+        <div class="scenario-role role-cg">Caregiver</div>
+      </div>
+      <div class="scenario-title">Try the detail sheet</div>
+      <div class="scenario-body">On any shift card, tap to open the detail sheet. Try swiping it down to dismiss it. Try tapping the backdrop to dismiss it.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> Both gestures close the sheet. No stuck states.</div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-num">Scenario 8</div>
+        <div class="scenario-role role-both">Both roles</div>
+      </div>
+      <div class="scenario-title">Read the user guide</div>
+      <div class="scenario-body">Open Settings (bottom right on Village tab) &rarr; tap &ldquo;How Homestead Works.&rdquo; Read through it. Note anything that&rsquo;s confusing, missing, or wrong.</div>
+      <div class="scenario-expect"><strong>Expected:</strong> The guide makes sense without any explanation from us.</div>
+    </div>
+
+    <hr class="rule" />
+
+    <!-- What to look for -->
+    <section class="section">
+      <div class="section-kicker">What matters most</div>
+      <h2>Things to pay attention to</h2>
+      <div class="callout callout-clay">
+        <div class="callout-label">Anything that blocked you</div>
+        <div class="callout-body">If you couldn&rsquo;t complete a step, got confused about what to do next, or had to try something more than once &mdash; that&rsquo;s the most valuable feedback we can get.</div>
+      </div>
+      <div class="callout callout-amber">
+        <div class="callout-label">Push notifications</div>
+        <div class="callout-body">Did they arrive? How fast? Did tapping them open the right place in the app? On iOS especially, this is the part most likely to have issues.</div>
+      </div>
+      <div class="callout callout-green">
+        <div class="callout-label">What felt good</div>
+        <div class="callout-body">If something worked exactly as you&rsquo;d expect, or felt surprisingly smooth, we want to know that too. It tells us what not to change.</div>
+      </div>
+      <div class="callout callout-ink">
+        <div class="callout-label">Language and copy</div>
+        <div class="callout-body">Any label, button, or message that was confusing, unclear, or felt wrong. The words matter as much as the features.</div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- Reporting -->
+    <section class="section">
+      <div class="section-kicker">Reporting issues</div>
+      <h2>How to tell us what you found</h2>
+      <p>Send feedback directly to <a href="mailto:mjsirmans@gmail.com" style="color:var(--clay); text-decoration:underline;">mjsirmans@gmail.com</a> or via text. Use this format so nothing gets lost:</p>
+
+      <div class="bug-field">
+        <div class="bug-label">What you were doing</div>
+        <div class="bug-box">e.g. &ldquo;I tapped Claim on a shift in Open Shifts&rdquo;</div>
+      </div>
+      <div class="bug-field">
+        <div class="bug-label">What happened</div>
+        <div class="bug-box">e.g. &ldquo;The button went grey and nothing happened. The shift didn&rsquo;t move to My Schedule.&rdquo;</div>
+      </div>
+      <div class="bug-field">
+        <div class="bug-label">What you expected</div>
+        <div class="bug-box">e.g. &ldquo;Expected a confirmation and the shift to appear in My Schedule.&rdquo;</div>
+      </div>
+      <div class="bug-field">
+        <div class="bug-label">Device &amp; browser (if known)</div>
+        <div class="bug-box">e.g. &ldquo;iPhone 15 Pro, Safari, added to home screen&rdquo;</div>
+      </div>
+
+      <p style="margin-top:16px;">A screenshot or screen recording is worth a thousand words. On iPhone: hold Side + Volume Up to screenshot. Press Side + Volume Up and swipe up to start a screen recording.</p>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- Ground rules -->
+    <section class="section">
+      <div class="section-kicker">Important</div>
+      <h2>Ground rules</h2>
+      <div class="callout callout-ink">
+        <div class="callout-label">This is private</div>
+        <div class="callout-body">Homestead is in private beta. Please don&rsquo;t share the app link, screenshots, or your feedback publicly. We&rsquo;ll let you know when it&rsquo;s ready for the world.</div>
+      </div>
+      <div class="callout callout-ink">
+        <div class="callout-label">This is real data</div>
+        <div class="callout-body">The app uses a live database. Shifts you create, claims you make, and bells you ring are real. The parent will see them. Don&rsquo;t post anything you&rsquo;d be embarrassed by.</div>
+      </div>
+      <div class="callout callout-green">
+        <div class="callout-label">You can delete your account</div>
+        <div class="callout-body">When you&rsquo;re done testing, go to Settings &rarr; Delete Account if you want all your data removed. It&rsquo;s permanent and immediate.</div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-quote">&ldquo;It takes a village.&rdquo;</div>
+      <div class="footer-sub">Thank you for being part of this one.</div>
+      <a href="/guide.html">User Guide</a>
+      <a href="/">Open the app</a>
+    </div>
+
+  </div>
+</body>
+</html>
