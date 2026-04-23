@@ -1,4 +1,4 @@
-import { eq, and, inArray, ne } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
 
@@ -52,27 +52,37 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
       ne(users.id, row.shift.createdByUserId),
     ));
   }
-  const emails = recipients.map(r => r.email).filter(Boolean);
+
+  // Filter to only those who have notifyShiftPosted enabled
+  const opted = recipients.filter(r => r.notifyShiftPosted !== false);
+  const emails = opted.map(r => r.email).filter(Boolean);
+  const optedIds = opted.map(r => r.id);
 
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Push notification — targeted or broadcast
-  // ?tab=almanac opens the Open Shifts tab so caregivers can claim immediately
-  import('@/lib/push').then(({ pushToUser, pushToHousehold }) => {
+  // Push notification — targeted or broadcast (only to opted-in users)
+  import('@/lib/push').then(async ({ pushToUser }) => {
     if (preferredCaregiverId) {
-      return pushToUser(preferredCaregiverId, {
-        title: `📋 ${row.household!.name} needs you`,
+      if (optedIds.includes(preferredCaregiverId)) {
+        await pushToUser(preferredCaregiverId, {
+          title: `📋 ${row.household!.name} needs you`,
+          body: `${row.shift.title} · ${when}`,
+          url: '/?tab=almanac',
+          tag: `shift-${shiftId}`,
+        });
+      }
+      return;
+    }
+    // For broadcast: push to each opted-in recipient individually so we
+    // respect per-user preferences even if pushToHousehold would skip them.
+    for (const uid of optedIds) {
+      await pushToUser(uid, {
+        title: `📋 New shift — ${row.household!.name}`,
         body: `${row.shift.title} · ${when}`,
         url: '/?tab=almanac',
         tag: `shift-${shiftId}`,
-      });
+      }).catch(() => {});
     }
-    return pushToHousehold(row.household!.id, row.shift.createdByUserId, {
-      title: `📋 New shift — ${row.household!.name}`,
-      body: `${row.shift.title} · ${when}`,
-      url: '/?tab=almanac',
-      tag: `shift-${shiftId}`,
-    });
   }).catch(() => {});
 
   if (!emails.length) return;
@@ -107,6 +117,9 @@ export async function notifyShiftClaimed(shiftId: string) {
   const [claimer] = await db.select().from(users).where(eq(users.id, row.shift.claimedByUserId)).limit(1);
   if (!creator) return;
 
+  // Respect the creator's notifyShiftClaimed preference
+  if (creator.notifyShiftClaimed === false) return;
+
   const claimerName = claimer?.name || 'A caregiver';
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -135,6 +148,37 @@ export async function notifyShiftClaimed(shiftId: string) {
   await send([creator.email], subject, text);
 }
 
+export async function notifyShiftReleased(shiftId: string, releasedByUserId: string) {
+  const [row] = await db.select({
+    shift: shifts,
+    household: households,
+  })
+    .from(shifts)
+    .leftJoin(households, eq(shifts.householdId, households.id))
+    .where(eq(shifts.id, shiftId))
+    .limit(1);
+  if (!row?.shift) return;
+
+  const [creator] = await db.select().from(users).where(eq(users.id, row.shift.createdByUserId)).limit(1);
+  const [releaser] = await db.select().from(users).where(eq(users.id, releasedByUserId)).limit(1);
+  if (!creator) return;
+
+  // Respect the creator's notifyShiftReleased preference
+  if (creator.notifyShiftReleased === false) return;
+
+  const releaserName = releaser?.name || 'A caregiver';
+  const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+  import('@/lib/push').then(({ pushToUser }) =>
+    pushToUser(row.shift.createdByUserId, {
+      title: `↩️ ${releaserName} released your shift`,
+      body: `"${row.shift.title}" · ${when} — now open again`,
+      url: '/?tab=almanac',
+      tag: `released-${shiftId}`,
+    })
+  ).catch(() => {});
+}
+
 export async function notifyBellResponse(
   bellId: string,
   responderId: string,   // users.id (not clerkUserId)
@@ -149,10 +193,13 @@ export async function notifyBellResponse(
 
   const name = responder.name || 'Someone';
 
-  // Find the parent who owns this household to push to
+  // Find the parents who own this household; filter by their notifyBellResponse pref
   const parents = await db.select().from(users).where(
     and(eq(users.householdId, bell.householdId), eq(users.role, 'parent'))
   );
+
+  const optedParents = parents.filter(p => p.notifyBellResponse !== false);
+  if (optedParents.length === 0) return;
 
   const msg = response === 'on_my_way'
     ? { title: `✅ ${name} is on the way`, body: 'Bell handled — someone is coming.', tag: `bell-handled-${bellId}` }
@@ -161,8 +208,7 @@ export async function notifyBellResponse(
     : { title: `${name} can't make it`, body: 'Bell continuing to next circle…', tag: `bell-cannot-${bellId}` };
 
   import('@/lib/push').then(async ({ pushToUser }) => {
-    for (const parent of parents) {
-      // Push to the parent's Clerk user ID — pushToUser accepts either DB user id or clerkUserId
+    for (const parent of optedParents) {
       await pushToUser(parent.id, { ...msg, url: '/?tab=bell' }).catch(() => {});
     }
   }).catch(() => {});

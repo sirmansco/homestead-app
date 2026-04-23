@@ -7,11 +7,16 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { apiError, authError } from '@/lib/api-error';
 
 export async function GET() {
+  const { userId, orgId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+
+  // First, pull every household this user belongs to (regardless of whether
+  // Clerk has an "active" org attached to the session). This lets the UI
+  // always render the household switcher — critical for multi-household
+  // users who need to pick one when their session has no active org yet.
   try {
-    const { household, user } = await requireHousehold();
-    const { userId } = await auth();
     const client = await clerkClient();
-    const memberships = await client.users.getOrganizationMembershipList({ userId: userId! });
+    const memberships = await client.users.getOrganizationMembershipList({ userId });
 
     const allHouseholds = await Promise.all(
       memberships.data.map(async m => {
@@ -22,7 +27,7 @@ export async function GET() {
           name: h.name,
           glyph: h.glyph,
           accentColor: h.accentColor,
-          active: m.organization.id === household.clerkOrgId,
+          active: m.organization.id === orgId,
         } : null;
       })
     );
@@ -30,11 +35,10 @@ export async function GET() {
     const validHouseholds = allHouseholds.filter(Boolean) as NonNullable<typeof allHouseholds[0]>[];
     const hhIds = validHouseholds.map(h => h.id);
 
-    // Role of this Clerk user in each of their households
     const myRoleRows = hhIds.length
       ? await db.select({ householdId: users.householdId, role: users.role })
           .from(users)
-          .where(eq(users.clerkUserId, userId!))
+          .where(eq(users.clerkUserId, userId))
       : [];
     const rolesByHousehold: Record<string, 'parent' | 'caregiver'> = {};
     for (const r of myRoleRows) {
@@ -42,6 +46,19 @@ export async function GET() {
     }
     const roles = Object.values(rolesByHousehold);
     const isDualRole = roles.includes('parent') && roles.includes('caregiver');
+
+    // Now enrich with the active household details (if any). If no org is
+    // attached, we still return the membership list so the switcher can render.
+    let household = null;
+    let user = null;
+    try {
+      const active = await requireHousehold();
+      household = active.household;
+      user = active.user;
+    } catch {
+      // No active household yet — multi-household user with unattached session,
+      // or brand-new user before setup. Switcher will still be usable.
+    }
 
     return NextResponse.json({
       household,

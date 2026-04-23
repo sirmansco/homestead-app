@@ -83,6 +83,38 @@ export default function GuidePage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.ink }}>
 
+      {/* Sticky back-to-app bar — so users never have to scroll to the bottom to escape */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: C.bg,
+        borderBottom: `1px solid ${C.hairline}`,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}>
+        <div style={{
+          maxWidth: 680, margin: '0 auto',
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <a href="/" style={{
+            fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+            textTransform: 'uppercase', color: C.ink, textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '8px 12px 8px 8px', borderRadius: 100,
+            border: `1px solid ${C.hairline}`,
+            minHeight: 36,
+          }}>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>‹</span>
+            <span>Back to app</span>
+          </a>
+          <span style={{
+            fontFamily: C.sans, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
+            color: C.muted,
+          }}>
+            How It Works
+          </span>
+        </div>
+      </div>
+
       {/* Masthead */}
       <div style={{
         borderBottom: `2px solid ${C.ink}`,

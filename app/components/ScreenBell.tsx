@@ -172,6 +172,14 @@ function BellCompose({ onRing, onBack, onPost }: {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Minimum selectable datetime — updated every minute so the constraint stays current
+  const [minNow, setMinNow] = useState(nowLocal);
+  useEffect(() => {
+    const tick = () => setMinNow(nowLocal());
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const reasons = [
     { id: 0, label: 'Sick kid',             desc: 'need someone home, now' },
     { id: 1, label: 'Last-minute conflict', desc: 'appointment, meeting, something came up' },
@@ -253,30 +261,43 @@ function BellCompose({ onRing, onBack, onPost }: {
 
         <div style={{ marginTop: 22 }}>
           <GLabel>When</GLabel>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <label style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+            <label style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: RED, fontWeight: 700, marginBottom: 4 }}>Start</div>
               <input
                 type="datetime-local"
                 value={startsAt}
-                onChange={e => setStartsAt(e.target.value)}
+                min={minNow}
+                onChange={e => {
+                  setStartsAt(e.target.value);
+                  // If the current end is at or before the new start, bump it by 3 hours
+                  if (e.target.value && endsAt <= e.target.value) {
+                    const newStart = new Date(e.target.value);
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    const bumped = new Date(newStart.getTime() + 3 * 3600000);
+                    setEndsAt(`${bumped.getFullYear()}-${pad(bumped.getMonth()+1)}-${pad(bumped.getDate())}T${pad(bumped.getHours())}:${pad(bumped.getMinutes())}`);
+                  }
+                }}
                 style={{
-                  display: 'block', width: '100%', padding: '8px 8px', borderRadius: 8, boxSizing: 'border-box',
+                  display: 'block', width: '100%', padding: '8px 6px', borderRadius: 8, boxSizing: 'border-box',
                   border: `1px solid ${RED}`, background: '#FFE6DA',
-                  fontFamily: G.display, fontSize: 12, color: G.ink, outline: 'none',
+                  fontFamily: G.display, fontSize: 11, color: G.ink, outline: 'none',
+                  minWidth: 0,
                 }}
               />
             </label>
-            <label style={{ flex: 1, minWidth: 0 }}>
+            <label style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
               <input
                 type="datetime-local"
                 value={endsAt}
+                min={startsAt || minNow}
                 onChange={e => setEndsAt(e.target.value)}
                 style={{
-                  display: 'block', width: '100%', padding: '8px 8px', borderRadius: 8, boxSizing: 'border-box',
+                  display: 'block', width: '100%', padding: '8px 6px', borderRadius: 8, boxSizing: 'border-box',
                   border: `1px solid ${G.hairline2}`, background: G.paper,
-                  fontFamily: G.display, fontSize: 12, color: G.ink, outline: 'none',
+                  fontFamily: G.display, fontSize: 11, color: G.ink, outline: 'none',
+                  minWidth: 0,
                 }}
               />
             </label>
@@ -546,14 +567,21 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
 function BellIncoming() {
   const [bells, setBells] = useState<ActiveBell[] | null>(null);
   const [responding, setResponding] = useState<string | null>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/bell/active');
-      if (!res.ok) return;
+      if (!res.ok) {
+        setPollError("Can't reach Homestead. Bells will appear once you're back online.");
+        return;
+      }
       const data = await res.json();
       setBells(data.bells || []);
-    } catch { /* ignore */ }
+      setPollError(null);
+    } catch {
+      setPollError("Can't reach Homestead. Bells will appear once you're back online.");
+    }
   }, []);
 
   useEffect(() => {
@@ -598,6 +626,13 @@ function BellIncoming() {
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
           <PushPermissionBanner />
+          {pollError && (
+            <div style={{
+              marginTop: 12, padding: '10px 14px', borderRadius: 8,
+              background: '#FFE6DA', border: `1px solid ${RED}`,
+              fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
+            }}>{pollError}</div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The bell is how families in your village ask for urgent help.</div>
             <BellGlyph size={48} />
@@ -620,6 +655,13 @@ function BellIncoming() {
         folioLeft="Live" folioRight="Urgent edition"
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+        {pollError && (
+          <div style={{
+            marginTop: 8, padding: '10px 14px', borderRadius: 8,
+            background: '#FFE6DA', border: `1px solid ${RED}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
+          }}>{pollError}</div>
+        )}
         {activeBells.map(bell => {
           const myResp = bell.myResponse;
           const rungAt = new Date(bell.createdAt);

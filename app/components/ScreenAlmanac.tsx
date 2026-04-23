@@ -204,6 +204,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
   const d = new Date(row.shift.startsAt);
   const dateLabel = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   const touchStartY = React.useRef(0);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
   return (
     <div
       onClick={onClose}
@@ -213,9 +214,16 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
       }}
     >
       <div
+        ref={sheetRef}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
-        onTouchEnd={(e) => { if (e.changedTouches[0].clientY - touchStartY.current > 80) onClose(); }}
+        onTouchEnd={(e) => {
+          const dragDown = e.changedTouches[0].clientY - touchStartY.current;
+          // Only dismiss if dragged ≥80px AND the sheet is scrolled to the top
+          // (otherwise the touch is being used for internal scroll)
+          const atTop = (sheetRef.current?.scrollTop ?? 0) === 0;
+          if (dragDown > 80 && atTop) onClose();
+        }}
         style={{
           width: '100%', maxWidth: 480, background: G.bg,
           borderRadius: '16px 16px 0 0', padding: '20px 20px 32px',
@@ -315,12 +323,13 @@ function OnboardStep({ num, done, title, sub, action }: {
   );
 }
 
-function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize }: {
+function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted }: {
   onRing?: () => void;
   onPost?: () => void;
   onVillage?: () => void;
   role: 'parent' | 'caregiver';
   villageSize: number;
+  hasPosted: boolean;
 }) {
   if (role === 'caregiver') {
     return (
@@ -391,14 +400,20 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize }: {
     );
   }
 
-  // First-time onboarding checklist — empty village means they're brand new
+  // First-time onboarding checklist. Each step reflects real state:
+  //   1. Name your homestead — done once household exists (always true here).
+  //   2. Invite your village — done when villageSize > 0.
+  //   3. Post your first need — done when the user has posted at least one shift.
+  // When all three are done, this whole panel hides (handled by caller).
+  const step2Done = villageSize > 0;
+  const step3Done = hasPosted;
   return (
     <div style={{ margin: '18px 0' }}>
       <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 22, color: G.ink, lineHeight: 1.2, marginBottom: 4 }}>
         Let&apos;s get set up.
       </div>
       <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 16 }}>
-        Two steps and your village is ready.
+        A few steps and your homestead is ready.
       </div>
       <OnboardStep
         num={1}
@@ -408,10 +423,12 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize }: {
       />
       <OnboardStep
         num={2}
-        done={false}
+        done={step2Done}
         title="Invite your village"
-        sub="Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the bell."
-        action={
+        sub={step2Done
+          ? 'Village members added. They can claim shifts and answer the bell.'
+          : 'Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the bell.'}
+        action={!step2Done ? (
           <button onClick={onVillage} style={{
             padding: '8px 16px',
             background: G.ink, color: '#FBF7F0',
@@ -419,22 +436,26 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize }: {
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
           }}>Go to Village →</button>
-        }
+        ) : undefined}
       />
       <OnboardStep
         num={3}
-        done={false}
+        done={step3Done}
         title="Post your first need"
-        sub="Pick a date, a time, and who it's for. Invite your village first so they get notified."
-        action={
-          <button onClick={onVillage} style={{
+        sub={step3Done
+          ? "You've posted your first need."
+          : "Pick a date, a time, and who it's for. Your village gets notified instantly."}
+        action={!step3Done ? (
+          <button onClick={onPost} disabled={!step2Done} style={{
             padding: '8px 16px',
-            background: G.ink, color: '#FBF7F0',
+            background: step2Done ? G.ink : G.hairline2,
+            color: step2Done ? '#FBF7F0' : G.muted,
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-            textTransform: 'uppercase', cursor: 'pointer',
-          }}>Go to Village →</button>
-        }
+            textTransform: 'uppercase',
+            cursor: step2Done ? 'pointer' : 'not-allowed',
+          }}>{step2Done ? 'Post a need →' : 'Invite village first'}</button>
+        ) : undefined}
       />
     </div>
   );
@@ -633,9 +654,14 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     const cleaned = name.replace(/\s+(household|family|home|house)s?$/i, '').trim();
     return cleaned.endsWith('s') ? `${cleaned}'` : `${cleaned}'s`;
   }
-  const title = role === 'caregiver' ? 'Open Shifts' : (active?.name ? `${possessive(active.name)} Almanac` : 'The Almanac');
+  const title = role === 'caregiver' ? 'Open Shifts' : 'The Almanac';
+  // Pretty name of the active household, shown as a subtitle so multi-household
+  // users (Karson) can see which family they're looking at without opening the switcher.
+  const activeHouseholdLabel = active?.name
+    ? active.name.replace(/\s+(household|family|home|house)s?$/i, '')
+    : null;
 
-  let tagline = 'Loading…';
+  let statusLine = 'Loading…';
   if (rows !== null) {
     if (isDualRole) {
       const parts = [
@@ -644,17 +670,20 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         myCaregiverClaimed.length > 0 ? `${myCaregiverClaimed.length} you're covering` : null,
         helpNeeded.length > 0 ? `${helpNeeded.length} available to help with` : null,
       ].filter(Boolean);
-      tagline = parts.length ? parts.join(' · ') : 'All covered.';
+      statusLine = parts.length ? parts.join(' · ') : 'All covered.';
     } else if (upcoming.length === 0) {
-      tagline = 'Nothing on the books yet.';
+      statusLine = 'Nothing on the books yet.';
     } else if (multiHousehold) {
-      tagline = `${upcoming.filter(r => r.shift.status === 'open').length} open · ${upcoming.filter(r => r.claimedByMe).length} you're covering.`;
+      statusLine = `${upcoming.filter(r => r.shift.status === 'open').length} open · ${upcoming.filter(r => r.claimedByMe).length} you're covering.`;
     } else if (role === 'parent') {
-      tagline = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
+      statusLine = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
     } else {
-      tagline = `${upcoming.filter(r => r.claimedByMe).length} shifts you're covering.`;
+      statusLine = `${upcoming.filter(r => r.claimedByMe).length} shifts you're covering.`;
     }
   }
+  const tagline = activeHouseholdLabel
+    ? `${activeHouseholdLabel} · ${statusLine}`
+    : statusLine;
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -727,7 +756,12 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
           </div>
         )}
         {rows && ownShifts.length === 0 && helpNeeded.length === 0 && myCaregiverClaimed.length === 0 && (
-          <EmptyAlmanac onRing={onRing} onPost={onPost} onVillage={onVillage} role={role} villageSize={villageSize} />
+          <EmptyAlmanac
+            onRing={onRing} onPost={onPost} onVillage={onVillage}
+            role={role}
+            villageSize={villageSize}
+            hasPosted={(rows?.length ?? 0) > 0}
+          />
         )}
 
         {today.length > 0 && <>
@@ -909,10 +943,12 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                   <div>
                     <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 6 }}>From</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
-                      <input type="date" value={unavailDate} onChange={e => {
-                        setUnavailDate(e.target.value);
-                        if (!unavailEndDate) setUnavailEndDate(e.target.value);
-                      }}
+                      <input type="date" value={unavailDate}
+                        min={new Date().toISOString().slice(0, 10)}
+                        onChange={e => {
+                          setUnavailDate(e.target.value);
+                          if (!unavailEndDate || unavailEndDate < e.target.value) setUnavailEndDate(e.target.value);
+                        }}
                         style={{ padding: '10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 14, color: G.ink, outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                       <input type="time" value={unavailStartTime} onChange={e => setUnavailStartTime(e.target.value)}
                         style={{ padding: '10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 14, color: G.ink, outline: 'none', width: 100 }} />
@@ -921,7 +957,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                   <div>
                     <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 6 }}>Until</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
-                      <input type="date" value={unavailEndDate} onChange={e => setUnavailEndDate(e.target.value)}
+                      <input type="date" value={unavailEndDate}
+                        min={unavailDate || new Date().toISOString().slice(0, 10)}
+                        onChange={e => setUnavailEndDate(e.target.value)}
                         style={{ padding: '10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 14, color: G.ink, outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                       <input type="time" value={unavailEndTime} onChange={e => setUnavailEndTime(e.target.value)}
                         style={{ padding: '10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.sans, fontSize: 14, color: G.ink, outline: 'none', width: 100 }} />
@@ -967,10 +1005,19 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                     </div>
                     {u.note && <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted, marginTop: 2 }}>{u.note}</div>}
                   </div>
-                  <button onClick={() => deleteUnavail(u.id)} style={{
-                    background: 'transparent', border: 'none', color: G.muted,
-                    fontSize: 18, cursor: 'pointer', padding: 4, lineHeight: 1,
-                  }}>×</button>
+                  <button
+                    onClick={() => deleteUnavail(u.id)}
+                    aria-label="Remove"
+                    style={{
+                      flexShrink: 0,
+                      background: 'transparent', border: `1px solid ${G.hairline2}`,
+                      borderRadius: 6, color: G.muted,
+                      fontSize: 16, cursor: 'pointer',
+                      padding: '6px 10px', lineHeight: 1,
+                      minWidth: 44, minHeight: 44,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >×</button>
                 </div>
               );
             })}

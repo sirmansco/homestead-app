@@ -1,17 +1,69 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserButton, useUser, useClerk } from '@clerk/nextjs';
 import Link from 'next/link';
 import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
 
-export function ScreenSettings({ onBack }: { onBack?: () => void }) {
+type NotifPrefs = {
+  notifyShiftPosted: boolean;
+  notifyShiftClaimed: boolean;
+  notifyShiftReleased: boolean;
+  notifyBellRinging: boolean;
+  notifyBellResponse: boolean;
+};
+
+const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | 'caregiver' | 'both' }[] = [
+  { key: 'notifyShiftPosted', label: 'New shifts available', forRole: 'caregiver' },
+  { key: 'notifyShiftClaimed', label: 'Shift claimed by caregiver', forRole: 'parent' },
+  { key: 'notifyShiftReleased', label: 'Shift released / unclaimed', forRole: 'parent' },
+  { key: 'notifyBellRinging', label: 'Family rings the bell', forRole: 'caregiver' },
+  { key: 'notifyBellResponse', label: 'Caregiver responds to bell', forRole: 'parent' },
+];
+
+export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: 'parent' | 'caregiver' }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Notification preferences state
+  const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsSaving, setPrefsSaving] = useState<keyof NotifPrefs | null>(null);
+
+  const loadPrefs = useCallback(async () => {
+    setPrefsLoading(true);
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.prefs) setPrefs(data.prefs);
+      }
+    } catch { /* ignore */ }
+    setPrefsLoading(false);
+  }, []);
+
+  useEffect(() => { loadPrefs(); }, [loadPrefs]);
+
+  async function togglePref(key: keyof NotifPrefs) {
+    if (!prefs || prefsSaving) return;
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next);          // optimistic
+    setPrefsSaving(key);
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: next[key] }),
+      });
+    } catch {
+      setPrefs(prefs);       // revert on error
+    }
+    setPrefsSaving(null);
+  }
 
   async function handleExport() {
     setExportingState('loading');
@@ -79,6 +131,65 @@ export function ScreenSettings({ onBack }: { onBack?: () => void }) {
             </div>
           </div>
         )}
+
+        {/* Notification preferences */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Notifications</GLabel>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
+            Choose what Homestead can alert you about.
+          </div>
+          {prefsLoading ? (
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 10 }}>
+              Loading…
+            </div>
+          ) : prefs ? (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {PREF_LABELS
+                .filter(p => p.forRole === 'both' || !role || p.forRole === role)
+                .map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => togglePref(key)}
+                    disabled={prefsSaving === key}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '13px 0',
+                      background: 'transparent', border: 'none',
+                      borderBottom: `1px solid ${G.hairline}`,
+                      cursor: prefsSaving === key ? 'wait' : 'pointer',
+                      opacity: prefsSaving === key ? 0.6 : 1,
+                      width: '100%',
+                    }}
+                  >
+                    <span style={{ fontFamily: G.display, fontSize: 15, fontWeight: 500, color: G.ink }}>
+                      {label}
+                    </span>
+                    {/* Toggle pill */}
+                    <span style={{
+                      width: 44, height: 26, borderRadius: 13,
+                      background: prefs[key] ? G.green : G.hairline2,
+                      display: 'flex', alignItems: 'center',
+                      transition: 'background 0.2s',
+                      padding: '0 3px',
+                      flexShrink: 0,
+                    }}>
+                      <span style={{
+                        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        transform: prefs[key] ? 'translateX(18px)' : 'translateX(0)',
+                        transition: 'transform 0.2s',
+                        display: 'block',
+                      }} />
+                    </span>
+                  </button>
+                ))}
+            </div>
+          ) : (
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 10 }}>
+              Could not load preferences.
+            </div>
+          )}
+        </div>
 
         {/* Help */}
         <div style={{ marginBottom: 28 }}>

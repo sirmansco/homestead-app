@@ -210,8 +210,12 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
             </div>
           ) : (
             <button onClick={() => setConfirmingDelete(true)} aria-label="Remove" style={{
-              background: 'transparent', border: 'none', color: G.muted,
-              fontSize: 16, cursor: 'pointer', padding: 4,
+              background: 'transparent', border: `1px solid ${G.hairline2}`,
+              borderRadius: 6, color: G.muted,
+              fontSize: 16, cursor: 'pointer',
+              minWidth: 44, minHeight: 44, padding: 0, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
             }}>×</button>
           )
         )}
@@ -632,13 +636,22 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
             <GLabel color={G.clay}>{count} {count === 1 ? 'family' : 'families'}</GLabel>
             {onOpenSettings && (
               <button onClick={onOpenSettings} aria-label="Settings" style={{
-                background: 'transparent', border: 'none', padding: 2, cursor: 'pointer',
-                color: G.muted, display: 'flex', alignItems: 'center',
+                background: 'transparent',
+                border: `1px solid ${G.hairline2}`,
+                borderRadius: 100,
+                padding: '4px 10px',
+                cursor: 'pointer',
+                color: G.ink,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                minHeight: 28,
               }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
+                <span>Settings</span>
               </button>
             )}
             <UserButton />
@@ -815,13 +828,22 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
             )}
             {onOpenSettings && (
               <button onClick={onOpenSettings} aria-label="Settings" style={{
-                background: 'transparent', border: 'none', padding: 2, cursor: 'pointer',
-                color: G.muted, display: 'flex', alignItems: 'center',
+                background: 'transparent',
+                border: `1px solid ${G.hairline2}`,
+                borderRadius: 100,
+                padding: '4px 10px',
+                cursor: 'pointer',
+                color: G.ink,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                minHeight: 28,
               }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
+                <span>Settings</span>
               </button>
             )}
             <UserButton />

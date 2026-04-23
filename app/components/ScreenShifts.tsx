@@ -185,7 +185,8 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   );
 }
 
-export function ScreenShifts() {
+export function ScreenShifts({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
+  // rows: null = loading, [] = loaded (even if empty)
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [myRows, setMyRows] = useState<ShiftRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -195,34 +196,42 @@ export function ScreenShifts() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [villageRes, mineRes] = await Promise.all([
-        fetch('/api/shifts?scope=village'),
-        fetch('/api/shifts?scope=mine'),
-      ]);
-      // 401 = not signed in, 409 = no household yet — both are valid empty states
-      // Process mine first — works even without an active org
-      if (mineRes.ok) {
-        const mine = await mineRes.json() as ApiResponse;
-        setMyRows(mine.shifts.filter(r =>
-          r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
-        ));
-      }
-
-      // Village scope requires active org — 401/409 just means empty open list, not an error
-      if (villageRes.status === 401 || villageRes.status === 409) {
+      const mineRes = await fetch('/api/shifts?scope=mine');
+      // 401 = not signed in, 409 = no household yet — valid empty states, not errors
+      if (mineRes.status === 401 || mineRes.status === 409) {
         setRows([]);
+        setMyRows([]);
         return;
       }
-      if (!villageRes.ok) throw new Error(`Failed (${villageRes.status})`);
-      const village = await villageRes.json() as ApiResponse;
-      setRows(village.shifts);
+      if (!mineRes.ok) throw new Error(`Failed (${mineRes.status})`);
+      const mine = await mineRes.json() as ApiResponse;
+      // My Schedule = only future shifts I've claimed
+      const claimed = mine.shifts.filter(r =>
+        r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
+      );
+      setMyRows(claimed);
+      setRows([]); // open shifts are on ScreenAlmanac, not here
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Re-poll when the tab regains focus — caregiver may have claimed/cancelled
+    // a shift while the user was elsewhere. Mirrors BellIncoming behavior.
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [load]);
+
+  // Auto-dismiss the error toast after 5s so it doesn't linger past the user's read.
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(null), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
 
   async function claim(id: string) {
     setBusyId(id);
@@ -267,37 +276,84 @@ export function ScreenShifts() {
     }
   }
 
-  const openRows = (rows || []).filter(r => r.shift.status === 'open');
-
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
-        leftAction={<HouseholdSwitcher />} right={myRows.length > 0 ? `${myRows.length} claimed` : ''}
+        leftAction={<HouseholdSwitcher />}
+        rightAction={onOpenSettings ? (
+          <button
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            style={{
+              background: 'transparent',
+              border: `1px solid ${G.hairline2}`,
+              borderRadius: 100,
+              padding: '4px 10px',
+              color: G.ink,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontFamily: G.sans,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              minHeight: 28,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <span>Settings</span>
+          </button>
+        ) : undefined}
+        right={myRows.length > 0 ? `${myRows.length} shift${myRows.length === 1 ? '' : 's'}` : ''}
         title="My Schedule"
-        tagline={myRows.length > 0 ? 'Tap a shift to view details or release it.' : 'Shifts you claim will appear here.'}
+        tagline={myRows.length > 0 ? 'Shifts you\'ve claimed. Release if something comes up.' : 'Shifts you claim will appear here.'}
         folioRight="The Slate"
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
-        {error && (
-          <div style={{
-            marginTop: 10, padding: '10px 12px', borderRadius: 8,
+      {error && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            position: 'fixed', left: 16, right: 16, bottom: 92, zIndex: 50,
+            padding: '12px 14px', borderRadius: 10,
             background: '#FFE6DA', color: '#7A2F12',
-            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
-          }}>{error}</div>
-        )}
+            border: `1px solid ${G.hairline2}`,
+            boxShadow: '0 8px 24px rgba(27,23,19,0.12)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.4,
+          }}
+        >
+          <span style={{ flex: 1 }}>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            aria-label="Dismiss"
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#7A2F12', fontFamily: G.sans, fontSize: 11, fontWeight: 700,
+              letterSpacing: 1.2, textTransform: 'uppercase', padding: '4px 6px',
+            }}
+          >Dismiss</button>
+        </div>
+      )}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
         {rows === null && (
           <div style={{ padding: '30px 0', textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
-            Loading the slate…
+            Loading your schedule…
           </div>
         )}
-        {rows && myRows.length === 0 && openRows.length === 0 && (
+        {rows !== null && myRows.length === 0 && (
           <div style={{
             marginTop: 32, padding: '36px 20px', textAlign: 'center',
             border: `1px dashed ${G.hairline2}`, borderRadius: 12,
             fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
           }}>
-            Nothing on your schedule yet.
+            Nothing claimed yet.
             <div style={{ marginTop: 8, fontSize: 12 }}>
               Head to <strong style={{ fontStyle: 'normal' }}>Open Shifts</strong> to find something to claim.
             </div>
@@ -305,10 +361,6 @@ export function ScreenShifts() {
         )}
         {myRows.length > 0 && (
           <>
-            <div style={{
-              fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
-              color: G.ink, fontWeight: 700, margin: '18px 0 8px',
-            }}>Claimed by you</div>
             {myRows.map((r, i) => (
               <ShiftCard
                 key={r.shift.id} row={r} first={i === 0}
@@ -320,23 +372,14 @@ export function ScreenShifts() {
                 onCancelUnclaim={() => setReleasingId(null)}
               />
             ))}
-            {openRows.length > 0 && <div style={{
-              fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
-              color: G.ink, fontWeight: 700, margin: '26px 0 8px',
-            }}>Also available</div>}
+            <div style={{
+              marginTop: 18, padding: '14px 12px', textAlign: 'center',
+              borderTop: `1px solid ${G.hairline}`,
+              fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 12,
+            }}>
+              That&apos;s your schedule.
+            </div>
           </>
-        )}
-        {openRows.map((r, i) => (
-          <ShiftCard key={r.shift.id} row={r} first={i === 0 && myRows.length === 0} onClaim={claim} onUnclaim={unclaim} busy={busyId === r.shift.id} />
-        ))}
-        {rows && openRows.length > 0 && (
-          <div style={{
-            marginTop: 18, padding: '14px 12px', textAlign: 'center',
-            borderTop: `1px solid ${G.hairline}`,
-            fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 12,
-          }}>
-            That&apos;s the whole slate.
-          </div>
         )}
       </div>
     </div>

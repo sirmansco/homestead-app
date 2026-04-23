@@ -25,6 +25,13 @@ export const users = pgTable('users', {
   role: appRoleEnum('role').notNull().default('parent'),
   villageGroup: villageGroupEnum('village_group').notNull().default('inner'),
   photoUrl: text('photo_url'),
+  // Notification preferences — defaults to true (opt-out model).
+  // Each column guards one notification type; notify.ts checks before sending.
+  notifyShiftPosted: boolean('notify_shift_posted').notNull().default(true),
+  notifyShiftClaimed: boolean('notify_shift_claimed').notNull().default(true),
+  notifyShiftReleased: boolean('notify_shift_released').notNull().default(true),
+  notifyBellRinging: boolean('notify_bell_ringing').notNull().default(true),
+  notifyBellResponse: boolean('notify_bell_response').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   userHouseholdUnique: unique('users_clerk_user_household_unique').on(t.clerkUserId, t.householdId),

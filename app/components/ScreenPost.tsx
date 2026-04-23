@@ -49,6 +49,14 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [notes, setNotes] = useState('');
   const [startsAt, setStartsAt] = useState(defaults.start);
   const [endsAt, setEndsAt] = useState(defaults.end);
+
+  // Minimum selectable datetime — updated every minute so it stays current.
+  const [minNow, setMinNow] = useState(() => toLocalInputValue(new Date()));
+  useEffect(() => {
+    const tick = () => setMinNow(toLocalInputValue(new Date()));
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
   const [isPaid, setIsPaid] = useState(false);
   const [rate, setRate] = useState('22');
   const [isRecurring, setIsRecurring] = useState(false);
@@ -264,10 +272,29 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           <GLabel>When</GLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
             <Pill label="Starts">
-              <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={pillInput} />
+              <input
+                type="datetime-local"
+                value={startsAt}
+                min={minNow}
+                onChange={e => {
+                  setStartsAt(e.target.value);
+                  // If the current end is before or equal to the new start, bump it by 1 hour
+                  if (e.target.value && endsAt <= e.target.value) {
+                    const newStart = new Date(e.target.value);
+                    setEndsAt(toLocalInputValue(new Date(newStart.getTime() + 60 * 60 * 1000)));
+                  }
+                }}
+                style={pillInput}
+              />
             </Pill>
             <Pill label="Ends">
-              <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={pillInput} />
+              <input
+                type="datetime-local"
+                value={endsAt}
+                min={startsAt || minNow}
+                onChange={e => setEndsAt(e.target.value)}
+                style={pillInput}
+              />
             </Pill>
           </div>
         </div>
@@ -330,6 +357,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                 {recurEnds === 'date' && (
                   <input
                     type="date" value={recurEndDate}
+                    min={new Date().toISOString().slice(0, 10)}
                     onChange={e => setRecurEndDate(e.target.value)}
                     style={{ ...selectStyle, marginTop: 10 }}
                   />

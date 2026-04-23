@@ -42,8 +42,10 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch('/api/household');
-      if (!res.ok) return;
-      const data = await res.json() as {
+      // 401 (not signed in) — bail. Other statuses still return a JSON body
+      // with allHouseholds (possibly empty), so we parse regardless.
+      if (res.status === 401) return;
+      const data = await res.json().catch(() => ({})) as {
         household?: ActiveHouseholdDetails;
         allHouseholds?: HouseholdSummary[];
         isDualRole?: boolean;
@@ -77,7 +79,8 @@ export function HouseholdSwitcher() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
 
-  if (!active) return null;
+  // Nothing to show if this user has no households at all.
+  if (all.length === 0 && !active) return null;
 
   async function pick(h: HouseholdSummary) {
     if (h.active || switching || !setActive) {
@@ -89,10 +92,20 @@ export function HouseholdSwitcher() {
       await setActive({ organization: h.clerkOrgId });
       await refresh();
       setOpen(false);
+      // Force reload so all screens re-fetch under the new active household.
+      if (typeof window !== 'undefined') window.location.reload();
     } finally {
       setSwitching(false);
     }
   }
+
+  // If no active is set (multi-household user with no Clerk org attached),
+  // show a prompt to pick one. The dropdown always works.
+  const showing = active ?? all[0] ?? null;
+  const label = showing
+    ? showing.name.replace(/\s+(household|family|home|house)s?$/i, '')
+    : 'Choose household';
+  const glyph = showing?.glyph ?? '🏠';
 
   return (
     <>
@@ -100,14 +113,19 @@ export function HouseholdSwitcher() {
         onClick={() => setOpen(true)}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+          background: 'transparent',
+          border: active ? 'none' : `1px solid ${G.hairline2}`,
+          borderRadius: active ? 0 : 100,
+          padding: active ? 0 : '4px 10px',
+          cursor: 'pointer',
           fontFamily: G.sans, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
-          color: G.muted,
+          color: active ? G.muted : G.ink,
+          fontWeight: active ? 400 : 700,
         }}
       >
-        <span style={{ fontSize: 14 }}>{active.glyph}</span>
+        <span style={{ fontSize: 14 }}>{glyph}</span>
         <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {active.name.replace(/\s+(household|family|home|house)s?$/i, '')}
+          {label}
         </span>
         {all.length > 1 && <span style={{ opacity: 0.5 }}>▾</span>}
       </button>

@@ -162,7 +162,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
 
 export function HomesteadApp() {
   const { user } = useUser();
-  const { isDualRole } = useHousehold();
+  const { isDualRole, active, rolesByHousehold } = useHousehold();
   const primaryEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? '';
   const canSwitchRole = !!primaryEmail && DEV_EMAILS.includes(primaryEmail);
 
@@ -174,6 +174,17 @@ export function HomesteadApp() {
     }
     return 'parent';
   });
+
+  // When the active household changes (Karson switches between families),
+  // update role to match her role in that household — unless she's a dev user
+  // with a manual override active.
+  // rolesByHousehold is keyed by DB household UUID (users.householdId).
+  useEffect(() => {
+    if (canSwitchRole) return; // dev user: respect their manual toggle
+    if (!active?.id) return;
+    const r = rolesByHousehold[active.id];
+    if (r) setRole(r);
+  }, [active?.id, rolesByHousehold, canSwitchRole]);
   const [screen, setScreen] = useState<TabId>('almanac');
   const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
@@ -198,20 +209,22 @@ export function HomesteadApp() {
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  // Load real role from API — dev user keeps localStorage; others get API role
+  // Role is now kept in sync via the rolesByHousehold effect above, which
+  // fires whenever the HouseholdProvider resolves or the active household changes.
+  // The manual fetch below is kept only as an initial fallback for cases where
+  // the provider hasn't resolved yet when this component first mounts.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || canSwitchRole) return;
+    // Only run if rolesByHousehold hasn't populated yet
+    if (active?.id && rolesByHousehold[active.id]) return;
     fetch('/api/household')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data) return;
-        // Dev user: localStorage always wins — don't overwrite their manual switch
-        if (canSwitchRole) return;
-        if (data.isDualRole) { setRole('parent'); return; }
+        if (!data || canSwitchRole) return;
         if (data.user?.role) setRole(data.user.role as Role);
       })
       .catch(() => {});
-  }, [user?.id, canSwitchRole]);
+  }, [user?.id, canSwitchRole, active?.id, rolesByHousehold]);
 
   useEffect(() => {
     // Deep-link from push notification: ?tab=bell (or ?tab=almanac etc.)
@@ -291,10 +304,10 @@ export function HomesteadApp() {
     switch (screen) {
       case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('bell')} onPost={() => setScreen('post')} onVillage={() => setScreen('village')} />;
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
-      case 'shifts':  return <ScreenShifts />;
+      case 'shifts':  return <ScreenShifts onOpenSettings={() => setScreen('settings')} />;
       case 'bell':    return <ScreenBell key={`bell-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
       case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
-      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} />;
+      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} role={role} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
     }
   }
