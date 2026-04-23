@@ -193,7 +193,7 @@ export function HomesteadApp() {
         .catch(() => {});
     };
     check();
-    const interval = setInterval(check, 30_000);
+    const interval = setInterval(check, 10_000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
@@ -235,7 +235,20 @@ export function HomesteadApp() {
     if (canSwitchRole) localStorage.setItem('hs.role', role);
   }, [role, canSwitchRole]);
 
-  const navigate = useCallback((id: TabId) => setScreen(id), []);
+  const navigate = useCallback((id: TabId) => {
+    setScreen(id);
+    // Re-poll bell count immediately on navigation so the badge reflects current state
+    if (id === 'bell' || id === 'almanac') {
+      fetch('/api/bell/active')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return;
+          const count = Array.isArray(data.bells) ? data.bells.filter((b: { status: string }) => b.status === 'ringing').length : 0;
+          setBellCount(count);
+        })
+        .catch(() => {});
+    }
+  }, []);
   const clockTime = useLiveClock();
 
   // Which tab pill to highlight.

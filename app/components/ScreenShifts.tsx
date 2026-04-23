@@ -273,8 +273,8 @@ export function ScreenShifts() {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />} right={rows ? `${openRows.length} open` : ''}
-        title="Open Shifts"
-        tagline="From families in your village. Claim one to lock it in."
+        title="My Schedule"
+        tagline="Shifts you've claimed. Tap one to view details or release."
         folioRight="The Slate"
       />
 

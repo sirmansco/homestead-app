@@ -607,7 +607,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onP
     const cleaned = name.replace(/\s+(household|family|home|house)s?$/i, '').trim();
     return cleaned.endsWith('s') ? `${cleaned}'` : `${cleaned}'s`;
   }
-  const title = role === 'caregiver' ? 'My Schedule' : (active?.name ? `${possessive(active.name)} Almanac` : 'The Almanac');
+  const title = role === 'caregiver' ? 'Open Shifts' : (active?.name ? `${possessive(active.name)} Almanac` : 'The Almanac');
 
   let tagline = 'Loading…';
   if (rows !== null) {
