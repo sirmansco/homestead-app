@@ -8,6 +8,9 @@ import { stripExif } from '@/lib/strip-exif';
 import { apiError } from '@/lib/api-error';
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ error: 'Photo storage not configured' }, { status: 503 });
+    }
     const { household, user } = await requireHousehold();
 
     // Rate limit: 30 uploads per hour per user

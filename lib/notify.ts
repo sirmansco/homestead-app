@@ -1,6 +1,6 @@
 import { eq, and, inArray, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { shifts, users, households } from '@/lib/db/schema';
+import { shifts, users, households, bells } from '@/lib/db/schema';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.NOTIFY_FROM || 'Homestead <notify@homestead.app>';
@@ -133,4 +133,37 @@ export async function notifyShiftClaimed(shiftId: string) {
   ].join('\n');
 
   await send([creator.email], subject, text);
+}
+
+export async function notifyBellResponse(
+  bellId: string,
+  responderId: string,   // users.id (not clerkUserId)
+  response: 'on_my_way' | 'in_thirty' | 'cannot',
+) {
+  // Only push — no email for bell responses (time-sensitive, email is too slow)
+  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  if (!bell) return;
+
+  const [responder] = await db.select().from(users).where(eq(users.id, responderId)).limit(1);
+  if (!responder) return;
+
+  const name = responder.name || 'Someone';
+
+  // Find the parent who owns this household to push to
+  const parents = await db.select().from(users).where(
+    and(eq(users.householdId, bell.householdId), eq(users.role, 'parent'))
+  );
+
+  const msg = response === 'on_my_way'
+    ? { title: `✅ ${name} is on the way`, body: 'Bell handled — someone is coming.', tag: `bell-handled-${bellId}` }
+    : response === 'in_thirty'
+    ? { title: `⏱ ${name} can help in 30 min`, body: 'Still looking for someone sooner…', tag: `bell-thirty-${bellId}` }
+    : { title: `${name} can't make it`, body: 'Bell continuing to next circle…', tag: `bell-cannot-${bellId}` };
+
+  import('@/lib/push').then(async ({ pushToUser }) => {
+    for (const parent of parents) {
+      // Push to the parent's Clerk user ID — pushToUser accepts either DB user id or clerkUserId
+      await pushToUser(parent.id, { ...msg, url: '/?tab=bell' }).catch(() => {});
+    }
+  }).catch(() => {});
 }

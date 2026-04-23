@@ -12,8 +12,8 @@ async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: str
   form.append('type', targetType);
   form.append('id', targetId);
   const res = await fetch('/api/upload', { method: 'POST', body: form });
-  if (!res.ok) return null;
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Upload failed');
   return data.url ?? null;
 }
 
@@ -75,6 +75,7 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [localPhoto, setLocalPhoto] = useState<string | null>(photoUrl ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -83,9 +84,17 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
     const file = e.target.files?.[0];
     if (!file || !targetType || !targetId) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const url = await uploadPhoto(file, targetType, targetId);
-      if (url) { setLocalPhoto(url); onPhotoChange?.(url); }
+      if (url) {
+        setLocalPhoto(url);
+        onPhotoChange?.(url);
+      } else {
+        setUploadError('Upload failed — photo storage may not be configured yet.');
+      }
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed. Try again.');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -207,6 +216,13 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
           )
         )}
       </div>
+      {uploadError && (
+        <div style={{
+          marginTop: 6, padding: '6px 10px', borderRadius: 6,
+          background: '#FFE6DA', border: `1px solid ${G.clay}`,
+          fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.clay,
+        }}>{uploadError}</div>
+      )}
       {pickerOpen && villageGroup && onChangeGroup && (
         <div onClick={() => setPickerOpen(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)', zIndex: 1100,
@@ -481,7 +497,13 @@ type FamilyData = {
   kids: Kid[];
 };
 
-function FamilyCard({ family }: { family: FamilyData }) {
+function FamilyCard({ family, myUserId, onLeave }: {
+  family: FamilyData;
+  myUserId?: string;
+  onLeave?: () => void;
+}) {
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const parents = family.adults.filter(a => a.role === 'parent');
   const caregivers = family.adults.filter(a => a.role === 'caregiver');
   return (
@@ -491,11 +513,41 @@ function FamilyCard({ family }: { family: FamilyData }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <span style={{ fontSize: 24 }}>{family.household.glyph}</span>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontFamily: G.display, fontSize: 18, fontWeight: 500, color: G.ink, lineHeight: 1.15 }}>
             {family.household.name}
           </div>
         </div>
+        {onLeave && !confirmLeave && (
+          <button onClick={() => setConfirmLeave(true)} style={{
+            background: 'transparent', color: G.muted, border: `1px solid ${G.hairline2}`,
+            borderRadius: 100, padding: '4px 10px', cursor: 'pointer',
+            fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+            textTransform: 'uppercase', flexShrink: 0,
+          }}>Leave</button>
+        )}
+        {onLeave && confirmLeave && (
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              disabled={leaving}
+              onClick={async () => {
+                setLeaving(true);
+                await onLeave();
+              }}
+              style={{
+                background: G.clay, color: '#FBF7F0', border: 'none',
+                borderRadius: 100, padding: '4px 10px', cursor: leaving ? 'wait' : 'pointer',
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                textTransform: 'uppercase', opacity: leaving ? 0.6 : 1,
+              }}>{leaving ? '…' : 'Yes, leave'}</button>
+            <button onClick={() => setConfirmLeave(false)} style={{
+              background: 'transparent', color: G.muted, border: `1px solid ${G.hairline2}`,
+              borderRadius: 100, padding: '4px 10px', cursor: 'pointer',
+              fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+              textTransform: 'uppercase',
+            }}>Keep</button>
+          </div>
+        )}
       </div>
 
       {parents.length > 0 && (
@@ -546,13 +598,22 @@ function FamilyCard({ family }: { family: FamilyData }) {
 
 function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [families, setFamilies] = useState<FamilyData[] | null>(null);
+  const [myUserIds, setMyUserIds] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/village?scope=all');
-      const data = res.ok ? await res.json() : { families: [] };
+      const [villageRes, householdRes] = await Promise.all([
+        fetch('/api/village?scope=all'),
+        fetch('/api/household'),
+      ]);
+      const data = villageRes.ok ? await villageRes.json() : { families: [] };
       setFamilies(data.families || []);
+      // Build set of my own users.id values across all households
+      if (householdRes.ok) {
+        const hh = await householdRes.json();
+        if (hh.user?.id) setMyUserIds(new Set([hh.user.id]));
+      }
     } catch {
       setFamilies([]);
     }
@@ -603,7 +664,20 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
             </div>
           </div>
         ) : (
-          families.map(f => <FamilyCard key={f.household.id} family={f} />)
+          families.map(f => {
+            const myRow = f.adults.find(a => myUserIds.has(a.id));
+            return (
+              <FamilyCard
+                key={f.household.id}
+                family={f}
+                myUserId={myRow?.id}
+                onLeave={myRow ? async () => {
+                  await fetch(`/api/village?id=${myRow.id}&type=adult`, { method: 'DELETE' });
+                  await load();
+                } : undefined}
+              />
+            );
+          })
         )}
 
         <div style={{

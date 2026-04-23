@@ -80,6 +80,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .where(eq(bells.id, bellId));
     }
 
+    // Push notification to parent so they see the response immediately
+    import('@/lib/notify').then(({ notifyBellResponse }) =>
+      notifyBellResponse(bellId, userRow.id, response)
+    ).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     return apiError(err, 'Could not respond to bell', 500, 'bell:respond');
