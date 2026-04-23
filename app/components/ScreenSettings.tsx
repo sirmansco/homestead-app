@@ -80,6 +80,14 @@ export function ScreenSettings({ onBack }: { onBack?: () => void }) {
           </div>
         )}
 
+        {/* Help */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Help</GLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 8 }}>
+            <Link href="/guide" style={settingLink}>How Homestead Works →</Link>
+          </div>
+        </div>
+
         {/* Legal */}
         <div style={{ marginBottom: 28 }}>
           <GLabel>Legal</GLabel>
