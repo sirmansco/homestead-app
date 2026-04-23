@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "mkdir -p $HOME/.homestead-next && ln -sf \"$(pwd)/node_modules\" $HOME/.homestead-next/node_modules; next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -27,7 +27,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
