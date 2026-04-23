@@ -487,7 +487,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
   const [villageSize, setVillageSize] = useState(0);
-  const [activeBell, setActiveBell] = useState<{ id: string; reason: string } | null>(null);
+  const [activeBell, setActiveBell] = useState<{ id: string; reason: string; status: string; handledByName: string | null } | null>(null);
   const [cancellingBell, setCancellingBell] = useState(false);
   const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
   const [showUnavailForm, setShowUnavailForm] = useState(false);
@@ -527,8 +527,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       }
       if (bellRes?.ok) {
         const bd = await bellRes.json();
-        const ringing = (bd.bells || []).find((b: { status: string; id: string; reason: string }) => b.status === 'ringing');
-        setActiveBell(ringing ? { id: ringing.id, reason: ringing.reason } : null);
+        // API returns ringing-first, so first entry is most urgent. No client-side status filter needed.
+        const bell = (bd.bells || [])[0] as { id: string; reason: string; status: string; handledByName: string | null } | undefined;
+        setActiveBell(bell ? { id: bell.id, reason: bell.reason, status: bell.status, handledByName: bell.handledByName ?? null } : null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
@@ -696,10 +697,15 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             background: '#FFF0E8', border: `1.5px solid #B5342B`,
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
-            <div style={{ fontSize: 20, flexShrink: 0 }}>🔔</div>
+            <div style={{ fontSize: 20, flexShrink: 0 }}>{activeBell.status === 'handled' ? '✅' : '🔔'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: '#B5342B', marginBottom: 2 }}>Bell ringing</div>
+              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: '#B5342B', marginBottom: 2 }}>
+                {activeBell.status === 'handled' ? 'Help is on the way' : 'Bell ringing'}
+              </div>
               <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeBell.reason}</div>
+              {activeBell.status === 'handled' && activeBell.handledByName && (
+                <div style={{ fontFamily: G.sans, fontSize: 11, color: G.muted, marginTop: 2 }}>{activeBell.handledByName} is on the way</div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={onViewBell ?? onRing} style={{
