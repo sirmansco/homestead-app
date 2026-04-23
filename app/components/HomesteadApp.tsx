@@ -175,6 +175,7 @@ export function HomesteadApp() {
     return 'parent';
   });
   const [screen, setScreen] = useState<TabId>('almanac');
+  const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const [bellCount, setBellCount] = useState(0);
   const isMobile = useIsMobile();
@@ -236,6 +237,8 @@ export function HomesteadApp() {
   }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
+    // Navigating to bell via tab bar should check for active bells first (not go straight to compose)
+    if (id === 'bell') setBellCompose(false);
     setScreen(id);
     // Re-poll bell count immediately on navigation so the badge reflects current state
     if (id === 'bell' || id === 'almanac') {
@@ -272,7 +275,7 @@ export function HomesteadApp() {
     return () => window.removeEventListener('keydown', handler);
   }, [role, navigate]);
 
-  const handleRing = useCallback(() => setScreen('bell'), []);
+  const handleRing = useCallback(() => { setBellCompose(true); setScreen('bell'); }, []);
 
   const handlePost = useCallback((msg?: string) => {
     setToast({ msg: msg || 'Posted to the Village', key: Date.now() });
@@ -289,7 +292,7 @@ export function HomesteadApp() {
       case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onPost={() => setScreen('post')} onVillage={() => setScreen('village')} />;
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
       case 'shifts':  return <ScreenShifts />;
-      case 'bell':    return <ScreenBell initialCompose={true} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
+      case 'bell':    return <ScreenBell key={`bell-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
       case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
       case 'settings': return <ScreenSettings onBack={() => setScreen('village')} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;

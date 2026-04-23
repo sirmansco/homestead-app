@@ -357,7 +357,7 @@ type ActiveBell = {
 
 type BellResponse = { userId: string; response: string };
 
-function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?: string; reason?: string }) {
+function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; onDone?: () => void; bellId?: string; reason?: string }) {
   const [members, setMembers] = useState<VillageMember[] | null>(null);
   const [responses, setResponses] = useState<BellResponse[]>([]);
   const [marking, setMarking] = useState(false);
@@ -425,7 +425,7 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
         body: JSON.stringify({ status: 'handled' }),
       });
       if (!res.ok) throw new Error('Could not mark as handled');
-      onBack?.();
+      onDone?.();   // go to compose, stay on Bell tab
     } catch {
       setBellError('Something went wrong. Try again.');
       setMarking(false);
@@ -444,12 +444,12 @@ function BellRinging({ onBack, bellId, reason }: { onBack?: () => void; bellId?:
           body: JSON.stringify({ status: 'cancelled' }),
         });
         if (!res.ok) throw new Error('Could not cancel bell');
-        onBack?.();
+        onDone?.();   // go to compose, stay on Bell tab
       } catch {
         setBellError('Could not cancel the bell. Try again.');
       }
     } else {
-      onBack?.();
+      onDone?.();
     }
   }
 
@@ -724,11 +724,42 @@ export function ScreenBell({ initialCompose = false, role = 'parent', onBack, on
   onBack?: () => void;
   onPost?: () => void;
 }) {
-  const [mode, setMode] = useState<'compose' | 'ringing'>(initialCompose ? 'compose' : 'ringing');
+  // 'loading' while we check for an existing ringing bell
+  const [mode, setMode] = useState<'loading' | 'compose' | 'ringing'>(
+    initialCompose ? 'compose' : 'loading'
+  );
   const [ringReason, setRingReason] = useState('');
   const [ringBellId, setRingBellId] = useState<string | undefined>();
 
+  // On mount (parent only): check if there's already a ringing bell to resume
+  useEffect(() => {
+    if (role !== 'parent' || initialCompose) return;
+    fetch('/api/bell/active')
+      .then(r => r.ok ? r.json() : { bells: [] })
+      .then(data => {
+        const active = (data.bells || []).find((b: { status: string; id: string; reason: string }) => b.status === 'ringing');
+        if (active) {
+          setRingBellId(active.id);
+          setRingReason(active.reason);
+          setMode('ringing');
+        } else {
+          setMode('compose');
+        }
+      })
+      .catch(() => setMode('compose'));
+  }, [role, initialCompose]);
+
   if (role === 'caregiver') return <BellIncoming />;
+
+  if (mode === 'loading') {
+    return (
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BELL_BG }}>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking bell status…</div>
+      </div>
+    );
+  }
+
+  const resetToCompose = () => { setRingBellId(undefined); setRingReason(''); setMode('compose'); };
 
   return mode === 'compose'
     ? <BellCompose
@@ -736,5 +767,10 @@ export function ScreenBell({ initialCompose = false, role = 'parent', onBack, on
         onBack={onBack}
         onPost={onPost}
       />
-    : <BellRinging onBack={onBack} bellId={ringBellId} reason={ringReason} />;
+    : <BellRinging
+        onBack={() => { resetToCompose(); onBack?.(); }}  // ‹ Back exits Bell tab
+        onDone={resetToCompose}                           // mark-done / cancel stays on Bell
+        bellId={ringBellId}
+        reason={ringReason}
+      />;
 }
