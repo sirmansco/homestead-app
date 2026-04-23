@@ -139,8 +139,8 @@ export function WhenPickerWindow({
         <Chip label={showCustom ? 'Hide custom' : 'Custom…'} active={showCustom || (!matchedPreset && !!startValue)} onClick={useCustom} accent={accent} />
       </div>
       {(showCustom || (!matchedPreset && !!startValue)) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-          <label style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+          <label>
             <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Start</div>
             <input
               type="datetime-local"
@@ -158,7 +158,7 @@ export function WhenPickerWindow({
               style={inputStyle(accent)}
             />
           </label>
-          <label style={{ minWidth: 0, overflow: 'hidden' }}>
+          <label>
             <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
             <input
               type="datetime-local"
@@ -229,7 +229,7 @@ export function WhenPickerDate({
 // ── WhenPicker — DateRange + Time mode (Almanac unavailable) ──────────────
 export function WhenPickerDateRange({
   startDate, endDate, startTime, endTime,
-  onChange, presets, allDayDefault = true, label,
+  onChange, presets, label,
 }: {
   startDate: string;
   endDate: string;
@@ -237,11 +237,9 @@ export function WhenPickerDateRange({
   endTime: string;
   onChange: (v: { startDate: string; endDate: string; startTime: string; endTime: string }) => void;
   presets: DateRangePreset[];
-  allDayDefault?: boolean;
   label?: string;
 }) {
   const [showCustom, setShowCustom] = useState(false);
-  const [allDay, setAllDay] = useState(() => allDayDefault && startTime === '00:00' && endTime === '23:59');
 
   const matched = useMemo(() => {
     if (!startDate || !endDate) return null;
@@ -257,17 +255,10 @@ export function WhenPickerDateRange({
     onChange({
       startDate: toLocalDate(r.start),
       endDate: toLocalDate(r.end),
-      startTime: allDay ? '00:00' : startTime,
-      endTime: allDay ? '23:59' : endTime,
+      startTime: startTime || '09:00',
+      endTime: endTime || '17:00',
     });
     setShowCustom(false);
-  };
-
-  const toggleAllDay = () => {
-    const next = !allDay;
-    setAllDay(next);
-    if (next) onChange({ startDate, endDate, startTime: '00:00', endTime: '23:59' });
-    else onChange({ startDate, endDate, startTime: '09:00', endTime: '17:00' });
   };
 
   return (
@@ -281,51 +272,41 @@ export function WhenPickerDateRange({
       </div>
 
       {(showCustom || (!matched && !!startDate)) && (
-        <div style={{ marginTop: 10 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
-            <input type="checkbox" checked={allDay} onChange={toggleAllDay} />
-            <span style={{ fontFamily: G.sans, fontSize: 12, color: G.ink2 }}>All day</span>
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div>
-              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>From</div>
-              <input
-                type="date"
-                value={startDate}
-                min={toLocalDate(new Date())}
-                onChange={e => {
-                  const v = e.target.value;
-                  onChange({ startDate: v, endDate: endDate < v ? v : endDate, startTime, endTime });
-                }}
-                style={inputStyle()}
-              />
-              {!allDay && (
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={e => onChange({ startDate, endDate, startTime: e.target.value, endTime })}
-                  style={{ ...inputStyle(), marginTop: 6 }}
-                />
-              )}
-            </div>
-            <div>
-              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate || toLocalDate(new Date())}
-                onChange={e => onChange({ startDate, endDate: e.target.value, startTime, endTime })}
-                style={inputStyle()}
-              />
-              {!allDay && (
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={e => onChange({ startDate, endDate, startTime, endTime: e.target.value })}
-                  style={{ ...inputStyle(), marginTop: 6 }}
-                />
-              )}
-            </div>
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>From</div>
+            <input
+              type="date"
+              value={startDate}
+              min={toLocalDate(new Date())}
+              onChange={e => {
+                const v = e.target.value;
+                onChange({ startDate: v, endDate: endDate < v ? v : endDate, startTime, endTime });
+              }}
+              style={inputStyle()}
+            />
+            <input
+              type="time"
+              value={startTime}
+              onChange={e => onChange({ startDate, endDate, startTime: e.target.value, endTime })}
+              style={{ ...inputStyle(), marginTop: 6 }}
+            />
+          </div>
+          <div>
+            <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || toLocalDate(new Date())}
+              onChange={e => onChange({ startDate, endDate: e.target.value, startTime, endTime })}
+              style={inputStyle()}
+            />
+            <input
+              type="time"
+              value={endTime}
+              onChange={e => onChange({ startDate, endDate, startTime, endTime: e.target.value })}
+              style={{ ...inputStyle(), marginTop: 6 }}
+            />
           </div>
         </div>
       )}
@@ -334,7 +315,7 @@ export function WhenPickerDateRange({
         <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           {formatWhen(startDate, 'date')}
           {startDate !== endDate && ` → ${formatWhen(endDate, 'date')}`}
-          {!allDay && ` · ${formatWhen(startTime, 'time')}–${formatWhen(endTime, 'time')}`}
+          {` · ${formatWhen(startTime, 'time')}–${formatWhen(endTime, 'time')}`}
         </div>
       )}
     </div>
