@@ -60,7 +60,7 @@ const APP_SHA = process.env.NEXT_PUBLIC_APP_SHA || 'dev';
 
 export function GMasthead({
   left, right, title, tagline,
-  folioLeft = `v${APP_VERSION} · ${APP_SHA}`, folioRight = 'Homestead Press',
+  folioLeft = `v${APP_VERSION} · ${APP_SHA}`, folioRight = '',
   leftAction, rightAction, titleColor,
 }: {
   left?: string;

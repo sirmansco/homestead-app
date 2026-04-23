@@ -70,7 +70,6 @@ export function ScreenTimeOff() {
         leftAction={<HouseholdSwitcher />} right="Your availability"
         title="Time Off"
         tagline="You're available by default. Block out the times you can't help — family keeps seeing everything else."
-        folioLeft="No. 142" folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>

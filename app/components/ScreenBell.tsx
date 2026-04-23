@@ -224,7 +224,7 @@ function BellCompose({ onRing, onBack, onPost }: {
         title="Bell Tower"
         titleColor={RED}
         tagline="Something came up — we'll reach the inner circle first, then widen if no one answers."
-        folioLeft="No. 142" folioRight="Urgent edition"
+        folioRight="Urgent edition"
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
         <div style={{ marginTop: 10 }}>

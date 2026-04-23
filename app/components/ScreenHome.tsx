@@ -351,7 +351,6 @@ export function ScreenHome({ onRing, onPost, onVillage, role = 'parent' }: {
         right={new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
         title={title}
         tagline={tagline}
-        folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>

@@ -116,7 +116,6 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
         rightAction={<UserButton />}
         title="Settings"
         tagline="Your account, your data, the legal stuff."
-        folioLeft="No. 142" folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 120px' }}>

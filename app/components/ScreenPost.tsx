@@ -162,7 +162,6 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         }
         title="Post a Need"
         tagline="For a last-minute need, ring the bell instead."
-        folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>

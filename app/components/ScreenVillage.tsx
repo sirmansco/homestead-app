@@ -663,7 +663,6 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
         }
         title="My Families"
         tagline="The families you help with."
-        folioRight="Homestead Press"
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
@@ -855,7 +854,6 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
         }
         title="The Village"
         tagline="Grouped by how close they are when the call goes out."
-        folioLeft="No. 142" folioRight="Homestead Press"
       />
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
