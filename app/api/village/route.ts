@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         email: email.trim(),
         name: name.trim(),
         role: role || 'caregiver',
-        villageGroup: villageGroup || 'family',
+        villageGroup: villageGroup || 'inner_circle',
       }).returning();
       return NextResponse.json({ user });
     }

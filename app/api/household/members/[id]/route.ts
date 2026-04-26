@@ -14,11 +14,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
     const body = await req.json() as {
       role?: 'parent' | 'caregiver';
-      villageGroup?: 'inner' | 'family' | 'sitter';
+      villageGroup?: 'inner_circle' | 'sitter';
     };
-    const patch: { role?: 'parent' | 'caregiver'; villageGroup?: 'inner' | 'family' | 'sitter' } = {};
+    const patch: { role?: 'parent' | 'caregiver'; villageGroup?: 'inner_circle' | 'sitter' } = {};
     if (body.role === 'parent' || body.role === 'caregiver') patch.role = body.role;
-    if (body.villageGroup === 'inner' || body.villageGroup === 'family' || body.villageGroup === 'sitter') {
+    if (body.villageGroup === 'inner_circle' || body.villageGroup === 'sitter') {
       patch.villageGroup = body.villageGroup;
     }
     if (!Object.keys(patch).length) {

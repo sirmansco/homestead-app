@@ -31,7 +31,7 @@ export async function requireHousehold() {
 
     const meta = (clerkUser.publicMetadata ?? {}) as {
       appRole?: 'parent' | 'caregiver';
-      villageGroup?: 'inner' | 'family' | 'sitter';
+      villageGroup?: 'inner_circle' | 'sitter';
       name?: string;
     };
 
@@ -44,7 +44,7 @@ export async function requireHousehold() {
       email,
       name: meta.name || name,
       role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
-      villageGroup: meta.villageGroup || (isFirstUser ? 'inner' : 'family'),
+      villageGroup: meta.villageGroup || (isFirstUser ? 'inner_circle' : 'sitter'),
     }).returning();
   } else if (looksLikeSlug(user.name)) {
     // Backfill: the row was seeded from email/username before Clerk collected a

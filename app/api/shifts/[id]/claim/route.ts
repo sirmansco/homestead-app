@@ -37,7 +37,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
         email,
         name,
         role: 'caregiver',
-        villageGroup: 'family',
+        villageGroup: 'sitter',
       }).returning();
     }
 

@@ -17,7 +17,7 @@ async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: str
   return data.url ?? null;
 }
 
-type VillageGroup = 'inner' | 'family' | 'sitter';
+type VillageGroup = 'inner_circle' | 'sitter';
 type AppRole = 'parent' | 'caregiver';
 
 type Adult = {
@@ -38,9 +38,8 @@ type Kid = {
 };
 
 const GROUP_META: Record<VillageGroup, { label: string; note: string }> = {
-  inner:  { label: 'Inner Circle',    note: 'rung first · no asking' },
-  family: { label: 'Family & Close',  note: 'rung second' },
-  sitter: { label: 'Trusted Sitters', note: 'paid · available on demand' },
+  inner_circle: { label: 'Inner Circle',    note: 'rung first · no asking' },
+  sitter:       { label: 'Trusted Sitters', note: 'paid · available on demand' },
 };
 
 function GroupHeader({ count, label, note }: { count: number; label: string; note: string }) {
@@ -55,9 +54,9 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
   );
 }
 
-const GROUP_CYCLE: VillageGroup[] = ['inner', 'family', 'sitter'];
-const GROUP_LABEL: Record<VillageGroup, string> = { inner: 'IC', family: 'FC', sitter: 'TS' };
-const GROUP_TITLE: Record<VillageGroup, string> = { inner: 'Inner Circle', family: 'Family & Close', sitter: 'Trusted Sitter' };
+const GROUP_CYCLE: VillageGroup[] = ['inner_circle', 'sitter'];
+const GROUP_LABEL: Record<VillageGroup, string> = { inner_circle: 'IC', sitter: 'TS' };
+const GROUP_TITLE: Record<VillageGroup, string> = { inner_circle: 'Inner Circle', sitter: 'Trusted Sitter' };
 
 function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
   name: string;
@@ -296,7 +295,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AppRole>('caregiver');
-  const [villageGroup, setVillageGroup] = useState<VillageGroup>('family');
+  const [villageGroup, setVillageGroup] = useState<VillageGroup>('inner_circle');
   const [birthday, setBirthday] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -409,8 +408,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
               <label style={{ display: 'block', marginBottom: 14 }}>
                 <div style={labelStyle}>Your circle with this family</div>
                 <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
-                  <option value="inner">Inner Circle</option>
-                  <option value="family">Family &amp; Close</option>
+                  <option value="inner_circle">Inner Circle</option>
                   <option value="sitter">Trusted Sitter</option>
                 </select>
               </label>
@@ -426,8 +424,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 <label>
                   <div style={labelStyle}>Group</div>
                   <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
-                    <option value="inner">Inner Circle</option>
-                    <option value="family">Family &amp; Close</option>
+                    <option value="inner_circle">Inner Circle</option>
                     <option value="sitter">Trusted Sitter</option>
                   </select>
                 </label>
@@ -886,7 +883,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
           </div>
         ) : (
           <>
-            {(['inner', 'family', 'sitter'] as const).map(g => {
+            {(['inner_circle', 'sitter'] as const).map(g => {
               const members = byGroup(g);
               const meta = GROUP_META[g];
               return (
@@ -904,10 +901,10 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
                     </div>
                   ) : (
                     <div style={{
-                      background: g === 'inner' ? G.paper : 'transparent',
-                      border: g === 'inner' ? `1px solid ${G.hairline2}` : 'none',
-                      borderRadius: g === 'inner' ? 10 : 0,
-                      padding: g === 'inner' ? 14 : 0,
+                      background: g === 'inner_circle' ? G.paper : 'transparent',
+                      border: g === 'inner_circle' ? `1px solid ${G.hairline2}` : 'none',
+                      borderRadius: g === 'inner_circle' ? 10 : 0,
+                      padding: g === 'inner_circle' ? 14 : 0,
                       marginBottom: 18,
                     }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>

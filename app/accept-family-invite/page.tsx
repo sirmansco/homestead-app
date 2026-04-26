@@ -7,12 +7,11 @@ type InviteInfo = {
   fromName: string;
   parentName: string | null;
   parentEmail: string;
-  villageGroup: 'inner' | 'family' | 'sitter';
+  villageGroup: 'inner_circle' | 'sitter';
 };
 
 const GROUP_LABEL: Record<string, string> = {
-  inner: 'Inner Circle',
-  family: 'Family & Close',
+  inner_circle: 'Inner Circle',
   sitter: 'Trusted Sitter',
 };
 

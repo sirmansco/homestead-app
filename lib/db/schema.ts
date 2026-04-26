@@ -3,7 +3,7 @@ import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean,
 export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
 export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'cancelled']);
 export const bellResponseEnum = pgEnum('bell_response', ['on_my_way', 'in_thirty', 'cannot']);
-export const villageGroupEnum = pgEnum('village_group', ['inner', 'family', 'sitter']);
+export const villageGroupEnum = pgEnum('village_group', ['inner_circle', 'sitter']);
 export const shiftStatusEnum = pgEnum('shift_status', ['open', 'claimed', 'cancelled', 'done']);
 
 export const households = pgTable('households', {
@@ -23,7 +23,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   name: text('name').notNull(),
   role: appRoleEnum('role').notNull().default('parent'),
-  villageGroup: villageGroupEnum('village_group').notNull().default('inner'),
+  villageGroup: villageGroupEnum('village_group').notNull().default('inner_circle'),
   photoUrl: text('photo_url'),
   // Notification preferences — defaults to true (opt-out model).
   // Each column guards one notification type; notify.ts checks before sending.
@@ -32,6 +32,7 @@ export const users = pgTable('users', {
   notifyShiftReleased: boolean('notify_shift_released').notNull().default(true),
   notifyBellRinging: boolean('notify_bell_ringing').notNull().default(true),
   notifyBellResponse: boolean('notify_bell_response').notNull().default(true),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   userHouseholdUnique: unique('users_clerk_user_household_unique').on(t.clerkUserId, t.householdId),
@@ -79,6 +80,7 @@ export const bells = pgTable('bells', {
   status: bellStatusEnum('status').notNull().default('ringing'),
   handledByUserId: uuid('handled_by_user_id').references(() => users.id, { onDelete: 'set null' }),
   handledAt: timestamp('handled_at'),
+  escalatedAt: timestamp('escalated_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -98,7 +100,7 @@ export const familyInvites = pgTable('family_invites', {
   fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   parentEmail: text('parent_email').notNull(),
   parentName: text('parent_name'),
-  villageGroup: villageGroupEnum('village_group').notNull().default('family'),
+  villageGroup: villageGroupEnum('village_group').notNull().default('inner_circle'),
   status: text('status').notNull().default('pending'),
   acceptedHouseholdId: uuid('accepted_household_id').references(() => households.id, { onDelete: 'set null' }),
   acceptedAt: timestamp('accepted_at'),
@@ -120,4 +122,15 @@ export const bellResponses = pgTable('bell_responses', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   response: bellResponseEnum('response').notNull(),
   respondedAt: timestamp('responded_at').notNull().defaultNow(),
+});
+
+export const feedback = pgTable('feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
+  message: text('message').notNull(),
+  kind: text('kind').notNull(),
+  userAgent: text('user_agent'),
+  appVersion: text('app_version'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         email,
         name,
         role: 'caregiver',
-        villageGroup: 'family',
+        villageGroup: 'sitter',
       }).returning();
     }
 

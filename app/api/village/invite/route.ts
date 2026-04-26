@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       name?: string;
       email?: string;
       role?: 'parent' | 'caregiver';
-      villageGroup?: 'inner' | 'family' | 'sitter';
+      villageGroup?: 'inner_circle' | 'sitter';
       mode?: 'email' | 'link';
     };
 

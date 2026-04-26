@@ -112,7 +112,7 @@ function plusHours(h: number) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-type VillageMember = { id: string; name: string; villageGroup: 'inner' | 'family' | 'sitter' };
+type VillageMember = { id: string; name: string; villageGroup: 'inner_circle' | 'sitter' };
 
 function PushPermissionBanner() {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
@@ -398,11 +398,10 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
     return 'notified';
   }
 
-  const byGroup = (g: 'inner' | 'family' | 'sitter') =>
+  const byGroup = (g: 'inner_circle' | 'sitter') =>
     (members || []).filter(m => m.villageGroup === g);
 
-  const inner  = byGroup('inner');
-  const family = byGroup('family');
+  const inner  = byGroup('inner_circle');
   const sitter = byGroup('sitter');
 
   async function handleMarkDone() {
@@ -480,9 +479,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
               <div style={{ position: 'absolute', left: 14, top: 12, bottom: 12, width: 1, background: G.hairline2 }} />
               <Rung ring={1} label="Inner Circle" status={inner.length > 0 ? 'rung' : 'pending'} time="Now"
                 people={inner.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
-              <Rung ring={2} label="Family & close friends" status={family.length > 0 ? 'queued' : 'pending'} time="+2 min if no answer"
-                people={family.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
-              <Rung ring={3} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="+5 min"
+              <Rung ring={2} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="+5 min if no answer"
                 people={sitter.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
             </div>
           </>
