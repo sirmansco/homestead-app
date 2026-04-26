@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { shifts } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { apiError, authError } from '@/lib/api-error';
+import { pushToUser } from '@/lib/push';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -31,17 +32,17 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       .returning();
     if (!cancelled) return NextResponse.json({ error: 'cancel failed' }, { status: 500 });
 
-    // Notify the caregiver who claimed this shift (if any)
-    // ?tab=shifts routes them to their Schedule tab so they can see the shift is gone
     if (claimedByUserId) {
-      import('@/lib/push').then(({ pushToUser }) =>
-        pushToUser(claimedByUserId, {
+      try {
+        await pushToUser(claimedByUserId, {
           title: '❌ Shift cancelled',
           body: `"${shift.title}" has been cancelled.`,
           url: '/?tab=shifts',
           tag: `cancel-${id}`,
-        })
-      ).catch(() => {});
+        });
+      } catch (err) {
+        console.error('[shifts:cancel:push]', err);
+      }
     }
 
     return NextResponse.json({ shift: cancelled });

@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users } from '@/lib/db/schema';
 import { apiError } from '@/lib/api-error';
+import { notifyShiftReleased } from '@/lib/notify';
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -31,10 +32,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       .returning();
     if (!released) return NextResponse.json({ error: 'race lost' }, { status: 409 });
 
-    // Notify the parent — respects their notifyShiftReleased preference
-    import('@/lib/notify').then(({ notifyShiftReleased }) =>
-      notifyShiftReleased(id, claimer.id)
-    ).catch(() => {});
+    try {
+      await notifyShiftReleased(id, claimer.id);
+    } catch (err) {
+      console.error('[shifts:unclaim:notify]', err);
+    }
 
     return NextResponse.json({ shift: released });
   } catch (err) {

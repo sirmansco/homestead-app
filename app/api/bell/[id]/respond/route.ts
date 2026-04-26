@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, bellResponses, users, households } from '@/lib/db/schema';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { apiError } from '@/lib/api-error';
+import { notifyBellResponse } from '@/lib/notify';
+import { escalateBell } from '@/app/api/bell/[id]/escalate/route';
+
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -80,10 +83,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .where(eq(bells.id, bellId));
     }
 
-    // Push notification to parent so they see the response immediately
-    import('@/lib/notify').then(({ notifyBellResponse }) =>
-      notifyBellResponse(bellId, userRow.id, response)
-    ).catch(() => {});
+    // Notify the ringer so they see the response immediately
+    try {
+      await notifyBellResponse(bellId, userRow.id, response);
+    } catch (err) {
+      console.error('[bell:respond:notify]', err);
+    }
+
+    // Immediate escalation if all inner_circle members have responded cannot
+    if (response === 'cannot' && bell.escalatedAt === null) {
+      const [{ total }] = await db.select({ total: sql<number>`count(*)::int` })
+        .from(users)
+        .where(and(
+          eq(users.householdId, bell.householdId),
+          eq(users.role, 'caregiver'),
+          eq(users.villageGroup, 'inner_circle'),
+        ));
+      if (total > 0) {
+        const [{ cannotCount }] = await db.select({ cannotCount: sql<number>`count(*)::int` })
+          .from(bellResponses)
+          .innerJoin(users, eq(bellResponses.userId, users.id))
+          .where(and(
+            eq(bellResponses.bellId, bellId),
+            eq(bellResponses.response, 'cannot'),
+            eq(users.villageGroup, 'inner_circle'),
+          ));
+        if (cannotCount >= total) {
+          await escalateBell(bellId, bell.householdId);
+        }
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

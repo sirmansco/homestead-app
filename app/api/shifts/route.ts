@@ -8,6 +8,7 @@ import { shifts, users, households } from '@/lib/db/schema';
 const claimerUsers = alias(users, 'claimer');
 import { requireHousehold } from '@/lib/auth/household';
 import { apiError, authError } from '@/lib/api-error';
+import { notifyNewShift } from '@/lib/notify';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -260,8 +261,13 @@ export async function POST(req: NextRequest) {
 
     const created = await db.insert(shifts).values(valuesList).returning();
 
-    // Fire-and-forget notification for the first shift (avoids N-fold spam on recurring)
-    if (created[0]) notifyShiftPosted(created[0].id, preferredCaregiverId ?? undefined).catch(() => {});
+    if (created[0]) {
+      try {
+        await notifyShiftPosted(created[0].id, preferredCaregiverId ?? undefined);
+      } catch (err) {
+        console.error('[shifts:post:notify]', err);
+      }
+    }
 
     return NextResponse.json({ shift: created[0], count: created.length });
   } catch (err) {
@@ -270,6 +276,5 @@ export async function POST(req: NextRequest) {
 }
 
 async function notifyShiftPosted(shiftId: string, preferredCaregiverId?: string) {
-  const { notifyNewShift } = await import('@/lib/notify');
   await notifyNewShift(shiftId, preferredCaregiverId);
 }

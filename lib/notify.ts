@@ -1,6 +1,7 @@
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
+import { pushToUser, pushToUsers } from '@/lib/push';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.NOTIFY_FROM || 'Homestead <notify@homestead.app>';
@@ -17,8 +18,8 @@ async function send(to: string[], subject: string, text: string) {
       },
       body: JSON.stringify({ from: FROM, to, subject, text }),
     });
-  } catch {
-    // swallow — best effort
+  } catch (err) {
+    console.error('[notify:email]', err);
   }
 }
 
@@ -47,9 +48,10 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   if (preferredCaregiverId) {
     recipients = await db.select().from(users).where(eq(users.id, preferredCaregiverId));
   } else {
+    // Parents never receive shift-posted alerts; co-parent suppression is automatic
     recipients = await db.select().from(users).where(and(
       eq(users.householdId, row.shift.householdId),
-      ne(users.id, row.shift.createdByUserId),
+      eq(users.role, 'caregiver'),
     ));
   }
 
@@ -60,30 +62,31 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
 
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Push notification — targeted or broadcast (only to opted-in users)
-  import('@/lib/push').then(async ({ pushToUser }) => {
-    if (preferredCaregiverId) {
-      if (optedIds.includes(preferredCaregiverId)) {
+  if (preferredCaregiverId) {
+    if (optedIds.includes(preferredCaregiverId)) {
+      try {
         await pushToUser(preferredCaregiverId, {
           title: `📋 ${row.household!.name} needs you`,
           body: `${row.shift.title} · ${when}`,
           url: '/?tab=almanac',
           tag: `shift-${shiftId}`,
         });
+      } catch (err) {
+        console.error('[notify:newShift:push:targeted]', err);
       }
-      return;
     }
-    // For broadcast: push to each opted-in recipient individually so we
-    // respect per-user preferences even if pushToHousehold would skip them.
-    for (const uid of optedIds) {
-      await pushToUser(uid, {
+  } else {
+    try {
+      await pushToUsers(optedIds, row.shift.householdId, {
         title: `📋 New shift — ${row.household!.name}`,
         body: `${row.shift.title} · ${when}`,
         url: '/?tab=almanac',
         tag: `shift-${shiftId}`,
-      }).catch(() => {});
+      });
+    } catch (err) {
+      console.error('[notify:newShift:push:broadcast]', err);
     }
-  }).catch(() => {});
+  }
 
   if (!emails.length) return;
 
@@ -123,15 +126,16 @@ export async function notifyShiftClaimed(shiftId: string) {
   const claimerName = claimer?.name || 'A caregiver';
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Push notification to the parent who posted the shift
-  import('@/lib/push').then(({ pushToUser }) =>
-    pushToUser(row.shift.createdByUserId, {
+  try {
+    await pushToUser(row.shift.createdByUserId, {
       title: `✅ ${claimerName} is on it`,
       body: `"${row.shift.title}" · ${when}`,
       url: '/?tab=almanac',
       tag: `claimed-${shiftId}`,
-    })
-  ).catch(() => {});
+    });
+  } catch (err) {
+    console.error('[notify:shiftClaimed:push]', err);
+  }
 
   if (!creator.email) return;
 
@@ -169,14 +173,16 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   const releaserName = releaser?.name || 'A caregiver';
   const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-  import('@/lib/push').then(({ pushToUser }) =>
-    pushToUser(row.shift.createdByUserId, {
+  try {
+    await pushToUser(row.shift.createdByUserId, {
       title: `↩️ ${releaserName} released your shift`,
       body: `"${row.shift.title}" · ${when} — now open again`,
       url: '/?tab=almanac',
       tag: `released-${shiftId}`,
-    })
-  ).catch(() => {});
+    });
+  } catch (err) {
+    console.error('[notify:shiftReleased:push]', err);
+  }
 }
 
 export async function notifyBellResponse(
@@ -207,9 +213,11 @@ export async function notifyBellResponse(
     ? { title: `⏱ ${name} can help in 30 min`, body: 'Still looking for someone sooner…', tag: `bell-thirty-${bellId}` }
     : { title: `${name} can't make it`, body: 'Bell continuing to next circle…', tag: `bell-cannot-${bellId}` };
 
-  import('@/lib/push').then(async ({ pushToUser }) => {
-    for (const parent of optedParents) {
-      await pushToUser(parent.id, { ...msg, url: '/?tab=bell' }).catch(() => {});
+  for (const parent of optedParents) {
+    try {
+      await pushToUser(parent.id, { ...msg, url: '/?tab=bell' });
+    } catch (err) {
+      console.error('[notify:bellResponse:push]', err);
     }
-  }).catch(() => {});
+  }
 }

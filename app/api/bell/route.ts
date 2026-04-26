@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells } from '@/lib/db/schema';
+import { bells, users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { apiError } from '@/lib/api-error';
+import { pushToUsers } from '@/lib/push';
+
 export async function POST(req: NextRequest) {
   try {
     const { household, user } = await requireHousehold();
@@ -37,16 +39,25 @@ export async function POST(req: NextRequest) {
       status: 'ringing',
     }).returning();
 
-    // Fire-and-forget push to all household members
-    // ?tab=bell routes caregivers directly to the Bell tab to respond
-    import('@/lib/push').then(({ pushToHousehold }) =>
-      pushToHousehold(household.id, user.id, {
+    // Notify inner_circle caregivers only (spec: Bell pings inner_circle first)
+    const innerCircle = await db.select({ id: users.id })
+      .from(users)
+      .where(and(
+        eq(users.householdId, household.id),
+        eq(users.role, 'caregiver'),
+        eq(users.villageGroup, 'inner_circle'),
+        eq(users.notifyBellRinging, true),
+      ));
+    try {
+      await pushToUsers(innerCircle.map(u => u.id), household.id, {
         title: `🔔 ${household.name} needs help`,
         body: reason + (note ? ` — ${note}` : ''),
         url: '/?tab=bell',
         tag: `bell-${bell.id}`,
-      })
-    ).catch(() => {});
+      });
+    } catch (err) {
+      console.error('[bell:ring:push]', err);
+    }
 
     return NextResponse.json({ bell });
   } catch (err) {

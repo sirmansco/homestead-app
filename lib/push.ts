@@ -124,6 +124,23 @@ export async function pushToUser(userId: string, payload: PushPayload): Promise<
   return sendBatch(subs, payload, `user:${userId}`);
 }
 
+// Send push to an explicit list of users.id values within a household
+export async function pushToUsers(
+  userIds: string[],
+  householdId: string,
+  payload: PushPayload,
+): Promise<PushResult> {
+  if (userIds.length === 0) {
+    return { attempted: 0, delivered: 0, stale: 0, failed: 0, errors: [] };
+  }
+  const subs = await db.select().from(pushSubscriptions)
+    .where(and(
+      inArray(pushSubscriptions.userId, userIds),
+      eq(pushSubscriptions.householdId, householdId),
+    ));
+  return sendBatch(subs, payload, `users:${userIds.length}@${householdId}`);
+}
+
 // Send push to all users in a household (parents + caregivers) except the sender
 export async function pushToHouseholdCaregivers(
   householdId: string,

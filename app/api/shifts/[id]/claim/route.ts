@@ -4,6 +4,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
 import { apiError } from '@/lib/api-error';
+import { notifyShiftClaimed } from '@/lib/notify';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
@@ -55,8 +56,11 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'already claimed' }, { status: 409 });
     }
 
-    const { notifyShiftClaimed } = await import('@/lib/notify');
-    notifyShiftClaimed(claimed.id).catch(() => {});
+    try {
+      await notifyShiftClaimed(claimed.id);
+    } catch (err) {
+      console.error('[shifts:claim:notify]', err);
+    }
 
     return NextResponse.json({ shift: claimed });
   } catch (err) {
