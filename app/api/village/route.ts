@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     if (scope === 'all') {
       const { userId } = await auth();
-      if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+      if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
       const myRows = await db.select().from(users).where(eq(users.clerkUserId, userId));
       const hhIds = myRows.map(r => r.householdId);

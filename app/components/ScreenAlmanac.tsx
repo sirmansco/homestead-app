@@ -4,7 +4,7 @@ import { G } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
-import { fmtTimeRange, durationH } from '@/lib/format/time';
+import { fmtTimeRange, durationH, fmtDateShort, fmtDateLong, fmtDateMonthDay, fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerDateRange, unavailRangePresets } from './WhenPicker';
 
 type UnavailRow = {
@@ -37,7 +37,7 @@ type ShiftRow = {
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  return fmtDateShort(iso);
 }
 function bucketOf(iso: string): 'today' | 'tomorrow' | 'week' | 'later' {
   const d = new Date(iso);
@@ -194,7 +194,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
 }) {
   const rate = fmtRate(row.shift.rateCents);
   const d = new Date(row.shift.startsAt);
-  const dateLabel = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  const dateLabel = fmtDateLong(d);
   const touchStartY = React.useRef(0);
   const sheetRef = React.useRef<HTMLDivElement>(null);
   return (
@@ -683,7 +683,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       <GMasthead
         leftAction={<HouseholdSwitcher />}
         rightAction={role === 'parent' && onRing ? <BellButton onRing={onRing} /> : undefined}
-        right={new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+        right={fmtDateShort(new Date())}
         title={title}
         tagline={tagline}
       />
@@ -816,7 +816,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             });
             return Array.from(byDay.entries()).map(([key, dayRows]) => {
               const first = new Date(dayRows[0].shift.startsAt);
-              const label = first.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+              const label = fmtDateShort(first);
               return (
                 <React.Fragment key={key}>
                   <div style={{
@@ -975,7 +975,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             {unavailability.map(u => {
               const s = new Date(u.startsAt);
               const e = new Date(u.endsAt);
-              const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+              const fmt = (d: Date) => fmtDateMonthDay(d) + ' ' + fmtTimeOnly(d);
               return (
                 <div key={u.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',

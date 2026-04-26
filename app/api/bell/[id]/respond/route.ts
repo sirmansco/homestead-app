@@ -12,7 +12,7 @@ type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const { id: bellId } = await params;
     const body = await req.json() as ResponseBody;

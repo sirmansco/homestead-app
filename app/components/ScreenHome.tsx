@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { G } from './tokens';
 import { GMasthead, GLabel, SectionHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
-import { fmtTimeRange, durationH } from '@/lib/format/time';
+import { fmtTimeRange, durationH, fmtDateShort } from '@/lib/format/time';
 
 type ShiftRow = {
   shift: {
@@ -348,7 +348,7 @@ export function ScreenHome({ onRing, onPost, onVillage, role = 'parent' }: {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        right={new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+        right={fmtDateShort(new Date())}
         title={title}
         tagline={tagline}
       />

@@ -13,7 +13,7 @@ import { apiError } from '@/lib/api-error';
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     // All households this Clerk user belongs to (across all orgs, no active-org requirement)
     const myRows = await db.select({

@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
 import { pushToUser, pushToUsers } from '@/lib/push';
+import { fmtDateTime, fmtDateShort } from '@/lib/format/time';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.NOTIFY_FROM || 'Homestead <notify@homestead.app>';
@@ -21,13 +22,6 @@ async function send(to: string[], subject: string, text: string) {
   } catch (err) {
     console.error('[notify:email]', err);
   }
-}
-
-function fmt(iso: Date) {
-  return iso.toLocaleString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
-  });
 }
 
 export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string) {
@@ -60,7 +54,7 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   const emails = opted.map(r => r.email).filter(Boolean);
   const optedIds = opted.map(r => r.id);
 
-  const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const when = fmtDateShort(row.shift.startsAt);
 
   if (preferredCaregiverId) {
     if (optedIds.includes(preferredCaregiverId)) {
@@ -95,7 +89,7 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
     `${row.creator?.name || 'A parent'} posted a new shift for ${row.household.name}:`,
     ``,
     `  ${row.shift.title}`,
-    `  ${fmt(row.shift.startsAt)} – ${fmt(row.shift.endsAt)}`,
+    `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
     row.shift.forWhom ? `  For ${row.shift.forWhom}` : '',
     row.shift.notes ? `  ${row.shift.notes}` : '',
     ``,
@@ -124,7 +118,7 @@ export async function notifyShiftClaimed(shiftId: string) {
   if (creator.notifyShiftClaimed === false) return;
 
   const claimerName = claimer?.name || 'A caregiver';
-  const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const when = fmtDateShort(row.shift.startsAt);
 
   try {
     await pushToUser(row.shift.createdByUserId, {
@@ -144,7 +138,7 @@ export async function notifyShiftClaimed(shiftId: string) {
     `${claimerName} just claimed your shift "${row.shift.title}"`,
     `at ${row.household?.name || 'your household'}:`,
     ``,
-    `  ${fmt(row.shift.startsAt)} – ${fmt(row.shift.endsAt)}`,
+    `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
     ``,
     `View it: ${APP_URL}`,
   ].join('\n');
@@ -171,7 +165,7 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   if (creator.notifyShiftReleased === false) return;
 
   const releaserName = releaser?.name || 'A caregiver';
-  const when = row.shift.startsAt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const when = fmtDateShort(row.shift.startsAt);
 
   try {
     await pushToUser(row.shift.createdByUserId, {

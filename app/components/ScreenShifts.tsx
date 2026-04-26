@@ -4,7 +4,7 @@ import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
-import { fmtTimeRange, durationH } from '@/lib/format/time';
+import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
 
 type ShiftRow = {
   shift: {
@@ -33,8 +33,8 @@ function fmtWhen(startIso: string) {
   const days = Math.round((s.getTime() - now.setHours(0, 0, 0, 0)) / 86400000);
   if (days === 0) return 'Tonight';
   if (days === 1) return 'Tomorrow';
-  if (days > 1 && days < 7) return s.toLocaleDateString(undefined, { weekday: 'long' });
-  return s.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  if (days > 1 && days < 7) return fmtDayOfWeekLong(s);
+  return fmtDateShort(s);
 }
 function dollars(cents: number | null) {
   if (cents == null) return null;
@@ -94,9 +94,9 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   onCancelUnclaim?: () => void;
 }) {
   const s = new Date(row.shift.startsAt);
-  const month = s.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+  const month = fmtMonthAbbr(s);
   const dayLarge = String(s.getDate());
-  const dow = s.toLocaleDateString(undefined, { weekday: 'short' });
+  const dow = fmtDayOfWeek(s);
 
   return (
     <article style={{ paddingTop: first ? 4 : 16, paddingBottom: 16, borderBottom: `1px solid ${G.hairline}` }}>

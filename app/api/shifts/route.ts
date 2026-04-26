@@ -15,7 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const scope = req.nextUrl.searchParams.get('scope') || 'household';
 

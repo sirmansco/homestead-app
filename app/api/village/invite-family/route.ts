@@ -9,7 +9,7 @@ import { apiError } from '@/lib/api-error';
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const body = await req.json() as {
       parentName?: string;

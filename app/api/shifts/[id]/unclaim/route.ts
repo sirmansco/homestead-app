@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   try {
     const { id } = await ctx.params;
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const body = await req.json().catch(() => ({})) as { reason?: string };
     const reason = body.reason?.trim() || null;

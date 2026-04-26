@@ -19,7 +19,7 @@ async function resolveUser(userId: string) {
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ unavailability: [] });
@@ -40,7 +40,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ error: 'No user profile found. Join a household first.' }, { status: 409 });
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ error: 'No user profile found' }, { status: 409 });

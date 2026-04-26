@@ -5,7 +5,8 @@ import { apiError } from '@/lib/api-error';
 export async function POST(req: NextRequest) {
   try {
     const { userId, orgId } = await auth();
-    if (!userId || !orgId) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    if (!orgId) return NextResponse.json({ error: 'no_household' }, { status: 409 });
 
     await requireHousehold();
 

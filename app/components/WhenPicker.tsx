@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useMemo, CSSProperties } from 'react';
+import { fmtDateShort } from '@/lib/format/time';
 import { G } from './tokens';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ export function formatWhen(value: string, kind: 'datetime' | 'date' | 'time' = '
   const today = startOfDay();
   const tomorrow = addDays(today, 1);
   const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  const dayLabel = sameDay(d, today) ? 'Today' : sameDay(d, addDays(today, -1)) ? 'Yesterday' : sameDay(d, tomorrow) ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const dayLabel = sameDay(d, today) ? 'Today' : sameDay(d, addDays(today, -1)) ? 'Yesterday' : sameDay(d, tomorrow) ? 'Tomorrow' : fmtDateShort(d);
   if (kind === 'date') return dayLabel;
   const h = d.getHours(), m = d.getMinutes();
   const ampm = h >= 12 ? 'pm' : 'am';

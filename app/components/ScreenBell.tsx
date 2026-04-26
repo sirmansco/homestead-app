@@ -4,6 +4,7 @@ import { G, RED, RED_DARK, BELL_BG } from './tokens';
 import { GMasthead, GLabel, GAvatar } from './shared';
 import { requestPushPermission } from './PushRegistrar';
 import { shortName } from '@/lib/format';
+import { fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerWindow, bellWindowPresets } from './WhenPicker';
 
 function BellPill({ label, value, emphasized }: { label: string; value: string; emphasized?: boolean }) {
@@ -656,7 +657,7 @@ function BellIncoming() {
               )}
               <div style={{ height: 1, background: G.hairline, margin: '14px 0' }} />
               <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
-                Needed from {new Date(bell.startsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} until {new Date(bell.endsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                Needed from {fmtTimeOnly(bell.startsAt)} until {fmtTimeOnly(bell.endsAt)}
               </div>
 
               {!myResp ? (

@@ -15,7 +15,7 @@ import { apiError, authError } from '@/lib/api-error';
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const myRows = await db.select().from(users).where(eq(users.clerkUserId, userId));
     if (myRows.length === 0) {

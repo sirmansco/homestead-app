@@ -9,7 +9,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   try {
     const { id } = await ctx.params;
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'unauth' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
 
     const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });
