@@ -33,6 +33,7 @@ export const users = pgTable('users', {
   notifyBellRinging: boolean('notify_bell_ringing').notNull().default(true),
   notifyBellResponse: boolean('notify_bell_response').notNull().default(true),
   isAdmin: boolean('is_admin').notNull().default(false),
+  calToken: text('cal_token'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   userHouseholdUnique: unique('users_clerk_user_household_unique').on(t.clerkUserId, t.householdId),

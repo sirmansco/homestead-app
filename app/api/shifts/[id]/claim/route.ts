@@ -4,12 +4,17 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
 import { apiError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyShiftClaimed } from '@/lib/notify';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+
+    const rl = rateLimit({ key: `shift-claim:${userId}`, limit: 10, windowMs: 60 * 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });

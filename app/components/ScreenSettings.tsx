@@ -4,6 +4,7 @@ import { UserButton, useUser, useClerk } from '@clerk/nextjs';
 import Link from 'next/link';
 import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
+import { requestPushPermission } from './PushRegistrar';
 
 type NotifPrefs = {
   notifyShiftPosted: boolean;
@@ -48,10 +49,27 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Calendar feed
+  const [calFeedUrl, setCalFeedUrl] = useState<string | null>(null);
+  const [calFeedState, setCalFeedState] = useState<'idle' | 'loading' | 'copied' | 'error'>('idle');
+
   // Notification preferences state
   const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsSaving, setPrefsSaving] = useState<keyof NotifPrefs | null>(null);
+
+  // Push permission state — lazy init reads window.Notification only on client
+  type PermState = 'unsupported' | 'default' | 'granted' | 'denied' | 'requesting';
+  const [permState, setPermState] = useState<PermState>(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+    return Notification.permission as PermState;
+  });
+
+  async function handleEnableNotifications() {
+    setPermState('requesting');
+    const ok = await requestPushPermission();
+    setPermState(ok ? 'granted' : (Notification.permission as PermState));
+  }
 
   // Theme
   const [theme, setTheme] = useState<Theme>('system');
@@ -136,6 +154,31 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
     }
   }
 
+  async function handleGetCalFeed() {
+    setCalFeedState('loading');
+    try {
+      // Session-authenticated call — server generates token and redirects to token URL.
+      // We follow the redirect and capture the final URL rather than the ICS body.
+      const res = await fetch('/api/shifts/ical', { redirect: 'follow' });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setCalFeedUrl(res.url);
+      setCalFeedState('idle');
+    } catch {
+      setCalFeedState('error');
+    }
+  }
+
+  async function handleCopyCalFeed() {
+    if (!calFeedUrl) return;
+    try {
+      await navigator.clipboard.writeText(calFeedUrl);
+      setCalFeedState('copied');
+      setTimeout(() => setCalFeedState('idle'), 2000);
+    } catch {
+      setCalFeedState('error');
+    }
+  }
+
   async function handleFeedback() {
     if (!feedbackMsg.trim() || feedbackState === 'submitting') return;
     setFeedbackState('submitting');
@@ -184,6 +227,56 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
             Choose what Homestead can alert you about.
           </div>
+
+          {/* OS-level push permission row */}
+          {permState !== 'unsupported' && (
+            <div style={{
+              marginTop: 12, padding: '12px 14px', borderRadius: 8,
+              background: permState === 'granted' ? G.greenSoft : G.claySoft,
+              border: `1px solid ${permState === 'granted' ? G.green : G.clay}`,
+            }}>
+              {permState === 'granted' && (
+                <div style={{ fontFamily: G.display, fontSize: 14, color: G.green, fontWeight: 500 }}>
+                  Push notifications enabled
+                </div>
+              )}
+              {permState === 'denied' && (
+                <>
+                  <div style={{ fontFamily: G.display, fontSize: 14, color: G.clay, fontWeight: 500 }}>
+                    Notifications blocked
+                  </div>
+                  <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.5 }}>
+                    Re-enable in your device Settings → Homestead (or your browser site settings), then return here.
+                  </div>
+                </>
+              )}
+              {(permState === 'default' || permState === 'requesting') && (
+                <>
+                  <div style={{ fontFamily: G.display, fontSize: 14, color: G.clay, fontWeight: 500 }}>
+                    Push notifications off
+                  </div>
+                  <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.5 }}>
+                    On iPhone, add Homestead to your home screen first, then enable here.
+                  </div>
+                  <button
+                    onClick={handleEnableNotifications}
+                    disabled={permState === 'requesting'}
+                    style={{
+                      marginTop: 10, padding: '9px 14px', borderRadius: 8,
+                      background: G.ink, color: G.bg, border: 'none',
+                      fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      cursor: permState === 'requesting' ? 'wait' : 'pointer',
+                      opacity: permState === 'requesting' ? 0.6 : 1,
+                    }}
+                  >
+                    {permState === 'requesting' ? 'Requesting…' : 'Enable notifications'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {prefsLoading ? (
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 10 }}>
               Loading…
@@ -376,6 +469,74 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
               }}>
               Download export ↓
             </a>
+          )}
+        </div>
+
+        {/* Calendar export */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Calendar</GLabel>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
+            Subscribe to your shifts in Google or Apple Calendar. The URL is private — anyone with it can see your schedule.
+          </div>
+          {!calFeedUrl ? (
+            <button
+              onClick={handleGetCalFeed}
+              disabled={calFeedState === 'loading'}
+              style={{
+                marginTop: 10, padding: '10px 16px', borderRadius: 8,
+                background: 'transparent', color: G.ink, border: `1px solid ${G.ink}`,
+                fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
+                textTransform: 'uppercase',
+                cursor: calFeedState === 'loading' ? 'wait' : 'pointer',
+                opacity: calFeedState === 'loading' ? 0.6 : 1,
+              }}
+            >
+              {calFeedState === 'loading' ? 'Generating…' : 'Get calendar feed URL'}
+            </button>
+          ) : (
+            <div style={{ marginTop: 10 }}>
+              <div style={{
+                padding: '8px 10px', borderRadius: 6,
+                background: G.paper, border: `1px solid ${G.hairline2}`,
+                fontFamily: 'monospace', fontSize: 11, color: G.ink2,
+                wordBreak: 'break-all', lineHeight: 1.5,
+              }}>
+                {calFeedUrl}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button
+                  onClick={handleCopyCalFeed}
+                  style={{
+                    padding: '9px 14px', borderRadius: 8,
+                    background: calFeedState === 'copied' ? G.green : G.ink,
+                    color: G.bg, border: 'none',
+                    fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                    textTransform: 'uppercase', cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  {calFeedState === 'copied' ? 'Copied!' : 'Copy URL'}
+                </button>
+                <a
+                  href={`webcal://${calFeedUrl.replace(/^https?:\/\//, '')}`}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '9px 14px', borderRadius: 8,
+                    background: 'transparent', color: G.ink,
+                    border: `1px solid ${G.hairline2}`,
+                    fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                    textTransform: 'uppercase', textDecoration: 'none',
+                  }}
+                >
+                  Open in Calendar
+                </a>
+              </div>
+              {calFeedState === 'error' && (
+                <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.clay, marginTop: 6 }}>
+                  Could not copy. Try selecting the URL manually.
+                </div>
+              )}
+            </div>
           )}
         </div>
 

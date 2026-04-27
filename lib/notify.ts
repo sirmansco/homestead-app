@@ -8,6 +8,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.NOTIFY_FROM || 'Homestead <notify@homestead.app>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://homestead-app-six.vercel.app';
 
+if (!RESEND_API_KEY) {
+  console.warn('[notify] RESEND_API_KEY not set — email notifications disabled');
+}
+
 async function send(to: string[], subject: string, text: string) {
   if (!RESEND_API_KEY || to.length === 0) return;
   try {

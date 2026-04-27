@@ -8,6 +8,7 @@ import { shifts, users, households } from '@/lib/db/schema';
 const claimerUsers = alias(users, 'claimer');
 import { requireHousehold } from '@/lib/auth/household';
 import { apiError, authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyNewShift } from '@/lib/notify';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -156,7 +157,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 20 shifts per hour per user (generous — covers recurring batches)
-    const { rateLimit, rateLimitResponse } = await import('@/lib/ratelimit');
     const rl = rateLimit({ key: `shift-post:${user.id}`, limit: 20, windowMs: 60 * 60_000 });
     const limited = rateLimitResponse(rl);
     if (limited) return limited;

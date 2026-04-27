@@ -184,7 +184,7 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   );
 }
 
-export function ScreenShifts({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
+export function ScreenShifts() {
   // rows: null = loading, [] = loaded (even if empty)
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [myRows, setMyRows] = useState<ShiftRow[]>([]);
@@ -279,35 +279,6 @@ export function ScreenShifts({ onOpenSettings }: { onOpenSettings?: () => void }
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        rightAction={onOpenSettings ? (
-          <button
-            onClick={onOpenSettings}
-            aria-label="Settings"
-            style={{
-              background: 'transparent',
-              border: `1px solid ${G.hairline2}`,
-              borderRadius: 100,
-              padding: '4px 10px',
-              color: G.ink,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontFamily: G.sans,
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              minHeight: 28,
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-            <span>Settings</span>
-          </button>
-        ) : undefined}
         right={myRows.length > 0 ? `${myRows.length} shift${myRows.length === 1 ? '' : 's'}` : ''}
         title="My Schedule"
         tagline={myRows.length > 0 ? 'Shifts you\'ve claimed. Release if something comes up.' : 'Shifts you claim will appear here.'}

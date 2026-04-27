@@ -1,0 +1,124 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { eq, and, inArray } from 'drizzle-orm';
+import crypto from 'crypto';
+import { db } from '@/lib/db';
+import { shifts, users, households } from '@/lib/db/schema';
+
+function escapeIcs(s: string) {
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function fmtIcsDate(d: Date) {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildIcs(events: { uid: string; summary: string; description: string; location: string; dtstart: Date; dtend: Date; dtstamp: Date }[]) {
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Homestead//Shifts//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Homestead Shifts',
+    'X-WR-TIMEZONE:UTC',
+  ];
+
+  for (const e of events) {
+    const eventLines = [
+      'BEGIN:VEVENT',
+      `UID:${e.uid}`,
+      `DTSTAMP:${fmtIcsDate(e.dtstamp)}`,
+      `DTSTART:${fmtIcsDate(e.dtstart)}`,
+      `DTEND:${fmtIcsDate(e.dtend)}`,
+      `SUMMARY:${escapeIcs(e.summary)}`,
+      e.description ? `DESCRIPTION:${escapeIcs(e.description)}` : '',
+      e.location ? `LOCATION:${escapeIcs(e.location)}` : '',
+      'END:VEVENT',
+    ].filter(Boolean);
+    lines.push(...eventLines);
+  }
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n') + '\r\n';
+}
+
+// GET /api/shifts/ical?token=<calToken>
+// Returns ICS feed for the user's claimed shifts (caregiver) or posted shifts (parent).
+// Also accepts GET /api/shifts/ical (authenticated via Clerk session) — generates+saves token, redirects to token URL.
+export async function GET(req: NextRequest) {
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://homestead-app-six.vercel.app';
+  const token = req.nextUrl.searchParams.get('token');
+
+  let user: typeof users.$inferSelect | undefined;
+
+  if (token) {
+    // Token-authenticated path — used by calendar apps
+    const [row] = await db.select().from(users).where(eq(users.calToken, token)).limit(1);
+    if (!row) return new NextResponse('Unauthorized', { status: 401 });
+    user = row;
+  } else {
+    // Session-authenticated path — used when user copies the URL from Settings
+    // Dynamically import Clerk auth to avoid build-time issues
+    const { auth } = await import('@clerk/nextjs/server');
+    const { userId } = await auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+
+    const [row] = await db.select().from(users).where(eq(users.clerkUserId, userId)).limit(1);
+    if (!row) return new NextResponse('Unauthorized', { status: 401 });
+
+    // Generate and persist token on first use
+    if (!row.calToken) {
+      const newToken = crypto.randomBytes(24).toString('hex');
+      const [updated] = await db.update(users).set({ calToken: newToken }).where(eq(users.id, row.id)).returning();
+      user = updated;
+    } else {
+      user = row;
+    }
+
+    // Redirect to token URL so the user can copy a stable subscribe link
+    return NextResponse.redirect(`${APP_URL}/api/shifts/ical?token=${user.calToken}`);
+  }
+
+  // Fetch relevant shifts
+  let userShifts: typeof shifts.$inferSelect[] = [];
+
+  if (user.role === 'caregiver') {
+    userShifts = await db.select().from(shifts).where(
+      and(eq(shifts.claimedByUserId, user.id), inArray(shifts.status, ['claimed', 'done']))
+    );
+  } else {
+    // Parent sees their posted shifts
+    userShifts = await db.select().from(shifts).where(
+      and(eq(shifts.createdByUserId, user.id), inArray(shifts.status, ['open', 'claimed', 'done']))
+    );
+  }
+
+  // Fetch household for location field
+  const [household] = await db.select().from(households).where(eq(households.id, user.householdId)).limit(1);
+  const location = household?.name ? `${household.name} (Homestead)` : 'Homestead';
+
+  const now = new Date();
+  const events = userShifts.map(s => {
+    const parts = [s.forWhom && `For ${s.forWhom}`, s.notes].filter(Boolean);
+    return {
+      uid: `shift-${s.id}@homestead.app`,
+      summary: s.title,
+      description: parts.join(' · '),
+      location,
+      dtstart: s.startsAt,
+      dtend: s.endsAt,
+      dtstamp: now,
+    };
+  });
+
+  const ics = buildIcs(events);
+
+  return new NextResponse(ics, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="homestead-shifts.ics"',
+      'Cache-Control': 'no-store',
+    },
+  });
+}

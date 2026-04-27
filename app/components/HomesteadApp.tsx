@@ -304,7 +304,7 @@ export function HomesteadApp() {
     switch (screen) {
       case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('bell')} onPost={() => setScreen('post')} onVillage={() => setScreen('village')} />;
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
-      case 'shifts':  return <ScreenShifts onOpenSettings={() => setScreen('settings')} />;
+      case 'shifts':  return <ScreenShifts />;
       case 'bell':    return <ScreenBell key={`bell-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
       case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
       case 'settings': return <ScreenSettings onBack={() => setScreen('village')} role={role} />;
