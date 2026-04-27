@@ -379,7 +379,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
           <div style={{ display: 'flex', gap: 4, marginBottom: 18, padding: 3,
             background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 100 }}>
             {(['adult', 'kid'] as const).map(k => (
-              <button key={k} onClick={() => setKind(k)} style={{
+              <button key={k} onClick={() => { setKind(k); setName(''); setEmail(''); setBirthday(''); setError(null); setLinkUrl(null); }} style={{
                 flex: 1, padding: '8px 12px', borderRadius: 100,
                 background: kind === k ? G.ink : 'transparent',
                 color: kind === k ? '#FBF7F0' : G.ink2,
@@ -391,13 +391,12 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
           </div>
         )}
 
-        <label style={{ display: 'block', marginBottom: 14 }}>
-          <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Name</div>
-          <input value={name} onChange={e => setName(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box' }} />
-        </label>
-
         {kind === 'adult' ? (
           <>
+            <label style={{ display: 'block', marginBottom: 14 }}>
+              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Name</div>
+              <input value={name} onChange={e => setName(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box' }} />
+            </label>
             <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>Email (for email invite)</div>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
@@ -455,6 +454,10 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
         ) : (
           <>
             <label style={{ display: 'block', marginBottom: 14 }}>
+              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>Name</div>
+              <input value={name} onChange={e => setName(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box' }} />
+            </label>
+            <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>Birthday (optional)</div>
               <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={inputStyle} />
             </label>
@@ -476,14 +479,14 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px', boxSizing: 'border-box',
-  background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 8,
+  background: G.paper, border: `1px solid ${G.ink2}`, borderRadius: 8,
   fontFamily: G.sans, fontSize: 16, color: G.ink,
   outline: 'none',
 };
 
 const btnStyle: React.CSSProperties = {
   padding: '12px 20px',
-  background: G.ink, color: '#FBF7F0', border: 'none', borderRadius: 100,
+  background: G.ink, color: G.bg, border: 'none', borderRadius: 100,
   fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
   textTransform: 'uppercase', cursor: 'pointer',
 };
@@ -800,6 +803,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
     load();
   };
   const removeKid = async (id: string) => {
+    setKids(prev => prev.filter(k => k.id !== id));
     await fetch(`/api/village?type=kid&id=${id}`, { method: 'DELETE' });
     load();
   };

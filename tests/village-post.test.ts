@@ -236,8 +236,8 @@ describe('POST /api/village', () => {
 
     const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: null }));
 
-    // apiError catch-all fires; DB must not be touched
-    expect(res.status).toBe(500);
+    // authError fires; DB must not be touched
+    expect(res.status).toBe(401);
     expect(db.insert).not.toHaveBeenCalled();
   });
 });

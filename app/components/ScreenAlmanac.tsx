@@ -505,8 +505,10 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const load = useCallback(async () => {
     setError(null);
     try {
-      // Dual-role and multi-household users always get the unified scope
-      const scope = (isDualRole || multiHousehold) ? 'all' : role === 'caregiver' ? 'village' : 'household';
+      // Caregivers always use 'all' so shifts from every household they serve
+      // are included — 'village' only fans out via Clerk orgs and can miss
+      // households where the user was added directly to the DB without a Clerk invite.
+      const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
       const [shiftsRes, villageRes, bellRes] = await Promise.all([
         fetch(`/api/shifts?scope=${scope}`),
         role === 'parent' ? fetch('/api/village') : Promise.resolve(null),

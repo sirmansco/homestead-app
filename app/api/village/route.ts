@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
   } catch (err) {
-    return apiError(err, 'Village action failed', 500, 'village');
+    return authError(err, 'village:POST');
   }
 }
 
