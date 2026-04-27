@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { familyInvites, users } from '@/lib/db/schema';
-import { apiError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 // Caregiver invites a parent of a new family to join Homestead
 // Creates a pending invite; parent accepts via /accept-family-invite?token=...
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const body = await req.json() as {
       parentName?: string;
@@ -41,6 +40,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, inviteUrl });
   } catch (err) {
-    return apiError(err, 'Invite failed', 500, 'village:invite-family');
+    return authError(err, 'village:invite-family', 'Invite failed');
   }
 }

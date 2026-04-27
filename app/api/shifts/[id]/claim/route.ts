@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, sql } from 'drizzle-orm';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
-import { apiError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyShiftClaimed } from '@/lib/notify';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const rl = rateLimit({ key: `shift-claim:${userId}`, limit: 10, windowMs: 60 * 60_000 });
     const limited = rateLimitResponse(rl);
@@ -69,6 +69,6 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     return NextResponse.json({ shift: claimed });
   } catch (err) {
-    return apiError(err, 'Could not claim shift', 500, 'shifts:claim');
+    return authError(err, 'shifts:claim', 'Could not claim shift');
   }
 }

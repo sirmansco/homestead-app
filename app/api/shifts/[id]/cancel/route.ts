@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { apiError, authError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 import { pushToUser } from '@/lib/push';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -47,6 +47,6 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     return NextResponse.json({ shift: cancelled });
   } catch (err) {
-    return apiError(err, 'Could not cancel shift', 500, 'shifts:cancel');
+    return authError(err, 'shifts:cancel', 'Could not cancel shift');
   }
 }

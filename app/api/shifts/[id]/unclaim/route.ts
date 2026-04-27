@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users } from '@/lib/db/schema';
-import { apiError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 import { notifyShiftReleased } from '@/lib/notify';
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const body = await req.json().catch(() => ({})) as { reason?: string };
     const reason = body.reason?.trim() || null;
@@ -40,6 +39,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     return NextResponse.json({ shift: released });
   } catch (err) {
-    return apiError(err, 'Could not unclaim shift', 500, 'shifts:unclaim');
+    return authError(err, 'shifts:unclaim', 'Could not unclaim shift');
   }
 }

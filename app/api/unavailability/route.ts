@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { caregiverUnavailability, users } from '@/lib/db/schema';
-import { apiError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 
 // Resolve the caller's primary users row without requiring an active Clerk org.
 // Caregivers often have no active org yet but still need to manage their unavailability.
@@ -18,8 +18,7 @@ async function resolveUser(userId: string) {
 
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ unavailability: [] });
@@ -33,14 +32,13 @@ export async function GET() {
       .orderBy(desc(caregiverUnavailability.startsAt));
     return NextResponse.json({ unavailability: rows });
   } catch (err) {
-    return apiError(err, 'Request failed', 500, 'unavailability');
+    return authError(err, 'unavailability', 'Request failed');
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ error: 'No user profile found. Join a household first.' }, { status: 409 });
@@ -62,14 +60,13 @@ export async function POST(req: NextRequest) {
     }).returning();
     return NextResponse.json({ unavailability: row });
   } catch (err) {
-    return apiError(err, 'Request failed', 500, 'unavailability');
+    return authError(err, 'unavailability', 'Request failed');
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const user = await resolveUser(userId);
     if (!user) return NextResponse.json({ error: 'No user profile found' }, { status: 409 });
@@ -81,6 +78,6 @@ export async function DELETE(req: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Request failed', 500, 'unavailability');
+    return authError(err, 'unavailability', 'Request failed');
   }
 }

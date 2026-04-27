@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { apiError, authError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 
 const PREF_KEYS = [
   'notifyShiftPosted',
@@ -22,8 +22,7 @@ type PrefKey = typeof PREF_KEYS[number];
  */
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) return authError(new Error('Not signed in'), 'notifications:GET');
+    const { userId } = await requireUser();
 
     const rows = await db.select({
       id: users.id,
@@ -52,7 +51,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    return apiError(err, 'Could not load notification preferences', 500, 'notifications:GET');
+    return authError(err, 'notifications:GET', 'Could not load notification preferences');
   }
 }
 
@@ -63,8 +62,7 @@ export async function GET() {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return authError(new Error('Not signed in'), 'notifications:PATCH');
+    const { userId } = await requireUser();
 
     const body = await req.json().catch(() => ({}));
     const patch: Partial<Record<PrefKey, boolean>> = {};
@@ -83,6 +81,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ ok: true, updated: patch });
   } catch (err) {
-    return apiError(err, 'Could not update notification preferences', 500, 'notifications:PATCH');
+    return authError(err, 'notifications:PATCH', 'Could not update notification preferences');
   }
 }

@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, kids, households } from '@/lib/db/schema';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHousehold, requireUser } from '@/lib/auth/household';
 import { normaliseStoredName } from '@/lib/format';
-import { apiError, authError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 
 export async function GET(req: NextRequest) {
   try {
     const scope = req.nextUrl.searchParams.get('scope') || 'household';
 
     if (scope === 'all') {
-      const { userId } = await auth();
-      if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+      const { userId } = await requireUser();
 
       const myRows = await db.select().from(users).where(eq(users.clerkUserId, userId));
       const hhIds = myRows.map(r => r.householdId);
@@ -104,6 +102,6 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Village action failed', 500, 'village');
+    return authError(err, 'village:PATCH', 'Village action failed');
   }
 }

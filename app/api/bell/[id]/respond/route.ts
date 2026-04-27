@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, bellResponses, users, households } from '@/lib/db/schema';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { apiError } from '@/lib/api-error';
+import { clerkClient } from '@clerk/nextjs/server';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 import { notifyBellResponse } from '@/lib/notify';
 import { escalateBell } from '@/app/api/bell/[id]/escalate/route';
 
@@ -11,8 +12,7 @@ type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const { id: bellId } = await params;
     const body = await req.json() as ResponseBody;
@@ -116,6 +116,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Could not respond to bell', 500, 'bell:respond');
+    return authError(err, 'bell:respond', 'Could not respond to bell');
   }
 }

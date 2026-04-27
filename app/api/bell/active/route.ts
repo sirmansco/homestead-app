@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { eq, inArray, and, gt } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, users, bellResponses } from '@/lib/db/schema';
-import { auth } from '@clerk/nextjs/server';
-import { apiError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 
 // GET /api/bell/active
 // Returns active bells visible to this user — status 'ringing' or 'handled', endsAt in the future.
@@ -12,8 +12,7 @@ import { apiError } from '@/lib/api-error';
 //   - caregiver/dual-role: bells from any household they belong to as caregiver
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     // All households this Clerk user belongs to (across all orgs, no active-org requirement)
     const myRows = await db.select({
@@ -68,6 +67,6 @@ export async function GET() {
 
     return NextResponse.json({ bells: result });
   } catch (err) {
-    return apiError(err, 'Could not load active bell', 500, 'bell:active');
+    return authError(err, 'bell:active', 'Could not load active bell');
   }
 }

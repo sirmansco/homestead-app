@@ -4,7 +4,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { apiError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 });
     return NextResponse.json({ member: updated });
   } catch (err) {
-    return apiError(err, 'Member action failed', 500, 'household:member');
+    return authError(err, 'household:member', 'Member action failed');
   }
 }
 
@@ -70,6 +70,6 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Member action failed', 500, 'household:member');
+    return authError(err, 'household:member', 'Member action failed');
   }
 }

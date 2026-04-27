@@ -3,7 +3,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { apiError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 import { pushToUsers } from '@/lib/push';
 
 /**
@@ -70,6 +70,6 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     await escalateBell(bellId, household.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Could not escalate bell', 500, 'bell:escalate');
+    return authError(err, 'bell:escalate', 'Could not escalate bell');
   }
 }
