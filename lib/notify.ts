@@ -183,6 +183,108 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   }
 }
 
+export async function notifyShiftCancelled(shiftId: string, recipientUserId: string) {
+  // Recipient is the user who had claimed the shift (or the targeted preferred
+  // caregiver, when cancellation happens before claim). They've lost a
+  // commitment — same mental model as a release, so we reuse notifyShiftReleased
+  // as the preference gate.
+  const [row] = await db.select({
+    shift: shifts,
+    household: households,
+  })
+    .from(shifts)
+    .leftJoin(households, eq(shifts.householdId, households.id))
+    .where(eq(shifts.id, shiftId))
+    .limit(1);
+  if (!row?.shift) return;
+
+  const [recipient] = await db.select().from(users).where(eq(users.id, recipientUserId)).limit(1);
+  if (!recipient) return;
+  if (recipient.notifyShiftReleased === false) return;
+
+  const when = fmtDateShort(row.shift.startsAt);
+
+  try {
+    await pushToUser(recipientUserId, {
+      title: '❌ Shift cancelled',
+      body: `"${row.shift.title}" · ${when}`,
+      url: '/?tab=shifts',
+      tag: `cancel-${shiftId}`,
+    });
+  } catch (err) {
+    console.error('[notify:shiftCancelled:push]', err);
+  }
+
+  if (!recipient.email) return;
+
+  const subject = `Shift cancelled — ${row.shift.title}`;
+  const text = [
+    `Your shift was cancelled at ${row.household?.name || 'your household'}:`,
+    ``,
+    `  ${row.shift.title}`,
+    `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
+    ``,
+    `View other open shifts: ${APP_URL}`,
+  ].join('\n');
+
+  await send([recipient.email], subject, text);
+}
+
+export async function notifyBellRing(bellId: string) {
+  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  if (!bell) return;
+
+  const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
+  if (!household) return;
+
+  const innerCircle = await db.select({ id: users.id })
+    .from(users)
+    .where(and(
+      eq(users.householdId, bell.householdId),
+      eq(users.role, 'caregiver'),
+      eq(users.villageGroup, 'inner_circle'),
+      eq(users.notifyBellRinging, true),
+    ));
+  if (innerCircle.length === 0) return;
+
+  try {
+    await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
+      title: `🔔 ${household.name} needs help`,
+      body: bell.reason + (bell.note ? ` — ${bell.note}` : ''),
+      url: '/?tab=bell',
+      tag: `bell-${bell.id}`,
+    });
+  } catch (err) {
+    console.error('[notify:bellRing:push]', err);
+  }
+}
+
+export async function notifyBellEscalated(bellId: string) {
+  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  if (!bell) return;
+
+  const sitters = await db.select({ id: users.id })
+    .from(users)
+    .where(and(
+      eq(users.householdId, bell.householdId),
+      eq(users.role, 'caregiver'),
+      eq(users.villageGroup, 'sitter'),
+      eq(users.notifyBellRinging, true),
+    ));
+  if (sitters.length === 0) return;
+
+  try {
+    await pushToUsers(sitters.map(s => s.id), bell.householdId, {
+      title: `🔔 Still needed — ${bell.reason}`,
+      body: 'Inner circle unavailable. Can you help?',
+      url: '/?tab=bell',
+      tag: `bell-escalate-${bellId}`,
+    });
+  } catch (err) {
+    console.error('[notify:bellEscalated:push]', err);
+  }
+}
+
 export async function notifyBellResponse(
   bellId: string,
   responderId: string,   // users.id (not clerkUserId)

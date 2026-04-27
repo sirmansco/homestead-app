@@ -109,7 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             eq(users.villageGroup, 'inner_circle'),
           ));
         if (cannotCount >= total) {
-          await escalateBell(bellId, bell.householdId);
+          await escalateBell(bellId);
         }
       }
     }
