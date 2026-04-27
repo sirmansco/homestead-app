@@ -159,17 +159,25 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
               }}>{busy ? 'Releasing…' : 'Release'}</button>
           )
         ) : (
-          <button
-            onClick={() => onClaim(row.shift.id)}
-            disabled={busy}
-            style={{
-              padding: '7px 14px',
-              background: G.ink, color: '#FBF7F0',
-              border: 'none', borderRadius: 100,
-              fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-              textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
-              opacity: busy ? 0.7 : 1,
-            }}>{busy ? 'Claiming…' : 'Claim'}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+            {row.household && (
+              <span style={{
+                fontFamily: G.sans, fontSize: 10, color: G.muted,
+                letterSpacing: 0.2,
+              }}>{row.household.glyph} {row.household.name}</span>
+            )}
+            <button
+              onClick={() => onClaim(row.shift.id)}
+              disabled={busy}
+              style={{
+                padding: '7px 14px',
+                background: G.ink, color: G.bg,
+                border: 'none', borderRadius: 100,
+                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+                textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
+                opacity: busy ? 0.7 : 1,
+              }}>{busy ? 'Claiming…' : 'Claim'}</button>
+          </div>
         )}
       </div>
     </article>

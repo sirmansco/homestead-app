@@ -35,6 +35,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="en">
         <head>
           <meta name="app-sha" content={APP_SHA} />
+          {/* Blocking script — applies saved theme before first paint to prevent flash */}
+          <script dangerouslySetInnerHTML={{ __html: `
+(function(){
+  try {
+    var t = localStorage.getItem('homestead-theme');
+    if (t === 'dark' || t === 'light') {
+      document.documentElement.setAttribute('data-theme', t);
+    }
+  } catch(e) {}
+})();
+          `.trim() }} />
         </head>
         <body>
           <AutoUpdate />

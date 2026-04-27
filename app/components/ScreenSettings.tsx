@@ -21,11 +21,30 @@ const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | '
   { key: 'notifyBellResponse', label: 'Caregiver responds to bell', forRole: 'parent' },
 ];
 
+type Theme = 'system' | 'light' | 'dark';
+
+function getStoredTheme(): Theme {
+  try { return (localStorage.getItem('homestead-theme') as Theme) || 'system'; } catch { return 'system'; }
+}
+
+function applyTheme(t: Theme) {
+  try {
+    if (t === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.removeItem('homestead-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('homestead-theme', t);
+    }
+  } catch { /* ignore private-mode errors */ }
+}
+
 export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: 'parent' | 'caregiver' }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
+  const [exportFilename, setExportFilename] = useState<string>('homestead-export.json');
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -33,6 +52,19 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
   const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsSaving, setPrefsSaving] = useState<keyof NotifPrefs | null>(null);
+
+  // Theme
+  const [theme, setTheme] = useState<Theme>('system');
+  useEffect(() => { setTheme(getStoredTheme()); }, []);
+  function handleTheme(t: Theme) {
+    setTheme(t);
+    applyTheme(t);
+  }
+
+  // Feedback
+  const [feedbackKind, setFeedbackKind] = useState<'bug' | 'idea' | 'general'>('general');
+  const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [feedbackState, setFeedbackState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
 
   const loadPrefs = useCallback(async () => {
     setPrefsLoading(true);
@@ -75,6 +107,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       setExportUrl(url);
+      setExportFilename(`homestead-export-${Date.now()}.json`);
       setExportingState('idle');
     } catch (e) {
       setExportingState('error');
@@ -92,18 +125,32 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
         throw new Error(data.error || `Delete failed (${res.status})`);
       }
       setDeletingState('done');
-      // Clear client storage so nothing lingers after we sign the user out.
       try {
         localStorage.clear();
         sessionStorage.clear();
       } catch { /* ignore quota/private-mode errors */ }
-      // signOut destroys the Clerk session in this browser; the Clerk account
-      // itself was deleted server-side. Redirect home so the app doesn't keep
-      // rendering against a dead identity.
       await signOut({ redirectUrl: '/' });
     } catch (e) {
       setDeletingState('error');
       setErrorMsg(e instanceof Error ? e.message : 'Delete failed');
+    }
+  }
+
+  async function handleFeedback() {
+    if (!feedbackMsg.trim() || feedbackState === 'submitting') return;
+    setFeedbackState('submitting');
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: feedbackMsg.trim(), kind: feedbackKind }),
+      });
+      if (!res.ok) throw new Error(`Submit failed (${res.status})`);
+      setFeedbackState('done');
+      setFeedbackMsg('');
+      setTimeout(() => setFeedbackState('idle'), 3000);
+    } catch {
+      setFeedbackState('error');
     }
   }
 
@@ -173,7 +220,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
                       flexShrink: 0,
                     }}>
                       <span style={{
-                        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                        width: 20, height: 20, borderRadius: '50%', background: G.paper,
                         boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                         transform: prefs[key] ? 'translateX(18px)' : 'translateX(0)',
                         transition: 'transform 0.2s',
@@ -186,6 +233,101 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
           ) : (
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 10 }}>
               Could not load preferences.
+            </div>
+          )}
+        </div>
+
+        {/* Appearance */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Appearance</GLabel>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
+            Choose your preferred color scheme.
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {(['system', 'light', 'dark'] as Theme[]).map(t => (
+              <button
+                key={t}
+                onClick={() => handleTheme(t)}
+                style={{
+                  flex: 1, padding: '9px 0',
+                  background: theme === t ? G.ink : 'transparent',
+                  color: theme === t ? G.bg : G.ink,
+                  border: `1px solid ${theme === t ? G.ink : G.hairline2}`,
+                  borderRadius: 8,
+                  fontFamily: G.sans, fontSize: 11, fontWeight: 700,
+                  letterSpacing: 1.2, textTransform: 'capitalize',
+                  cursor: 'pointer',
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Feedback */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Feedback</GLabel>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
+            Bug, idea, or anything else — we read it all.
+          </div>
+          {feedbackState === 'done' ? (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: G.greenSoft, border: `1px solid ${G.green}` }}>
+              <div style={{ fontFamily: G.display, fontSize: 14, color: G.green, fontWeight: 500 }}>Thanks for the feedback!</div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                {(['bug', 'idea', 'general'] as const).map(k => (
+                  <button
+                    key={k}
+                    onClick={() => setFeedbackKind(k)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 100,
+                      background: feedbackKind === k ? G.ink : 'transparent',
+                      color: feedbackKind === k ? G.bg : G.ink,
+                      border: `1px solid ${feedbackKind === k ? G.ink : G.hairline2}`,
+                      fontFamily: G.sans, fontSize: 10, fontWeight: 700,
+                      letterSpacing: 1.2, textTransform: 'capitalize',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {k === 'bug' ? '🐛 Bug' : k === 'idea' ? '💡 Idea' : '💬 General'}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={feedbackMsg}
+                onChange={e => setFeedbackMsg(e.target.value)}
+                placeholder="What's on your mind?"
+                rows={4}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  border: `1px solid ${G.hairline2}`, background: G.paper,
+                  color: G.ink, fontFamily: G.serif, fontSize: 14,
+                  resize: 'vertical', outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {feedbackState === 'error' && (
+                <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.clay, marginTop: 6 }}>
+                  Could not submit. Try again.
+                </div>
+              )}
+              <button
+                onClick={handleFeedback}
+                disabled={!feedbackMsg.trim() || feedbackState === 'submitting'}
+                style={{
+                  marginTop: 10, padding: '10px 16px', borderRadius: 8,
+                  background: G.ink, color: G.bg, border: 'none',
+                  fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
+                  textTransform: 'uppercase',
+                  cursor: (!feedbackMsg.trim() || feedbackState === 'submitting') ? 'not-allowed' : 'pointer',
+                  opacity: (!feedbackMsg.trim() || feedbackState === 'submitting') ? 0.5 : 1,
+                }}
+              >
+                {feedbackState === 'submitting' ? 'Sending…' : 'Send feedback'}
+              </button>
             </div>
           )}
         </div>
@@ -224,11 +366,11 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
               {exportingState === 'loading' ? 'Preparing…' : 'Export my data'}
             </button>
           ) : (
-            <a href={exportUrl} download={`homestead-export-${Date.now()}.json`}
+            <a href={exportUrl} download={exportFilename}
               onClick={() => setTimeout(() => { URL.revokeObjectURL(exportUrl); setExportUrl(null); }, 1000)}
               style={{
                 display: 'inline-block', marginTop: 10, padding: '10px 16px', borderRadius: 8,
-                background: G.ink, color: '#FBF7F0', textDecoration: 'none',
+                background: G.ink, color: G.bg, textDecoration: 'none',
                 fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
                 textTransform: 'uppercase',
               }}>
@@ -240,7 +382,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
         {/* Danger zone */}
         <div style={{
           marginTop: 40, padding: 16, borderRadius: 10,
-          border: `1px solid ${G.clay}`, background: '#FFF5F0',
+          border: `1px solid ${G.clay}`, background: G.claySoft,
         }}>
           <GLabel color={G.clay}>Danger zone</GLabel>
           <div style={{ fontFamily: G.display, fontSize: 18, marginTop: 6, fontWeight: 500 }}>
@@ -268,7 +410,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={handleDelete} style={{
                   padding: '10px 16px', borderRadius: 8,
-                  background: G.clay, color: '#FBF7F0', border: 'none',
+                  background: G.clay, color: G.bg, border: 'none',
                   fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
                   textTransform: 'uppercase', cursor: 'pointer',
                 }}>Yes, delete</button>
@@ -298,7 +440,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
           )}
 
           {deletingState === 'error' && errorMsg && (
-            <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: '#FFE6DA', border: `1px solid ${G.clay}` }}>
+            <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: G.claySoft, border: `1px solid ${G.clay}` }}>
               <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.clay }}>{errorMsg}</div>
             </div>
           )}
@@ -318,7 +460,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
 
 const settingLink: React.CSSProperties = {
   display: 'block', padding: '14px 0',
-  borderBottom: `1px solid ${G.hairline}`,
+  borderBottom: `1px solid var(--hairline)`,
   fontFamily: G.display, fontSize: 15, fontWeight: 500, color: G.ink,
   textDecoration: 'none',
 };

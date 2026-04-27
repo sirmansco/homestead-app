@@ -1,11 +1,73 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400;1,500&family=Spectral:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ── Design tokens — light (default) ──────────────────────────────────── */
+:root {
+  --bg:         #FBF7F0;
+  --paper:      #FFFFFF;
+  --ink:        #1B1713;
+  --ink2:       #4A423A;
+  --muted:      #8A8078;
+  --hairline:   rgba(27,23,19,0.12);
+  --hairline2:  rgba(27,23,19,0.22);
+  --green:      #2F4A2A;
+  --green-soft: #E8EDE2;
+  --clay:       #B05A3A;
+  --clay-soft:  #F1DCC9;
+  --mustard:    #B8893B;
+  --cream:      #F5EFE3;
+  --red:        #B5342B;
+  --red-dark:   #7D1F14;
+  --bell-bg:    #FFF6F1;
+}
+
+/* ── Dark overrides — system preference ───────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:         #16110C;
+    --paper:      #1F1812;
+    --ink:        #F0EBE3;
+    --ink2:       #B8AFA5;
+    --muted:      #6E6560;
+    --hairline:   rgba(240,235,227,0.12);
+    --hairline2:  rgba(240,235,227,0.22);
+    --green:      #4A7242;
+    --green-soft: #1E2E1A;
+    --clay:       #D4724E;
+    --clay-soft:  #2A1710;
+    --mustard:    #CFA55A;
+    --cream:      #1E180F;
+    --red:        #E05A50;
+    --red-dark:   #B03028;
+    --bell-bg:    #221410;
+  }
+}
+
+/* ── Dark overrides — explicit user preference ────────────────────────── */
+[data-theme="dark"] {
+  --bg:         #16110C;
+  --paper:      #1F1812;
+  --ink:        #F0EBE3;
+  --ink2:       #B8AFA5;
+  --muted:      #6E6560;
+  --hairline:   rgba(240,235,227,0.12);
+  --hairline2:  rgba(240,235,227,0.22);
+  --green:      #4A7242;
+  --green-soft: #1E2E1A;
+  --clay:       #D4724E;
+  --clay-soft:  #2A1710;
+  --mustard:    #CFA55A;
+  --cream:      #1E180F;
+  --red:        #E05A50;
+  --red-dark:   #B03028;
+  --bell-bg:    #221410;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: #1a120b;
+  background: var(--bg);
   font-family: 'Inter Tight', -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
