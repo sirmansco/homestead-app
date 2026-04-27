@@ -98,6 +98,7 @@ function Chip({ label, active, onClick, accent }: { label: string; active: boole
 }
 
 // ── WhenPicker — Window mode (start + end datetime) ───────────────────────
+// Custom picker uses two-step: date first, then start/end time — no datetime-local.
 export function WhenPickerWindow({
   startValue, endValue, onChange, presets, accent, minNow, label,
 }: {
@@ -128,7 +129,37 @@ export function WhenPickerWindow({
     setShowCustom(false);
   };
 
-  const useCustom = () => setShowCustom(s => !s);
+  // Derived date/time parts from the composite datetime-local strings
+  const dateVal = startValue ? startValue.slice(0, 10) : '';
+  const startTimeVal = startValue ? startValue.slice(11, 16) : '';
+  const endTimeVal = endValue ? endValue.slice(11, 16) : '';
+  const minDate = minNow ? minNow.slice(0, 10) : '';
+
+  const handleDate = (d: string) => {
+    const st = startTimeVal || '09:00';
+    const et = endTimeVal || '12:00';
+    const next = `${d}T${st}`;
+    let nextEnd = `${d}T${et}`;
+    if (nextEnd <= next) {
+      nextEnd = toLocalDT(addHours(new Date(next), 3));
+    }
+    onChange(next, nextEnd);
+  };
+
+  const handleStartTime = (t: string) => {
+    const d = dateVal || toLocalDate(new Date());
+    const next = `${d}T${t}`;
+    let nextEnd = endValue;
+    if (!nextEnd || nextEnd <= next) {
+      nextEnd = toLocalDT(addHours(new Date(next), 3));
+    }
+    onChange(next, nextEnd);
+  };
+
+  const handleEndTime = (t: string) => {
+    const d = dateVal || toLocalDate(new Date());
+    onChange(startValue, `${d}T${t}`);
+  };
 
   return (
     <div>
@@ -137,38 +168,40 @@ export function WhenPickerWindow({
         {presets.map(p => (
           <Chip key={p.id} label={p.label} active={matchedPreset === p.id && !showCustom} onClick={() => apply(p)} accent={accent} />
         ))}
-        <Chip label={showCustom ? 'Hide custom' : 'Custom…'} active={showCustom || (!matchedPreset && !!startValue)} onClick={useCustom} accent={accent} />
+        <Chip label={showCustom ? 'Hide custom' : 'Custom…'} active={showCustom || (!matchedPreset && !!startValue)} onClick={() => setShowCustom(s => !s)} accent={accent} />
       </div>
       {(showCustom || (!matchedPreset && !!startValue)) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <label>
-            <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Start</div>
+            <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Date</div>
             <input
-              type="datetime-local"
-              value={startValue}
-              min={minNow}
-              onChange={e => {
-                const next = e.target.value;
-                let nextEnd = endValue;
-                if (next && endValue <= next) {
-                  const ns = new Date(next);
-                  nextEnd = toLocalDT(addHours(ns, 3));
-                }
-                onChange(next, nextEnd);
-              }}
+              type="date"
+              value={dateVal}
+              min={minDate}
+              onChange={e => handleDate(e.target.value)}
               style={inputStyle(accent)}
             />
           </label>
-          <label>
-            <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
-            <input
-              type="datetime-local"
-              value={endValue}
-              min={startValue || minNow}
-              onChange={e => onChange(startValue, e.target.value)}
-              style={inputStyle()}
-            />
-          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <label>
+              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Start</div>
+              <input
+                type="time"
+                value={startTimeVal}
+                onChange={e => handleStartTime(e.target.value)}
+                style={inputStyle(accent)}
+              />
+            </label>
+            <label>
+              <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
+              <input
+                type="time"
+                value={endTimeVal}
+                onChange={e => handleEndTime(e.target.value)}
+                style={inputStyle()}
+              />
+            </label>
+          </div>
         </div>
       )}
       {!showCustom && matchedPreset && (

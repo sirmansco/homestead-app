@@ -189,7 +189,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         <Field label="Title">
           <input
             value={title} onChange={e => setTitle(e.target.value)}
-            placeholder="Evening sit"
+            placeholder="Afternoon pickup, date night…"
             style={inputStyle}
           />
         </Field>
@@ -357,7 +357,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
             value={notes} onChange={e => setNotes(e.target.value)}
             placeholder="Pickup, dinner, bedtime routine…"
             style={{
-              marginTop: 8, padding: 14, borderRadius: 8, width: '100%',
+              marginTop: 8, padding: 14, borderRadius: 8, width: '100%', boxSizing: 'border-box',
               border: `1px solid ${G.hairline2}`, background: G.paper,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.ink, lineHeight: 1.5,
               minHeight: 88, resize: 'vertical', outline: 'none',
@@ -426,7 +426,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
 }
 
 const inputStyle: React.CSSProperties = {
-  marginTop: 6, paddingBottom: 8, width: '100%',
+  marginTop: 6, paddingBottom: 8, width: '100%', boxSizing: 'border-box',
   border: 'none', borderBottom: `1px solid ${G.ink}`,
   background: 'transparent', outline: 'none',
   fontFamily: G.display, fontSize: 22, fontWeight: 500, color: G.ink,
@@ -452,7 +452,7 @@ const microLabel: React.CSSProperties = {
 };
 
 const selectStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', borderRadius: 8,
+  width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
   border: `1px solid ${G.hairline2}`, background: G.bg,
   fontFamily: G.display, fontSize: 14, color: G.ink, outline: 'none',
 };

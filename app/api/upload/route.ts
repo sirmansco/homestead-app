@@ -5,14 +5,23 @@ import { db } from '@/lib/db';
 import { users, kids } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { stripExif } from '@/lib/strip-exif';
-import { apiError } from '@/lib/api-error';
-export async function POST(req: NextRequest) {
-  try {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json({ error: 'Photo storage not configured' }, { status: 503 });
-    }
-    const { household, user } = await requireHousehold();
+import { apiError, authError } from '@/lib/api-error';
 
+export async function POST(req: NextRequest) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.error('[api:upload] BLOB_READ_WRITE_TOKEN is not set — photo storage unavailable');
+    return NextResponse.json({ error: 'Photo storage not configured' }, { status: 503 });
+  }
+
+  let household: Awaited<ReturnType<typeof requireHousehold>>['household'];
+  let user: Awaited<ReturnType<typeof requireHousehold>>['user'];
+  try {
+    ({ household, user } = await requireHousehold());
+  } catch (err) {
+    return authError(err, 'upload');
+  }
+
+  try {
     // Rate limit: 30 uploads per hour per user
     const { rateLimit, rateLimitResponse } = await import('@/lib/ratelimit');
     const rl = rateLimit({ key: `upload:${user.id}`, limit: 30, windowMs: 60 * 60_000 });
@@ -42,7 +51,14 @@ export async function POST(req: NextRequest) {
     const cleanBuf = stripExif(rawBuf, ext);
 
     const pathname = `homestead/${household.id}/${targetType}-${targetId}.${ext}`;
-    const { url } = await put(pathname, cleanBuf, { access: 'public', addRandomSuffix: false, contentType: file.type });
+    console.log(`[api:upload] putting blob: ${pathname} (${cleanBuf.length}b, type=${file.type})`);
+    let url: string;
+    try {
+      ({ url } = await put(pathname, cleanBuf, { access: 'public', addRandomSuffix: false, contentType: file.type }));
+    } catch (blobErr) {
+      console.error('[api:upload] @vercel/blob put failed:', blobErr instanceof Error ? blobErr.message : blobErr);
+      throw blobErr;
+    }
 
     if (targetType === 'user') {
       await db.update(users)
