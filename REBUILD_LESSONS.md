@@ -306,4 +306,72 @@ app/api/shifts/route.ts  — POST coerces preferredCaregiverId to null if invali
 
 ---
 
+---
+
+## Batch 2–4 lessons (2026-04-26)
+
+### 11. Fire-and-forget notifications are silent bugs
+
+Dynamic `import('@/lib/push').then(...).catch(() => {})` looks safe but kills
+all observability. When a push silently fails, you have no log, no metric, and
+no retry. Caregivers miss alerts you thought were delivered.
+
+**Fix:** Static imports, `try { await ... } catch (err) { console.error(...) }`.
+The one-liner `.catch(() => {})` is a smell; remove it on sight.
+
+**Next build rule:** Never `.catch(() => {})` a notification send. Always log.
+Linting rule: grep for `.catch(() => {})` in `app/api/` and `lib/` before every
+release.
+
+---
+
+### 12. Tier-aware push from day one
+
+Broadcasting to all household members when only a subset should receive a
+notification (e.g., caregivers, not co-parents) inflates send volume and trains
+users to ignore pings. The village group enum (`inner_circle | sitter`) was
+added mid-build and required a backfill migration.
+
+**Fix:** `pushToUsers(userIds, householdId, payload)` as a first-class primitive
+alongside `pushToUser`. Bell ring targets `inner_circle` caregivers only; shift
+posts target `role='caregiver'` only.
+
+**Next build rule:** Schema the social graph tier in the initial migration.
+Write `pushToUsers` at the same time as `pushToUser`. Notification routing
+decisions belong in `lib/notify.ts`, not scattered across routes.
+
+---
+
+### 13. CSS custom properties from day one — avoid token divergence
+
+Tokens started as hardcoded hex strings in `tokens.ts` and CSS. When dark mode
+was added in Batch 4, every color had to be touched twice (CSS vars + TS tokens).
+A `#FBF7F0` hardcoded in a button style won't flip with the theme.
+
+**Fix:** CSS custom properties in `globals.css`, all design tokens in `tokens.ts`
+reference `var(--...)`. Dark mode = `[data-theme="dark"]` + media query. Blocking
+inline script in `<head>` reads `localStorage` before first paint to prevent flash.
+
+**Next build rule:** On day one, define all tokens as CSS custom properties.
+`tokens.ts` is just named exports for the variable references. Any hardcoded hex
+in a component is a future dark-mode bug.
+
+---
+
+### 14. Date.now() in JSX triggers react-hooks/purity
+
+Calling `Date.now()` (or any non-deterministic function) directly in JSX
+attributes like `download={`filename-${Date.now()}.json`}` fails
+`react-hooks/purity`. ESLint catches it but only after you're already at 36
+problems.
+
+**Fix:** Compute the filename at the same time the URL is generated (state
+mutation event), store it in state, reference the state variable in JSX.
+
+**Next build rule:** Inline function calls in JSX attributes are only safe if
+the function is pure and referentially stable. `Date.now()`, `Math.random()`,
+`URL.createObjectURL()`, etc. all violate purity — move them out of render.
+
+---
+
 *Post-mortem complete. Apply these patterns from day one on the next build.*
