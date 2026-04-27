@@ -67,8 +67,8 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
 
   async function handleEnableNotifications() {
     setPermState('requesting');
-    const ok = await requestPushPermission();
-    setPermState(ok ? 'granted' : (Notification.permission as PermState));
+    const result = await requestPushPermission();
+    setPermState(result.ok ? 'granted' : (Notification.permission as PermState));
   }
 
   // Theme

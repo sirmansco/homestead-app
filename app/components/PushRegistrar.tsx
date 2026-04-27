@@ -43,8 +43,8 @@ export function PushRegistrar() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sub.toJSON()),
         });
-      } catch {
-        // SW or push not supported — silent fail
+      } catch (err) {
+        console.warn('[push:registrar] registration or subscribe failed', err instanceof Error ? err.message : String(err));
       }
     }
 
@@ -54,14 +54,24 @@ export function PushRegistrar() {
   return null;
 }
 
+export type PushPermissionResult = { ok: true } | { ok: false; reason: string };
+
 // Call this to prompt for permission and subscribe
-export async function requestPushPermission(): Promise<boolean> {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+export async function requestPushPermission(): Promise<PushPermissionResult> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return { ok: false, reason: 'push_not_supported' };
+  }
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
+  if (permission !== 'granted') {
+    return { ok: false, reason: `permission_${permission}` };
+  }
 
   try {
+    if (!VAPID_PUBLIC_KEY) {
+      console.error('[push:registrar] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set');
+      return { ok: false, reason: 'vapid_key_missing' };
+    }
     const reg = await navigator.serviceWorker.ready;
     const existing = await reg.pushManager.getSubscription();
     const sub = existing || await reg.pushManager.subscribe({
@@ -75,8 +85,14 @@ export async function requestPushPermission(): Promise<boolean> {
       body: JSON.stringify(sub.toJSON()),
     });
 
-    return res.ok;
-  } catch {
-    return false;
+    if (!res.ok) {
+      console.error('[push:registrar] /api/push/subscribe returned', res.status);
+      return { ok: false, reason: `subscribe_api_${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[push:registrar] subscribe failed:', msg);
+    return { ok: false, reason: msg };
   }
 }

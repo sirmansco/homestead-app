@@ -7,8 +7,18 @@ import { pushSubscriptions, users } from '@/lib/db/schema';
 // Calling setVapidDetails at the top level causes build failures because
 // VAPID env vars are not available during Next.js "Collecting page data".
 let vapidInitialised = false;
+let vapidMissing: string[] | null = null;
+
 function ensureVapid() {
-  if (vapidInitialised) return;
+  if (vapidInitialised || vapidMissing) return;
+  const missing = (
+    ['VAPID_SUBJECT', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const
+  ).filter(k => !process.env[k]);
+  if (missing.length > 0) {
+    vapidMissing = missing;
+    console.error(`[push:vapid] missing env vars: ${missing.join(', ')} — push delivery disabled`);
+    return;
+  }
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT!,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -24,12 +34,13 @@ type PushPayload = {
   tag?: string;
 };
 
-type PushResult = {
+export type PushResult = {
   attempted: number;
   delivered: number;
   stale: number;
   failed: number;
   errors: string[];
+  reason?: string;
 };
 
 /**
@@ -43,6 +54,9 @@ async function sendBatch(
   context: string,
 ): Promise<PushResult> {
   ensureVapid();
+  if (vapidMissing) {
+    return { attempted: subs.length, delivered: 0, stale: 0, failed: subs.length, errors: [], reason: 'vapid_not_configured' };
+  }
   const result: PushResult = { attempted: subs.length, delivered: 0, stale: 0, failed: 0, errors: [] };
   if (subs.length === 0) return result;
 
