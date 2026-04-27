@@ -34,8 +34,17 @@ vi.mock('@/lib/notify', () => ({
 }));
 
 vi.mock('@/lib/ratelimit', () => ({
-  rateLimit: vi.fn().mockReturnValue({ limited: false }),
+  rateLimit: vi.fn().mockReturnValue({ ok: true, remaining: 9, resetAt: Date.now() + 3600000, retryAfterMs: 0 }),
   rateLimitResponse: vi.fn().mockReturnValue(null),
+}));
+
+// push/test route imports lib/push directly (allowlisted diagnostic); stub so
+// the route can be imported without VAPID env vars present.
+vi.mock('@/lib/push', () => ({
+  pushToUser: vi.fn(),
+  pushToUsers: vi.fn(),
+  pushToHousehold: vi.fn(),
+  pushToHouseholdCaregivers: vi.fn(),
 }));
 
 // Real next/server response so .json() and .status round-trip realistically.
@@ -66,6 +75,7 @@ import * as accountRoute from '@/app/api/account/route';
 import * as notificationsRoute from '@/app/api/notifications/route';
 import * as uploadRoute from '@/app/api/upload/route';
 import * as pushSubscribeRoute from '@/app/api/push/subscribe/route';
+import * as pushTestRoute from '@/app/api/push/test/route';
 
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -146,6 +156,7 @@ const cases: Array<{
   { name: 'PATCH /api/notifications', handler: notificationsRoute.PATCH as unknown as Handler },
   { name: 'POST /api/upload', handler: uploadRoute.POST as unknown as Handler },
   { name: 'POST /api/push/subscribe', handler: pushSubscribeRoute.POST as unknown as Handler },
+  { name: 'POST /api/push/test', handler: pushTestRoute.POST as unknown as Handler },
 ];
 
 // ── The actual contract test ─────────────────────────────────────────────────

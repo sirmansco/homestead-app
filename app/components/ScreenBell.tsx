@@ -143,8 +143,8 @@ function PushPermissionBanner() {
           <button
             onClick={async () => {
               setRequesting(true);
-              const ok = await requestPushPermission();
-              setPermission(ok ? 'granted' : 'denied');
+              const result = await requestPushPermission();
+              setPermission(result.ok ? 'granted' : 'denied');
               setRequesting(false);
             }}
             disabled={requesting}

@@ -12,9 +12,12 @@ const APP_DIR = join(APP_ROOT, 'app');
 
 // Modules that may import push primitives. lib/notify.ts is the canonical
 // consumer; lib/push.ts is itself the module that defines them.
+// app/api/push/test/route.ts is a diagnostic endpoint that targets the
+// caller's own subscriptions — no notify-level recipient resolution needed.
 const ALLOWED_FILES = new Set([
   join(APP_ROOT, 'lib', 'notify.ts'),
   join(APP_ROOT, 'lib', 'push.ts'),
+  join(APP_ROOT, 'app', 'api', 'push', 'test', 'route.ts'),
 ]);
 
 const FORBIDDEN_IMPORTS = [
