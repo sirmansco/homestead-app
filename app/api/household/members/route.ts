@@ -18,6 +18,7 @@ export async function GET() {
         email: r.email,
         role: r.role,
         villageGroup: r.villageGroup,
+        isAdmin: r.isAdmin,
         isMe: r.clerkUserId === user.clerkUserId,
       })),
     });
