@@ -53,6 +53,7 @@ export async function requireHousehold() {
       name: meta.name || name,
       role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
       villageGroup: meta.villageGroup || (isFirstUser ? 'inner_circle' : 'sitter'),
+      isAdmin: isFirstUser,
     }).onConflictDoNothing();
     [user] = await db.select().from(users).where(and(
       eq(users.clerkUserId, userId),
