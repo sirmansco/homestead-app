@@ -14,10 +14,12 @@ export async function requireHousehold() {
   let [household] = await db.select().from(households).where(eq(households.clerkOrgId, orgId)).limit(1);
   if (!household) {
     const org = await client.organizations.getOrganization({ organizationId: orgId });
-    [household] = await db.insert(households).values({
+    await db.insert(households).values({
       clerkOrgId: orgId,
       name: org.name,
-    }).returning();
+    }).onConflictDoNothing();
+    [household] = await db.select().from(households).where(eq(households.clerkOrgId, orgId)).limit(1);
+    if (!household) throw new Error('Failed to resolve household');
   }
 
   let [user] = await db.select().from(users).where(and(
@@ -38,14 +40,19 @@ export async function requireHousehold() {
     const memberCount = await db.$count(users, eq(users.householdId, household.id));
     const isFirstUser = memberCount === 0;
 
-    [user] = await db.insert(users).values({
+    await db.insert(users).values({
       clerkUserId: userId,
       householdId: household.id,
       email,
       name: meta.name || name,
       role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
       villageGroup: meta.villageGroup || (isFirstUser ? 'inner_circle' : 'sitter'),
-    }).returning();
+    }).onConflictDoNothing();
+    [user] = await db.select().from(users).where(and(
+      eq(users.clerkUserId, userId),
+      eq(users.householdId, household.id),
+    )).limit(1);
+    if (!user) throw new Error('Failed to resolve user');
   } else if (looksLikeSlug(user.name)) {
     // Backfill: the row was seeded from email/username before Clerk collected a
     // real first/last. Re-sync when Clerk now has one so UI shows "First L."
