@@ -397,7 +397,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
                 style={{
                   width: '100%', padding: '10px 12px', borderRadius: 8,
                   border: `1px solid ${G.hairline2}`, background: G.paper,
-                  color: G.ink, fontFamily: G.serif, fontSize: 14,
+                  color: G.ink, fontFamily: G.serif, fontSize: 16,
                   resize: 'vertical', outline: 'none',
                   boxSizing: 'border-box',
                 }}

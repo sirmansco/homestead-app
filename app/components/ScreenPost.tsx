@@ -228,7 +228,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           <input
             value={forWhom} onChange={e => setForWhom(e.target.value)}
             placeholder="Or note someone else (e.g. grandma)"
-            style={{ ...inputStyle, marginTop: 10, fontSize: 14, fontFamily: G.serif, fontStyle: 'italic' }}
+            style={{ ...inputStyle, marginTop: 10, fontSize: 16, fontFamily: G.serif, fontStyle: 'italic' }}
           />
         </div>
 
@@ -434,7 +434,7 @@ const inputStyle: React.CSSProperties = {
 
 const pillInput: React.CSSProperties = {
   marginTop: 3, width: '100%', border: 'none', background: 'transparent',
-  fontFamily: G.display, fontSize: 14, color: G.ink, fontWeight: 500, outline: 'none',
+  fontFamily: G.display, fontSize: 16, color: G.ink, fontWeight: 500, outline: 'none',
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

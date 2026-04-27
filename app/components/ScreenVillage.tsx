@@ -477,7 +477,7 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px', boxSizing: 'border-box',
   background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 8,
-  fontFamily: G.sans, fontSize: 14, color: G.ink,
+  fontFamily: G.sans, fontSize: 16, color: G.ink,
   outline: 'none',
 };
 
