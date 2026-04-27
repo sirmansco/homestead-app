@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     ));
 
   const results = await Promise.allSettled(
-    due.map(bell => escalateBell(bell.id, bell.householdId))
+    due.map(bell => escalateBell(bell.id))
   );
 
   const failed = results.filter(r => r.status === 'rejected');
