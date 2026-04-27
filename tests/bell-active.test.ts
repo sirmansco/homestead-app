@@ -34,6 +34,29 @@ vi.mock('@/lib/api-error', () => ({
     status: 500,
     json: async () => ({ error: msg }),
   }),
+  authError: (err: unknown, _tag?: string, fallback = 'Something went wrong') => {
+    const raw = err instanceof Error ? err.message : String(err);
+    if (raw === 'Not signed in') return {
+      _body: { error: 'not_signed_in' },
+      status: 401,
+      json: async () => ({ error: 'not_signed_in' }),
+    };
+    if (raw === 'No access') return {
+      _body: { error: 'no_access' },
+      status: 403,
+      json: async () => ({ error: 'no_access' }),
+    };
+    if (raw === 'No active household') return {
+      _body: { error: 'no_household' },
+      status: 409,
+      json: async () => ({ error: 'no_household' }),
+    };
+    return {
+      _body: { error: fallback },
+      status: 500,
+      json: async () => ({ error: fallback }),
+    };
+  },
 }));
 
 // ── Import after mocks are wired ─────────────────────────────────────────────

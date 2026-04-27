@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { feedback } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { apiError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 
 const VALID_KINDS = ['bug', 'idea', 'general'] as const;
 type FeedbackKind = typeof VALID_KINDS[number];
@@ -31,6 +31,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Could not submit feedback', 500, 'feedback');
+    return authError(err, 'feedback', 'Could not submit feedback');
   }
 }

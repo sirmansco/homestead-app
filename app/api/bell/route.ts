@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { bells, users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
-import { apiError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 import { pushToUsers } from '@/lib/push';
 
 export async function POST(req: NextRequest) {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ bell });
   } catch (err) {
-    return apiError(err, 'Bell action failed', 500, 'bell');
+    return authError(err, 'bell', 'Bell action failed');
   }
 }
 
@@ -73,6 +73,6 @@ export async function GET() {
       .orderBy(desc(bells.createdAt));
     return NextResponse.json({ bells: activeBells });
   } catch (err) {
-    return apiError(err, 'Bell action failed', 500, 'bell');
+    return authError(err, 'bell', 'Bell action failed');
   }
 }

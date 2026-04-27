@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, gte, inArray, or } from 'drizzle-orm';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import {
   users, kids, shifts, bells, pushSubscriptions, familyInvites,
   caregiverUnavailability, bellResponses,
 } from '@/lib/db/schema';
-import { apiError, authError } from '@/lib/api-error';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 
 /**
  * GET /api/account — export all data for the current user across all households.
@@ -14,8 +15,7 @@ import { apiError, authError } from '@/lib/api-error';
  */
 export async function GET() {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const myRows = await db.select().from(users).where(eq(users.clerkUserId, userId));
     if (myRows.length === 0) {
@@ -53,7 +53,7 @@ export async function GET() {
       bellResponses: myBellResponses,
     });
   } catch (err) {
-    return apiError(err, 'Could not export your data', 500, 'account:GET');
+    return authError(err, 'account:GET', 'Could not export your data');
   }
 }
 
@@ -67,8 +67,7 @@ export async function GET() {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return authError(new Error('Not signed in'), 'account:DELETE');
+    const { userId } = await requireUser();
 
     const confirm = req.nextUrl.searchParams.get('confirm');
     if (confirm !== 'yes-delete-my-data') {
@@ -174,6 +173,6 @@ export async function DELETE(req: NextRequest) {
       },
     });
   } catch (err) {
-    return apiError(err, 'Could not delete your account', 500, 'account:DELETE');
+    return authError(err, 'account:DELETE', 'Could not delete your account');
   }
 }

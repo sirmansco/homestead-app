@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { pushSubscriptions } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { apiError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 type PushSubBody = {
   endpoint: string;
   keys: { p256dh: string; auth: string };
@@ -40,6 +40,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return apiError(err, 'Could not register for notifications', 500, 'push:subscribe');
+    return authError(err, 'push:subscribe', 'Could not register for notifications');
   }
 }

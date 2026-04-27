@@ -2,19 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHousehold, requireUser } from '@/lib/auth/household';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { apiError, authError } from '@/lib/api-error';
+import { authError } from '@/lib/api-error';
 
 export async function GET() {
-  const { userId, orgId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
-
   // First, pull every household this user belongs to (regardless of whether
   // Clerk has an "active" org attached to the session). This lets the UI
   // always render the household switcher — critical for multi-household
   // users who need to pick one when their session has no active org yet.
   try {
+    const { userId } = await requireUser();
+    const { orgId } = await auth();
     const client = await clerkClient();
     const memberships = await client.users.getOrganizationMembershipList({ userId });
 
@@ -103,6 +102,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ household: updated });
   } catch (err) {
-    return apiError(err, 'Household action failed', 500, 'household');
+    return authError(err, 'household', 'Household action failed');
   }
 }

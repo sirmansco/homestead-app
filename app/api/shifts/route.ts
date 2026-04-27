@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc, asc, inArray, or, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
 
 const claimerUsers = alias(users, 'claimer');
-import { requireHousehold } from '@/lib/auth/household';
-import { apiError, authError } from '@/lib/api-error';
+import { requireHousehold, requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyNewShift } from '@/lib/notify';
 
@@ -15,8 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+    const { userId } = await requireUser();
 
     const scope = req.nextUrl.searchParams.get('scope') || 'household';
 
@@ -271,7 +270,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ shift: created[0], count: created.length });
   } catch (err) {
-    return apiError(err, 'Could not post shift. Try again.', 500, 'shifts:POST');
+    return authError(err, 'shifts:POST', 'Could not post shift. Try again.');
   }
 }
 
