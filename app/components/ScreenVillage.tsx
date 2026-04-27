@@ -1,6 +1,5 @@
 'use client';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { UserButton } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
@@ -655,7 +654,6 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 <span>Settings</span>
               </button>
             )}
-            <UserButton />
           </div>
         }
         title="My Families"
@@ -846,7 +844,6 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
                 <span>Settings</span>
               </button>
             )}
-            <UserButton />
           </div>
         }
         title="The Village"
