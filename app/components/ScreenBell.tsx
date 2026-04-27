@@ -225,7 +225,6 @@ function BellCompose({ onRing, onBack, onPost }: {
         title="Bell Tower"
         titleColor={RED}
         tagline="Something came up — we'll reach the inner circle first, then widen if no one answers."
-        folioRight="Urgent edition"
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
         <div style={{ marginTop: 10 }}>
@@ -454,7 +453,6 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
         title={reason || 'Bell ringing'}
         titleColor={RED}
         tagline="Your village is being notified — inner circle first, widening if no one answers."
-        folioLeft="Live" folioRight="Urgent edition"
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
@@ -590,7 +588,6 @@ function BellIncoming() {
           title="All clear"
           titleColor={G.ink}
           tagline="You'll be notified instantly when a family needs help. Stand by."
-          folioLeft="No alerts" folioRight="Standing by"
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
           <PushPermissionBanner />
@@ -620,7 +617,6 @@ function BellIncoming() {
         title={activeBells.length === 1 ? activeBells[0].reason : `${activeBells.length} bells ringing`}
         titleColor={RED}
         tagline="Someone in your village needs help. Inner circle — you're first."
-        folioLeft="Live" folioRight="Urgent edition"
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
         {pollError && (

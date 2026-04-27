@@ -282,7 +282,6 @@ export function ScreenShifts() {
         right={myRows.length > 0 ? `${myRows.length} shift${myRows.length === 1 ? '' : 's'}` : ''}
         title="My Schedule"
         tagline={myRows.length > 0 ? 'Shifts you\'ve claimed. Release if something comes up.' : 'Shifts you claim will appear here.'}
-        folioRight="The Slate"
       />
 
       {error && (
