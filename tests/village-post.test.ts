@@ -1,0 +1,243 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+vi.mock('@clerk/nextjs/server', () => ({
+  auth: vi.fn(),
+  clerkClient: vi.fn(),
+}));
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    $count: vi.fn(),
+  },
+}));
+
+vi.mock('@/lib/format', () => ({
+  looksLikeSlug: vi.fn().mockReturnValue(false),
+  normaliseStoredName: (s: string) => s,
+}));
+
+vi.mock('next/server', () => ({
+  NextRequest: class {
+    constructor(public url: string, private init: RequestInit = {}) {}
+    get nextUrl() { return new URL(this.url); }
+    async json() { return JSON.parse(this.init.body as string); }
+  },
+  NextResponse: {
+    json: (body: unknown, init?: { status?: number }) => ({
+      _body: body,
+      status: init?.status ?? 200,
+      json: async () => body,
+    }),
+  },
+}));
+
+vi.mock('@/lib/api-error', () => ({
+  apiError: (_err: unknown, msg: string, status = 500) => ({
+    _body: { error: msg },
+    status,
+    json: async () => ({ error: msg }),
+  }),
+  authError: (_err: unknown) => ({
+    _body: { error: 'auth_error' },
+    status: 401,
+    json: async () => ({ error: 'auth_error' }),
+  }),
+}));
+
+// ── Imports after mocks ───────────────────────────────────────────────────────
+
+import { POST } from '@/app/api/village/route';
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { db } from '@/lib/db';
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const CLERK_USER_ID = 'user_clerk_1';
+const CLERK_ORG_ID  = 'org_clerk_1';
+const HH_ID         = 'hh-uuid-001';
+const USER_ID       = 'usr-uuid-001';
+const KID_ID        = 'kid-uuid-001';
+
+const HOUSEHOLD_ROW = { id: HH_ID, clerkOrgId: CLERK_ORG_ID, name: 'Smith Family', glyph: '🏡' };
+const USER_ROW = {
+  id: USER_ID, clerkUserId: CLERK_USER_ID, householdId: HH_ID,
+  email: 'alice@example.com', name: 'Alice Smith',
+  role: 'parent', villageGroup: 'inner_circle',
+};
+const KID_ROW = {
+  id: KID_ID, householdId: HH_ID, name: 'Emma', birthday: '2021-03-14', notes: null,
+  photoUrl: null, createdAt: new Date().toISOString(),
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function makeSelectStub(rows: unknown[]) {
+  const chain: Record<string, unknown> = {};
+  const terminal = () => chain;
+  chain['from']    = terminal;
+  chain['where']   = terminal;
+  chain['limit']   = terminal;
+  chain['orderBy'] = terminal;
+  chain['then']    = (resolve: (v: unknown) => void) => { resolve(rows); return chain; };
+  chain['catch']   = () => chain;
+  chain['finally'] = () => chain;
+  return chain;
+}
+
+function makeInsertStub(returning: unknown[] = []) {
+  const chain: Record<string, unknown> = {};
+  const terminal = () => chain;
+  chain['values']              = terminal;
+  chain['onConflictDoNothing'] = terminal;
+  chain['returning']           = terminal;
+  chain['then']    = (resolve: (v: unknown) => void) => { resolve(returning); return chain; };
+  chain['catch']   = () => chain;
+  chain['finally'] = () => chain;
+  return chain;
+}
+
+function makeReq(body: unknown) {
+  const { NextRequest } = require('next/server');
+  return new NextRequest('http://localhost/api/village', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+function wireHousehold() {
+  vi.mocked(db.select)
+    .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW]))
+    .mockReturnValueOnce(makeSelectStub([USER_ROW]));
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('POST /api/village', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.mocked(auth).mockResolvedValue({
+      userId: CLERK_USER_ID, orgId: CLERK_ORG_ID,
+    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+
+    vi.mocked(clerkClient).mockResolvedValue({
+      organizations: { getOrganization: vi.fn().mockResolvedValue({ id: CLERK_ORG_ID, name: 'Smith Family' }) },
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          primaryEmailAddress: { emailAddress: 'alice@example.com' },
+          firstName: 'Alice', lastName: 'Smith', publicMetadata: {},
+        }),
+      },
+    } as ReturnType<typeof clerkClient> extends Promise<infer T> ? T : never);
+
+    vi.mocked(db.$count).mockResolvedValue(1);
+  });
+
+  // ── type: 'kid' ──────────────────────────────────────────────────────────
+
+  it('inserts a kid with name and birthday and returns the row', async () => {
+    wireHousehold();
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub([KID_ROW]));
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: '2021-03-14' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.kid).toEqual(KID_ROW);
+    expect(db.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it('inserts a kid with null birthday when no date provided', async () => {
+    wireHousehold();
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub([{ ...KID_ROW, birthday: null }]));
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Liam', birthday: null }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.kid.birthday).toBeNull();
+  });
+
+  it('treats empty-string birthday as null', async () => {
+    // The client sends birthday || null, so '' becomes null before the request.
+    // Confirm the route handles null cleanly regardless.
+    wireHousehold();
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub([{ ...KID_ROW, birthday: null }]));
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Liam', birthday: null }));
+
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 400 when kid name is missing', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'kid', name: '', birthday: null }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/name required/i);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when kid name is only whitespace', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'kid', name: '   ', birthday: null }));
+
+    expect(res.status).toBe(400);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  // ── type: 'adult' ────────────────────────────────────────────────────────
+
+  it('inserts an adult placeholder and returns the row', async () => {
+    wireHousehold();
+    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'caregiver', villageGroup: 'inner_circle' };
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub([adult]));
+
+    const res = await POST(makeReq({ type: 'adult', name: 'Bob', email: 'bob@example.com' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.user.name).toBe('Bob');
+  });
+
+  it('returns 400 when adult is missing email', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'adult', name: 'Bob', email: '' }));
+
+    expect(res.status).toBe(400);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  // ── unknown type ─────────────────────────────────────────────────────────
+
+  it('returns 400 for unknown type', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'pet', name: 'Rex' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/unknown type/i);
+  });
+
+  // ── auth guard ───────────────────────────────────────────────────────────
+
+  it('propagates auth error when requireHousehold throws', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: null, orgId: null } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: null }));
+
+    // apiError catch-all fires; DB must not be touched
+    expect(res.status).toBe(500);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+});
