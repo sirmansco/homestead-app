@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   applicationName: 'Homestead',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Homestead',
   },
   formatDetection: {

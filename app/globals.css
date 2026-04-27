@@ -65,6 +65,9 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Prevent Safari auto-zoom on focus (requires font-size >= 16px) */
+input, textarea, select { font-size: 16px; }
+
 body {
   margin: 0;
   background: var(--bg);
