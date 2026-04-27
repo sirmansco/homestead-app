@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { shifts } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
-import { pushToUser } from '@/lib/push';
+import { notifyShiftCancelled } from '@/lib/notify';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -34,14 +34,9 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (claimedByUserId) {
       try {
-        await pushToUser(claimedByUserId, {
-          title: '❌ Shift cancelled',
-          body: `"${shift.title}" has been cancelled.`,
-          url: '/?tab=shifts',
-          tag: `cancel-${id}`,
-        });
+        await notifyShiftCancelled(id, claimedByUserId);
       } catch (err) {
-        console.error('[shifts:cancel:push]', err);
+        console.error('[shifts:cancel:notify]', err);
       }
     }
 

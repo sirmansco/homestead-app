@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells, users } from '@/lib/db/schema';
+import { bells } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
-import { pushToUsers } from '@/lib/push';
+import { notifyBellRing } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,24 +39,12 @@ export async function POST(req: NextRequest) {
       status: 'ringing',
     }).returning();
 
-    // Notify inner_circle caregivers only (spec: Bell pings inner_circle first)
-    const innerCircle = await db.select({ id: users.id })
-      .from(users)
-      .where(and(
-        eq(users.householdId, household.id),
-        eq(users.role, 'caregiver'),
-        eq(users.villageGroup, 'inner_circle'),
-        eq(users.notifyBellRinging, true),
-      ));
+    // Notify inner_circle caregivers (spec: Bell pings inner_circle first).
+    // Recipient resolution + preference filter live in notify.ts.
     try {
-      await pushToUsers(innerCircle.map(u => u.id), household.id, {
-        title: `🔔 ${household.name} needs help`,
-        body: reason + (note ? ` — ${note}` : ''),
-        url: '/?tab=bell',
-        tag: `bell-${bell.id}`,
-      });
+      await notifyBellRing(bell.id);
     } catch (err) {
-      console.error('[bell:ring:push]', err);
+      console.error('[bell:ring:notify]', err);
     }
 
     return NextResponse.json({ bell });
