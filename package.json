@@ -12,6 +12,7 @@
     "db:generate": "COPYFILE_DISABLE=1 drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:mark-baseline": "tsx scripts/migrate.ts -- --mark-baseline",
+    "db:doctor": "tsx scripts/doctor.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

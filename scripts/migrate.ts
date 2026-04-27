@@ -1,23 +1,35 @@
 /**
  * Runs pending Drizzle migrations against the configured database.
  *
- * IMPORTANT: the existing database already has the baseline schema applied
- * (we've been using `drizzle-kit push --force` up to now). For the 0000
- * baseline migration, run `npm run db:mark-baseline` FIRST — this records
- * the baseline as applied WITHOUT executing the CREATE TABLE statements.
- * After that, regular `npm run db:migrate` handles future migrations.
+ * Always runs `db:doctor` BEFORE migrate (refuses to migrate against a drifted
+ * DB; you must reconcile first) and AFTER migrate (verifies the migration
+ * actually closed the drift). This guards against the 2026-04-27 failure
+ * mode where Drizzle silently skipped 0001/0002 due to stale `when`
+ * timestamps in _journal.json and reported "✓ Migrations applied" anyway.
  *
  * Usage:
  *   npm run db:generate                # create a new migration from schema.ts changes
  *   npm run db:mark-baseline           # one-time: record 0000_baseline as applied
  *   npm run db:migrate                 # apply any pending migrations (0001+, etc.)
+ *   npm run db:doctor                  # verify journal + schema consistency
  */
 import { config } from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
+import { spawnSync } from 'node:child_process';
 
 config({ path: '.env.local' });
+
+function runDoctor(phase: 'pre' | 'post'): void {
+  console.log(`\n[${phase}-flight] running db:doctor…`);
+  const result = spawnSync('npx', ['tsx', 'scripts/doctor.ts'], { stdio: 'inherit' });
+  if (result.status !== 0) {
+    console.error(`\n✗ db:doctor (${phase}-flight) reported drift. Aborting migrate.`);
+    console.error('  Reconcile the journal/schema before migrating. See scripts/doctor.ts for what it checks.');
+    process.exit(1);
+  }
+}
 
 const DATABASE_URL = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -49,13 +61,18 @@ async function run() {
       return;
     }
 
-    console.log('Running pending migrations…');
+    runDoctor('pre');
+
+    console.log('\nRunning pending migrations…');
     const db = drizzle(client);
     await migrate(db, { migrationsFolder: './drizzle' });
-    console.log('✓ Migrations applied.');
+    console.log('✓ Drizzle migrate() returned successfully (note: this does NOT mean SQL ran — see post-flight check).');
   } finally {
     await client.end();
   }
+
+  runDoctor('post');
+  console.log('\n✓ Migrations applied and verified.');
 }
 
 run().catch(err => {
