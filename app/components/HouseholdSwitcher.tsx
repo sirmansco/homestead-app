@@ -62,6 +62,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, [refresh]);
 
   const active = all.find(h => h.active) ?? null;

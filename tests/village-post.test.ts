@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -102,7 +103,6 @@ function makeInsertStub(returning: unknown[] = []) {
 }
 
 function makeReq(body: unknown) {
-  const { NextRequest } = require('next/server');
   return new NextRequest('http://localhost/api/village', {
     method: 'POST',
     body: JSON.stringify(body),

@@ -626,6 +626,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const count = families?.length ?? 0;

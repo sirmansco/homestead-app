@@ -60,7 +60,7 @@ async function main() {
   const journalPath = path.join(drizzleDir, 'meta', '_journal.json');
   const journal = JSON.parse(readFileSync(journalPath, 'utf-8'));
   const sqlFiles = readdirSync(drizzleDir).filter(f => f.endsWith('.sql') && !f.startsWith('._')).sort();
-  const journalTags = new Set<string>(journal.entries.map((e: any) => e.tag as string));
+  const journalTags = new Set<string>(journal.entries.map((e: { tag: string }) => e.tag));
   const sqlTags = new Set(sqlFiles.map(f => f.replace(/\.sql$/, '')));
 
   // 1 & 2: journal ⇄ disk
@@ -89,7 +89,7 @@ async function main() {
   const sql = postgres(process.env.DATABASE_URL!);
   try {
     // 5: applied migrations match journal hashes
-    const applied = await sql`SELECT hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at` as any[];
+    const applied = await sql`SELECT hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at` as { hash: string; created_at: string | number }[];
     const appliedHashes = new Set(applied.map(r => r.hash));
     const journalHashes = new Set([...sqlTags].map(t => hashByTag.get(t)!));
     // Special case: 0000_baseline is recorded with literal 'hash=0000_baseline' (not sha256)
@@ -106,7 +106,7 @@ async function main() {
       if (tag === '0000_baseline') continue;
       const h = hashByTag.get(tag)!;
       if (!appliedHashes.has(h)) {
-        const entry = journal.entries.find((e: any) => e.tag === tag);
+        const entry = journal.entries.find((e: { tag: string; when: number }) => e.tag === tag);
         const lastApplied = applied.length ? Number(applied[applied.length - 1].created_at) : 0;
         const willRun = entry && entry.when > lastApplied;
         if (willRun) {
@@ -119,7 +119,7 @@ async function main() {
 
     // 6 & 7: column drift
     for (const [table, cols] of Object.entries(EXPECTED_COLUMNS)) {
-      const live = await sql`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=${table}` as any[];
+      const live = await sql`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=${table}` as { column_name: string }[];
       const liveCols = new Set(live.map(r => r.column_name));
       if (liveCols.size === 0) {
         fail('schema-drift', `expected table "${table}" is missing in the live DB`);
@@ -136,7 +136,7 @@ async function main() {
         SELECT enumlabel FROM pg_enum
         WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname=${name})
         ORDER BY enumsortorder
-      ` as any[];
+      ` as { enumlabel: string }[];
       if (live.length === 0) {
         fail('schema-drift', `expected enum "${name}" is missing`);
         continue;

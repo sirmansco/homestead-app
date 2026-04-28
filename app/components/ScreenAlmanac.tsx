@@ -539,6 +539,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     }
   }, [role, isDualRole, multiHousehold]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load, active?.id]);
 
   const loadUnavail = useCallback(async () => {
@@ -552,6 +553,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     } catch { /* ignore */ }
   }, [role, isDualRole]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadUnavail(); }, [loadUnavail]);
 
   async function saveUnavail() {

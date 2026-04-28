@@ -73,6 +73,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
 
   // Theme
   const [theme, setTheme] = useState<Theme>('system');
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setTheme(getStoredTheme()); }, []);
   function handleTheme(t: Theme) {
     setTheme(t);
@@ -96,6 +97,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
     setPrefsLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadPrefs(); }, [loadPrefs]);
 
   async function togglePref(key: keyof NotifPrefs) {

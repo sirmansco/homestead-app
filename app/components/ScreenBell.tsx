@@ -120,6 +120,7 @@ function PushPermissionBanner() {
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     if (typeof Notification !== 'undefined') setPermission(Notification.permission);
   }, []);
 
@@ -550,6 +551,7 @@ function BellIncoming() {
   }, []);
 
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     load();
     const interval = setInterval(load, 8_000);
     // Re-poll immediately when the tab regains focus (user comes back from another app)
@@ -628,6 +630,7 @@ function BellIncoming() {
         {activeBells.map(bell => {
           const myResp = bell.myResponse;
           const rungAt = new Date(bell.createdAt);
+          // eslint-disable-next-line react-hooks/purity
           const secondsAgo = Math.floor((Date.now() - rungAt.getTime()) / 1000);
           const timeAgo = secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`;
 

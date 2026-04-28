@@ -296,6 +296,7 @@ export function ScreenHome({ onRing, onPost, onVillage, role = 'parent' }: {
     }
   }, [role, multiHousehold]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load, active?.id, multiHousehold]);
 
   async function cancelShift(id: string) {

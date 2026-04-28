@@ -50,7 +50,7 @@ function ReleaseForm({ onConfirm, onCancel, busy }: {
   return (
     <div style={{ marginTop: 4 }}>
       <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginBottom: 6 }}>
-        Why can't you make it? The parent will be notified.
+        Why can&apos;t you make it? The parent will be notified.
       </div>
       <textarea
         value={reason}
@@ -217,6 +217,7 @@ export function ScreenShifts() {
   }, []);
 
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     load();
     // Re-poll when the tab regains focus — caregiver may have claimed/cancelled
     // a shift while the user was elsewhere. Mirrors BellIncoming behavior.

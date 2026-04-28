@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Homestead — How It Works',
@@ -95,7 +96,7 @@ export default function GuidePage() {
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <a href="/" style={{
+          <Link href="/" style={{
             fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
             textTransform: 'uppercase', color: C.ink, textDecoration: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -105,7 +106,7 @@ export default function GuidePage() {
           }}>
             <span style={{ fontSize: 15, lineHeight: 1 }}>‹</span>
             <span>Back to app</span>
-          </a>
+          </Link>
           <span style={{
             fontFamily: C.sans, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
             color: C.muted,
@@ -296,9 +297,9 @@ export default function GuidePage() {
           <div style={{ fontFamily: C.serif, fontStyle: 'italic', fontSize: 12, color: C.muted }}>
             Homestead — built for the people who keep your family running.
           </div>
-          <a href="/" style={{ display: 'inline-block', marginTop: 20, fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: C.ink, textDecoration: 'none', borderBottom: `1px solid ${C.ink}`, paddingBottom: 2 }}>
+          <Link href="/" style={{ display: 'inline-block', marginTop: 20, fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: C.ink, textDecoration: 'none', borderBottom: `1px solid ${C.ink}`, paddingBottom: 2 }}>
             Back to the app →
-          </a>
+          </Link>
         </div>
 
       </div>

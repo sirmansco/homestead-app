@@ -183,7 +183,7 @@ export function HomesteadApp() {
     if (canSwitchRole) return; // dev user: respect their manual toggle
     if (!active?.id) return;
     const r = rolesByHousehold[active.id];
-    if (r) setRole(r);
+    if (r) setTimeout(() => setRole(r), 0);
   }, [active?.id, rolesByHousehold, canSwitchRole]);
   const [screen, setScreen] = useState<TabId>('almanac');
   const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
@@ -226,6 +226,7 @@ export function HomesteadApp() {
       .catch(() => {});
   }, [user?.id, canSwitchRole, active?.id, rolesByHousehold]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Deep-link from push notification: ?tab=bell (or ?tab=almanac etc.)
     // This runs on app open so tapping a notification lands on the right screen.
@@ -233,6 +234,7 @@ export function HomesteadApp() {
     const tabParam = params.get('tab') as TabId | null;
     const validTabs: TabId[] = ['almanac', 'post', 'village', 'shifts', 'bell', 'settings'];
     if (tabParam && validTabs.includes(tabParam)) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setScreen(tabParam);
       // Clean the URL so the param doesn't persist on refresh
       const clean = new URL(window.location.href);

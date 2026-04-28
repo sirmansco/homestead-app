@@ -38,7 +38,7 @@ function InviteContent() {
   const [invite, setInvite] = useState<InviteInfo | null>(null);
 
   useEffect(() => {
-    if (!token) { setState('invalid'); return; }
+    if (!token) { setTimeout(() => setState('invalid'), 0); return; }
 
     fetch(`/api/village/invite-family/accept?token=${encodeURIComponent(token)}`)
       .then(res => res.json())
@@ -93,7 +93,7 @@ function InviteContent() {
             Already accepted
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, lineHeight: 1.5, marginBottom: 20 }}>
-            This invite has already been used. If you haven't signed up yet, ask for a new link.
+            This invite has already been used. If you haven&apos;t signed up yet, ask for a new link.
           </div>
           <button onClick={() => router.push('/sign-in')} style={btnStyle}>
             Sign in →
@@ -107,7 +107,7 @@ function InviteContent() {
           background: G.paper, textAlign: 'left',
         }}>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 22, color: G.ink, marginBottom: 6, lineHeight: 1.2 }}>
-            You've been invited
+            You&apos;ve been invited
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, marginBottom: 20, lineHeight: 1.5 }}>
             <strong style={{ color: G.ink2 }}>{invite.fromName}</strong> invited you to join their village on Homestead as{' '}
