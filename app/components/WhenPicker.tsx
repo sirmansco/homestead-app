@@ -169,7 +169,7 @@ export function WhenPickerWindow({
   const showFields = noPresets || showCustom || (!matchedPreset && !!startValue);
 
   return (
-    <div>
+    <div style={{ overflow: 'hidden' }}>
       {label && <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.ink, fontWeight: 700, marginBottom: 8 }}>{label}</div>}
       {!noPresets && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -192,7 +192,7 @@ export function WhenPickerWindow({
             />
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <label>
+            <label style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Start</div>
               <input
                 type="time"
@@ -201,7 +201,7 @@ export function WhenPickerWindow({
                 style={inputStyle(accent)}
               />
             </label>
-            <label>
+            <label style={{ minWidth: 0, overflow: 'hidden' }}>
               <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, fontWeight: 700, marginBottom: 4 }}>Until</div>
               <input
                 type="time"
@@ -367,7 +367,8 @@ export function WhenPickerDateRange({
 
 function inputStyle(accent?: string): CSSProperties {
   return {
-    display: 'block', width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
+    display: 'block', width: '100%', maxWidth: '100%', padding: '8px 10px', borderRadius: 8,
+    boxSizing: 'border-box',
     border: `1px solid ${accent || G.hairline2}`, background: accent ? '#FFE6DA' : G.paper,
     fontFamily: G.display, fontSize: 16, color: G.ink, outline: 'none', minWidth: 0,
   };

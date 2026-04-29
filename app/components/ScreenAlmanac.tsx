@@ -630,9 +630,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const myHouseholdId = active?.id;
   const ownShifts = isDualRole
     ? upcoming.filter(r => r.shift.householdId === myHouseholdId)
-    // Pure caregiver: only open shifts + shifts I've claimed — never show shifts claimed by others
+    // Pure caregiver: only open shifts — claimed shifts live on the Schedule screen
     : role === 'caregiver'
-      ? upcoming.filter(r => r.shift.status === 'open' || r.claimedByMe)
+      ? upcoming.filter(r => r.shift.status === 'open')
       : upcoming;
   const helpNeeded = isDualRole
     ? upcoming.filter(r => r.shift.householdId !== myHouseholdId && r.shift.status === 'open' && !r.claimedByMe)
@@ -675,7 +675,8 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     } else if (role === 'parent') {
       statusLine = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
     } else {
-      statusLine = `${upcoming.filter(r => r.claimedByMe).length} shifts you're covering.`;
+      const openCount = upcoming.filter(r => r.shift.status === 'open').length;
+      statusLine = openCount > 0 ? `${openCount} open` : 'Nothing open right now.';
     }
   }
   const tagline = activeHouseholdLabel
