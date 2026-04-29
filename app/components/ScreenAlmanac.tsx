@@ -630,7 +630,10 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const myHouseholdId = active?.id;
   const ownShifts = isDualRole
     ? upcoming.filter(r => r.shift.householdId === myHouseholdId)
-    : upcoming;
+    // Pure caregiver: only open shifts + shifts I've claimed — never show shifts claimed by others
+    : role === 'caregiver'
+      ? upcoming.filter(r => r.shift.status === 'open' || r.claimedByMe)
+      : upcoming;
   const helpNeeded = isDualRole
     ? upcoming.filter(r => r.shift.householdId !== myHouseholdId && r.shift.status === 'open' && !r.claimedByMe)
     : [];
