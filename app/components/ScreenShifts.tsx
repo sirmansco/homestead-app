@@ -35,14 +35,16 @@ function fmtWhen(startIso: string) {
   if (days > 1 && days < 7) return fmtDayOfWeekLong(s);
   return fmtDateShort(s);
 }
-function groupByDate(rows: ShiftRow[]): { label: string; rows: ShiftRow[] }[] {
-  const groups: Map<string, ShiftRow[]> = new Map();
+function groupByDate(rows: ShiftRow[]): { key: string; label: string; rows: ShiftRow[] }[] {
+  // Use ISO date (YYYY-MM-DD) as the stable map key so group identity
+  // doesn't change if fmtWhen labels flip at midnight.
+  const groups: Map<string, { label: string; rows: ShiftRow[] }> = new Map();
   for (const row of rows) {
-    const label = fmtWhen(row.shift.startsAt);
-    if (!groups.has(label)) groups.set(label, []);
-    groups.get(label)!.push(row);
+    const key = row.shift.startsAt.slice(0, 10);
+    if (!groups.has(key)) groups.set(key, { label: fmtWhen(row.shift.startsAt), rows: [] });
+    groups.get(key)!.rows.push(row);
   }
-  return Array.from(groups.entries()).map(([label, rows]) => ({ label, rows }));
+  return Array.from(groups.entries()).map(([key, { label, rows }]) => ({ key, label, rows }));
 }
 
 function dollars(cents: number | null) {
@@ -329,8 +331,8 @@ export function ScreenShifts() {
         )}
         {myRows.length > 0 && (
           <>
-            {groupByDate(myRows).map(({ label, rows }) => (
-              <div key={label}>
+            {groupByDate(myRows).map(({ key, label, rows }) => (
+              <div key={key}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 6px',
                 }}>

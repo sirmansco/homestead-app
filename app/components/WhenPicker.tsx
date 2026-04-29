@@ -371,5 +371,8 @@ function inputStyle(accent?: string): CSSProperties {
     boxSizing: 'border-box',
     border: `1px solid ${accent || G.hairline2}`, background: accent ? '#FFE6DA' : G.paper,
     fontFamily: G.display, fontSize: 16, color: G.ink, outline: 'none', minWidth: 0,
+    // iOS Safari: native date/time inputs ignore CSS width in grid cells without this
+    WebkitAppearance: 'none',
+    appearance: 'none',
   };
 }
