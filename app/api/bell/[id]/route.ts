@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
     if (!bell) return NextResponse.json({ error: 'Bell not found' }, { status: 404 });
     if (bell.householdId !== household.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
     const updates: { status: 'handled' | 'cancelled'; handledByUserId?: string; handledAt?: Date } = { status };

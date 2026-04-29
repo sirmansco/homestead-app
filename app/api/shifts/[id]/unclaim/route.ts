@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     const [claimer] = await db.select().from(users).where(eq(users.id, shift.claimedByUserId)).limit(1);
     if (!claimer || claimer.clerkUserId !== userId) {
-      return NextResponse.json({ error: 'only the claimer can release' }, { status: 403 });
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
     const [released] = await db.update(shifts)

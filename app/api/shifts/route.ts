@@ -27,8 +27,11 @@ export async function GET(req: NextRequest) {
       try {
         const { household } = await requireHousehold();
         activeHousehold = household;
-      } catch {
-        return NextResponse.json({ error: 'no_household' }, { status: 409 });
+      } catch (err) {
+        const raw = err instanceof Error ? err.message : String(err);
+        const status = raw === 'No active household' ? 409 : raw === 'Not signed in' ? 401 : 500;
+        const error = raw === 'No active household' ? 'no_household' : raw === 'Not signed in' ? 'not_signed_in' : 'internal_error';
+        return NextResponse.json({ error }, { status });
       }
     }
 

@@ -539,6 +539,21 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load, active?.id]);
 
+  // Re-load on focus so the bell banner reappears when parent switches back from
+  // another screen or app — without this, the banner only shows on mount.
+  useEffect(() => {
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [load]);
+
+  // Poll every 15s while visible so bell status (ringing → handled) stays live.
+  useEffect(() => {
+    if (role !== 'parent') return;
+    const id = setInterval(() => load(), 15_000);
+    return () => clearInterval(id);
+  }, [role, load]);
+
   const loadUnavail = useCallback(async () => {
     if (role !== 'caregiver' && !isDualRole) return;
     try {

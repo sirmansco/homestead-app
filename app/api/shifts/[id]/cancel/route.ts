@@ -14,10 +14,10 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });
     if (shift.householdId !== household.id) {
-      return NextResponse.json({ error: 'wrong household' }, { status: 403 });
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
     if (user.role !== 'parent' && shift.createdByUserId !== user.id) {
-      return NextResponse.json({ error: 'only parents or the poster can cancel' }, { status: 403 });
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
     if (shift.status === 'cancelled') {

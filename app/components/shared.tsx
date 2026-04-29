@@ -187,8 +187,8 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
 
   return (
     <div style={{
-      position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', left: 0, right: 0, zIndex: 30,
-      paddingBottom: 8,
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
       background: `linear-gradient(180deg, transparent 0%, ${G.bg} 30%)`,
     }}>
       <div style={{

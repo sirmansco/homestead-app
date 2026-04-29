@@ -26,7 +26,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     const client = await clerkClient();
     const memberships = await client.users.getOrganizationMembershipList({ userId });
     const isMember = memberships.data.some(m => m.organization.id === household.clerkOrgId);
-    if (!isMember) return NextResponse.json({ error: 'not a member of this household' }, { status: 403 });
+    if (!isMember) return NextResponse.json({ error: 'no_access' }, { status: 403 });
 
     // Ensure a users row exists for this claimer in the shift's household
     let [claimer] = await db.select().from(users).where(and(
