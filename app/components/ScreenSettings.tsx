@@ -40,7 +40,7 @@ function applyTheme(t: Theme) {
   } catch { /* ignore private-mode errors */ }
 }
 
-export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: 'parent' | 'caregiver' }) {
+export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: () => void; role?: 'parent' | 'caregiver'; onOpenDiagnostics?: () => void }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
@@ -210,7 +210,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
         tagline="Your account, your data, the legal stuff."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 140px' }}>
         {user && (
           <div style={{ marginBottom: 28 }}>
             <GLabel>Signed in as</GLabel>
@@ -432,6 +432,11 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
           <GLabel>Help</GLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 8 }}>
             <Link href="/guide" style={settingLink}>How Homestead Works →</Link>
+            {onOpenDiagnostics && (
+              <button onClick={onOpenDiagnostics} style={{ ...settingLink, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: '14px 0' }}>
+                Diagnostics →
+              </button>
+            )}
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import { ScreenAlmanac } from './ScreenAlmanac';
 import { ScreenBell } from './ScreenBell';
 import { ScreenVillage } from './ScreenVillage';
 import { ScreenSettings } from './ScreenSettings';
+import { ScreenDiagnostics } from './ScreenDiagnostics';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
 import { InstallHint } from './InstallHint';
 
@@ -19,7 +20,7 @@ const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);
 
-type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell' | 'settings';
+type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell' | 'settings' | 'diagnostics';
 type Role = 'parent' | 'caregiver';
 
 function useIsMobile() {
@@ -232,7 +233,7 @@ export function HomesteadApp() {
     // This runs on app open so tapping a notification lands on the right screen.
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') as TabId | null;
-    const validTabs: TabId[] = ['almanac', 'post', 'village', 'shifts', 'bell', 'settings'];
+    const validTabs: TabId[] = ['almanac', 'post', 'village', 'shifts', 'bell', 'settings', 'diagnostics'];
     if (tabParam && validTabs.includes(tabParam)) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setScreen(tabParam);
@@ -275,7 +276,7 @@ export function HomesteadApp() {
   type NavTab = 'almanac' | 'post' | 'village' | 'shifts' | 'bell';
   const activeTab: NavTab =
     screen === 'bell' ? (role === 'caregiver' ? 'bell' : 'almanac') :
-    screen === 'settings' ? 'village' :
+    (screen === 'settings' || screen === 'diagnostics') ? 'village' :
     screen as NavTab;
 
   useEffect(() => {
@@ -309,7 +310,8 @@ export function HomesteadApp() {
       case 'shifts':  return <ScreenShifts />;
       case 'bell':    return <ScreenBell key={`bell-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
       case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
-      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} role={role} />;
+      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} role={role} onOpenDiagnostics={canSwitchRole ? () => setScreen('diagnostics') : undefined} />;
+      case 'diagnostics': return <ScreenDiagnostics onBack={() => setScreen('settings')} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
     }
   }

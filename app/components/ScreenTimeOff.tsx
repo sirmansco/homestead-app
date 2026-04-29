@@ -72,7 +72,7 @@ export function ScreenTimeOff() {
         tagline="You're available by default. Block out the times you can't help — family keeps seeing everything else."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 140px' }}>
         <SectionHead2 label="Every Week" />
         <RecurringBlock days={['M', 'T', 'W', 'T', 'F']} time="9:00 AM – 5:00 PM" label="Work (office)" />
         <RecurringBlock days={['Sun']} time="All day" label="Church + family" />
