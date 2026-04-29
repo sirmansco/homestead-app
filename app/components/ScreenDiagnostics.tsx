@@ -31,7 +31,7 @@ export function ScreenDiagnostics({ onBack }: { onBack: () => void }) {
         tagline="Dev-only system snapshot."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 140px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 100px' }}>
         {loading && (
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 16 }}>
             Loading…

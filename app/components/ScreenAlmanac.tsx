@@ -693,7 +693,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         tagline={tagline}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 140px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {/* Active bell banner — parent only */}
         {role === 'parent' && activeBell && (
           <div style={{

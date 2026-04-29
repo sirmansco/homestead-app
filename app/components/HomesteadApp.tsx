@@ -43,7 +43,7 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   }, [onDone]);
   return (
     <div style={{
-      position: 'absolute', bottom: 110, left: 24, right: 24, zIndex: 99,
+      position: 'absolute', bottom: 88, left: 24, right: 24, zIndex: 99,
       transition: 'opacity 0.3s, transform 0.3s',
       opacity: visible ? 1 : 0,
       transform: visible ? 'translateY(0)' : 'translateY(10px)',
@@ -103,7 +103,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
         onClick={() => setOpen(o => !o)}
         aria-label="Switch role"
         style={{
-          position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)', left: 12, zIndex: 200,
+          position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 78px)', left: 12, zIndex: 200,
           background: 'rgba(27,23,19,0.85)', color: '#FBF7F0',
           border: '1px solid rgba(251,247,240,0.25)', borderRadius: 100,
           padding: '5px 10px', cursor: 'pointer',

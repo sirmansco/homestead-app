@@ -660,7 +660,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
         tagline="The families you help with."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 140px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {families === null ? (
           <div style={{ padding: 40, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted }}>
             Loading…
@@ -851,7 +851,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
         tagline="Grouped by how close they are when the call goes out."
       />
 
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 140px' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {villageError && (
           <div style={{
             margin: '8px 0', padding: '10px 14px', borderRadius: 8,
