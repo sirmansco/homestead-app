@@ -100,7 +100,7 @@ function Chip({ label, active, onClick, accent }: { label: string; active: boole
 // ── WhenPicker — Window mode (start + end datetime) ───────────────────────
 // Custom picker uses two-step: date first, then start/end time — no datetime-local.
 export function WhenPickerWindow({
-  startValue, endValue, onChange, presets, accent, minNow, label,
+  startValue, endValue, onChange, presets, accent, minNow, label, noPresets,
 }: {
   startValue: string;
   endValue: string;
@@ -109,6 +109,7 @@ export function WhenPickerWindow({
   accent?: string;
   minNow?: string;
   label?: string;
+  noPresets?: boolean;
 }) {
   const [showCustom, setShowCustom] = useState(false);
 
@@ -161,17 +162,21 @@ export function WhenPickerWindow({
     onChange(startValue, `${d}T${t}`);
   };
 
+  const showFields = noPresets || showCustom || (!matchedPreset && !!startValue);
+
   return (
     <div>
       {label && <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.ink, fontWeight: 700, marginBottom: 8 }}>{label}</div>}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {presets.map(p => (
-          <Chip key={p.id} label={p.label} active={matchedPreset === p.id && !showCustom} onClick={() => apply(p)} accent={accent} />
-        ))}
-        <Chip label={showCustom ? 'Hide custom' : 'Custom…'} active={showCustom || (!matchedPreset && !!startValue)} onClick={() => setShowCustom(s => !s)} accent={accent} />
-      </div>
-      {(showCustom || (!matchedPreset && !!startValue)) && (
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {!noPresets && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {presets.map(p => (
+            <Chip key={p.id} label={p.label} active={matchedPreset === p.id && !showCustom} onClick={() => apply(p)} accent={accent} />
+          ))}
+          <Chip label={showCustom ? 'Hide custom' : 'Custom…'} active={showCustom || (!matchedPreset && !!startValue)} onClick={() => setShowCustom(s => !s)} accent={accent} />
+        </div>
+      )}
+      {showFields && (
+        <div style={{ marginTop: noPresets ? 0 : 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <label>
             <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: accent || G.muted, fontWeight: 700, marginBottom: 4 }}>Date</div>
             <input
@@ -204,7 +209,7 @@ export function WhenPickerWindow({
           </div>
         </div>
       )}
-      {!showCustom && matchedPreset && (
+      {!noPresets && !showCustom && matchedPreset && (
         <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           {formatWhen(startValue)} → {formatWhen(endValue)}
         </div>

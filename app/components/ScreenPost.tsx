@@ -277,6 +277,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               onChange={(s, e) => { setStartsAt(s); setEndsAt(e); }}
               presets={shiftWindowPresets}
               minNow={minNow}
+              noPresets
             />
           </div>
         </div>
