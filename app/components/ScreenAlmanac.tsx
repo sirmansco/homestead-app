@@ -84,12 +84,12 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
       onClick={onOpen ? () => onOpen(row) : undefined}
       style={{
         background: G.paper, border: `1px solid ${G.hairline2}`,
-        borderRadius: 8, padding: 16, position: 'relative', marginBottom: 10,
+        borderRadius: 8, padding: 12, position: 'relative', marginBottom: 8,
         cursor: onOpen ? 'pointer' : 'default',
       }}
     >
       <div style={{
-        position: 'absolute', top: -1, left: -1, width: 4, height: 'calc(100% + 2px)',
+        position: 'absolute', top: -1, left: -1, width: 3, height: 'calc(100% + 2px)',
         background: accent, borderRadius: '8px 0 0 8px',
       }} />
       {showHousehold && row.household && (
@@ -97,61 +97,58 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
       )}
       {row.requestedForMe && (
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 6,
-          padding: '2px 8px', borderRadius: 100,
-          background: G.clay, color: '#FBF7F0',
+          display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 4,
+          padding: '2px 7px', borderRadius: 100,
+          background: G.clay, color: G.bg,
           fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase',
         }}>★ Requested for you</div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <GLabel color={accent}>{tagline}</GLabel>
-          <div style={{ fontFamily: G.display, fontSize: 22, fontWeight: 500, color: G.ink, marginTop: 4, lineHeight: 1.15 }}>
+          <div style={{ fontFamily: G.display, fontSize: 16, fontWeight: 500, color: G.ink, marginTop: 2, lineHeight: 1.2 }}>
             {row.shift.title}
           </div>
-          <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.ink2, fontSize: 13, marginTop: 4 }}>
-            {fmtTimeRange(row.shift.startsAt, row.shift.endsAt)}
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.ink2, fontSize: 11, marginTop: 2 }}>
+            {fmtDate(row.shift.startsAt)} · {fmtTimeRange(row.shift.startsAt, row.shift.endsAt)}
             {row.shift.forWhom && <> · For {row.shift.forWhom}</>}
           </div>
-          <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 11, marginTop: 2 }}>
-            {fmtDate(row.shift.startsAt)}
-          </div>
           {row.shift.notes && (
-            <div style={{ fontFamily: G.serif, fontSize: 13, color: G.ink2, marginTop: 6, lineHeight: 1.4 }}>
+            <div style={{ fontFamily: G.serif, fontSize: 11, color: G.ink2, marginTop: 3, lineHeight: 1.4 }}>
               {row.shift.notes}
             </div>
           )}
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-            <div style={{ fontFamily: G.display, fontSize: 22, color: accent }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</div>
-            <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: accent, opacity: 0.7 }}>hrs</div>
+            <div style={{ fontFamily: G.display, fontSize: 16, color: accent }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</div>
+            <div style={{ fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.5, color: accent, opacity: 0.7 }}>hrs</div>
           </div>
           {rate && (
-            <div style={{ fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1, color: G.ink, marginTop: 2 }}>
+            <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: G.ink, marginTop: 1 }}>
               {rate}
             </div>
           )}
         </div>
       </div>
       {(onCancel || onClaim) && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
           {onCancel && (
             confirmingCancel ? (
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmingCancel(false); onCancel(row.shift.id); }}
                   style={{
-                    padding: '9px 16px', background: G.ink, color: '#FBF7F0',
-                    border: 'none', borderRadius: 8,
+                    padding: '5px 12px', background: G.ink, color: G.bg,
+                    border: 'none', borderRadius: 100,
                     fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
                     textTransform: 'uppercase', cursor: 'pointer',
                   }}>Yes, cancel</button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmingCancel(false); }}
                   style={{
-                    padding: '9px 14px', background: 'transparent', color: G.muted,
-                    border: `1px solid ${G.hairline2}`, borderRadius: 8,
+                    padding: '5px 10px', background: 'transparent', color: G.muted,
+                    border: `1px solid ${G.hairline2}`, borderRadius: 100,
                     fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
                     textTransform: 'uppercase', cursor: 'pointer',
                   }}>Keep</button>
@@ -161,9 +158,9 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
                 onClick={(e) => { e.stopPropagation(); setConfirmingCancel(true); }}
                 disabled={cancelling}
                 style={{
-                  padding: '6px 12px', background: 'transparent',
-                  border: `1px solid ${G.hairline2}`, borderRadius: 6, color: G.muted,
-                  fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+                  padding: '5px 10px', background: 'transparent',
+                  border: `1px solid ${G.hairline2}`, borderRadius: 100, color: G.muted,
+                  fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
                   textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
                 }}
               >{cancelling ? 'Cancelling…' : 'Cancel'}</button>
@@ -174,9 +171,9 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
               onClick={(e) => { e.stopPropagation(); onClaim(row.shift.id); }}
               disabled={claiming}
               style={{
-                padding: '7px 14px', background: G.ink, color: '#FBF7F0',
+                padding: '5px 12px', background: G.ink, color: G.bg,
                 border: 'none', borderRadius: 100,
-                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
                 textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
                 opacity: claiming ? 0.7 : 1,
               }}
