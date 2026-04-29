@@ -227,7 +227,7 @@ function BellCompose({ onRing, onBack, onPost }: {
         titleColor={RED}
         tagline="Something came up — we'll reach the inner circle first, then widen if no one answers."
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ marginTop: 10 }}>
           <GLabel color={G.ink}>What&apos;s happening?</GLabel>
           {why === null && (
@@ -283,7 +283,7 @@ function BellCompose({ onRing, onBack, onPost }: {
             placeholder="What happened, what you need…"
             rows={3}
             style={{
-              marginTop: 8, padding: 12, borderRadius: 8, width: '100%',
+              marginTop: 8, padding: 12, borderRadius: 8, width: '100%', boxSizing: 'border-box',
               border: `1px solid ${G.hairline2}`, background: G.paper,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink, lineHeight: 1.4,
               outline: 'none', resize: 'none',
@@ -454,7 +454,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
         titleColor={RED}
         tagline="Your village is being notified — inner circle first, widening if no one answers."
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
           <BellGlyph size={72} />
         </div>
@@ -590,7 +590,7 @@ function BellIncoming() {
           titleColor={G.ink}
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
           <PushPermissionBanner />
           {pollError && (
             <div style={{
@@ -619,7 +619,7 @@ function BellIncoming() {
         titleColor={RED}
         tagline="Someone in your village needs help. Inner circle — you're first."
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
         {pollError && (
           <div style={{
             marginTop: 8, padding: '10px 14px', borderRadius: 8,

@@ -23,11 +23,12 @@ type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell' | 'settings';
 type Role = 'parent' | 'caregiver';
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 820 : false
+  );
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 820px)');
     const update = () => setIsMobile(mq.matches);
-    update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
@@ -49,7 +50,7 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
       pointerEvents: 'none',
     }}>
       <div style={{
-        background: G.ink, color: '#FBF7F0',
+        background: G.ink, color: G.bg,
         borderRadius: 100, padding: '12px 20px', textAlign: 'center',
         fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
         boxShadow: '0 4px 16px rgba(27,23,19,0.25)',
@@ -226,7 +227,6 @@ export function HomesteadApp() {
       .catch(() => {});
   }, [user?.id, canSwitchRole, active?.id, rolesByHousehold]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Deep-link from push notification: ?tab=bell (or ?tab=almanac etc.)
     // This runs on app open so tapping a notification lands on the right screen.

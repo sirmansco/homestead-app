@@ -164,7 +164,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         tagline="For a last-minute need, ring the bell instead."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
         {multi && active && (
           <div style={{
             marginTop: 4, padding: '10px 12px',

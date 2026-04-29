@@ -210,7 +210,7 @@ export function ScreenSettings({ onBack, role }: { onBack?: () => void; role?: '
         tagline="Your account, your data, the legal stuff."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px calc(120px + env(safe-area-inset-bottom, 0px))' }}>
         {user && (
           <div style={{ marginBottom: 28 }}>
             <GLabel>Signed in as</GLabel>

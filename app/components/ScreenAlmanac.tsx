@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
-import { G } from './tokens';
+import { G, RED, BELL_BG } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
@@ -692,17 +692,17 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         tagline={tagline}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px calc(120px + env(safe-area-inset-bottom, 0px))', transition: 'opacity 0.15s', opacity: rows === null ? 0.4 : 1 }}>
         {/* Active bell banner — parent only */}
         {role === 'parent' && activeBell && (
           <div style={{
             margin: '10px 0 4px', padding: '12px 14px', borderRadius: 10,
-            background: '#FFF0E8', border: `1.5px solid #B5342B`,
+            background: BELL_BG, border: `1.5px solid ${RED}`,
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
             <div style={{ fontSize: 20, flexShrink: 0 }}>{activeBell.status === 'handled' ? '✅' : '🔔'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: '#B5342B', marginBottom: 2 }}>
+              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: RED, marginBottom: 2 }}>
                 {activeBell.status === 'handled' ? 'Help is on the way' : 'Bell ringing'}
               </div>
               <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeBell.reason}</div>
@@ -713,7 +713,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={onViewBell ?? onRing} style={{
                 padding: '6px 10px', borderRadius: 6,
-                background: '#B5342B', color: '#FBF7F0', border: 'none',
+                background: RED, color: G.bg, border: 'none',
                 fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
                 textTransform: 'uppercase', cursor: 'pointer',
               }}>View</button>
@@ -735,8 +735,8 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                 }}
                 style={{
                   padding: '6px 10px', borderRadius: 6,
-                  background: 'transparent', color: '#B5342B',
-                  border: `1px solid #B5342B`,
+                  background: 'transparent', color: RED,
+                  border: `1px solid ${RED}`,
                   fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
                   textTransform: 'uppercase', cursor: cancellingBell ? 'wait' : 'pointer',
                   opacity: cancellingBell ? 0.6 : 1,

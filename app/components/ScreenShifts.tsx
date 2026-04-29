@@ -311,7 +311,7 @@ export function ScreenShifts() {
           >Dismiss</button>
         </div>
       )}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px calc(120px + env(safe-area-inset-bottom, 0px))', transition: 'opacity 0.15s', opacity: rows === null ? 0.4 : 1 }}>
         {rows === null && (
           <div style={{ padding: '30px 0', textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
             Loading your schedule…

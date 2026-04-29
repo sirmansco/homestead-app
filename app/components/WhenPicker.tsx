@@ -88,8 +88,8 @@ function Chip({ label, active, onClick, accent }: { label: string; active: boole
       style={{
         padding: '7px 12px', borderRadius: 999,
         border: `1px solid ${active ? ink : G.hairline2}`,
-        background: active ? (accent ? '#FFE6DA' : G.ink) : G.paper,
-        color: active ? (accent ? ink : '#FBF7F0') : G.ink,
+        background: active ? (accent ? G.claySoft : G.ink) : G.paper,
+        color: active ? (accent ? ink : G.bg) : G.ink,
         fontFamily: G.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.2,
         cursor: 'pointer', whiteSpace: 'nowrap', lineHeight: 1.1,
       }}
@@ -359,7 +359,7 @@ export function WhenPickerDateRange({
 function inputStyle(accent?: string): CSSProperties {
   return {
     display: 'block', width: '100%', padding: '8px 10px', borderRadius: 8, boxSizing: 'border-box',
-    border: `1px solid ${accent || G.hairline2}`, background: accent ? '#FFE6DA' : G.paper,
+    border: `1px solid ${accent || G.hairline2}`, background: accent ? G.claySoft : G.paper,
     fontFamily: G.display, fontSize: 16, color: G.ink, outline: 'none', minWidth: 0,
   };
 }
