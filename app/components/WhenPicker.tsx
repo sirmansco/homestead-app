@@ -159,7 +159,11 @@ export function WhenPickerWindow({
 
   const handleEndTime = (t: string) => {
     const d = dateVal || toLocalDate(new Date());
-    onChange(startValue, `${d}T${t}`);
+    let endDt = `${d}T${t}`;
+    if (startValue && endDt <= startValue) {
+      endDt = toLocalDT(addDays(new Date(`${d}T${t}`), 1));
+    }
+    onChange(startValue, endDt);
   };
 
   const showFields = noPresets || showCustom || (!matchedPreset && !!startValue);

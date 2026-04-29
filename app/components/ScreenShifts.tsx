@@ -1,9 +1,8 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 import { G } from './tokens';
-import { GMasthead, GLabel } from './shared';
+import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
-import { shortName } from '@/lib/format';
 import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
 
 type ShiftRow = {
@@ -36,6 +35,16 @@ function fmtWhen(startIso: string) {
   if (days > 1 && days < 7) return fmtDayOfWeekLong(s);
   return fmtDateShort(s);
 }
+function groupByDate(rows: ShiftRow[]): { label: string; rows: ShiftRow[] }[] {
+  const groups: Map<string, ShiftRow[]> = new Map();
+  for (const row of rows) {
+    const label = fmtWhen(row.shift.startsAt);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(row);
+  }
+  return Array.from(groups.entries()).map(([label, rows]) => ({ label, rows }));
+}
+
 function dollars(cents: number | null) {
   if (cents == null) return null;
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}/hr`;
@@ -320,16 +329,30 @@ export function ScreenShifts() {
         )}
         {myRows.length > 0 && (
           <>
-            {myRows.map((r, i) => (
-              <ShiftCard
-                key={r.shift.id} row={r} first={i === 0}
-                onClaim={claim}
-                onUnclaim={unclaim}
-                mine
-                busy={busyId === r.shift.id}
-                releasingUnclaim={releasingId === r.shift.id}
-                onCancelUnclaim={() => setReleasingId(null)}
-              />
+            {groupByDate(myRows).map(({ label, rows }) => (
+              <div key={label}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 6px',
+                }}>
+                  <div style={{ width: 18, height: 1, background: G.ink }} />
+                  <div style={{
+                    fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+                    color: G.ink, fontWeight: 700, whiteSpace: 'nowrap',
+                  }}>{label}</div>
+                  <div style={{ flex: 1, height: 1, background: G.hairline }} />
+                </div>
+                {rows.map((r, i) => (
+                  <ShiftCard
+                    key={r.shift.id} row={r} first={i === 0}
+                    onClaim={claim}
+                    onUnclaim={unclaim}
+                    mine
+                    busy={busyId === r.shift.id}
+                    releasingUnclaim={releasingId === r.shift.id}
+                    onCancelUnclaim={() => setReleasingId(null)}
+                  />
+                ))}
+              </div>
             ))}
             <div style={{
               marginTop: 18, padding: '14px 12px', textAlign: 'center',
