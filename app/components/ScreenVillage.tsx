@@ -511,84 +511,85 @@ function FamilyCard({ family, myUserId, onLeave }: {
   return (
     <div style={{
       background: G.paper, border: `1px solid ${G.hairline2}`,
-      borderRadius: 10, padding: 16, marginBottom: 12,
+      borderRadius: 10, padding: 12, marginBottom: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 24 }}>{family.household.glyph}</span>
+      {/* Header: glyph + name + leave button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 20 }}>{family.household.glyph}</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: G.display, fontSize: 18, fontWeight: 500, color: G.ink, lineHeight: 1.15 }}>
+          <div style={{ fontFamily: G.display, fontSize: 15, fontWeight: 500, color: G.ink, lineHeight: 1.15 }}>
             {family.household.name}
           </div>
         </div>
         {onLeave && !confirmLeave && (
           <button onClick={() => setConfirmLeave(true)} style={{
             background: 'transparent', color: G.muted, border: `1px solid ${G.hairline2}`,
-            borderRadius: 100, padding: '4px 10px', cursor: 'pointer',
-            fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+            borderRadius: 100, padding: '3px 8px', cursor: 'pointer',
+            fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
             textTransform: 'uppercase', flexShrink: 0,
           }}>Leave</button>
         )}
         {onLeave && confirmLeave && (
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
             <button
               disabled={leaving}
-              onClick={async () => {
-                setLeaving(true);
-                await onLeave();
-              }}
+              onClick={async () => { setLeaving(true); await onLeave(); }}
               style={{
-                background: G.clay, color: '#FBF7F0', border: 'none',
-                borderRadius: 100, padding: '4px 10px', cursor: leaving ? 'wait' : 'pointer',
-                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                background: G.clay, color: G.bg, border: 'none',
+                borderRadius: 100, padding: '3px 8px', cursor: leaving ? 'wait' : 'pointer',
+                fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
                 textTransform: 'uppercase', opacity: leaving ? 0.6 : 1,
               }}>{leaving ? '…' : 'Yes, leave'}</button>
             <button onClick={() => setConfirmLeave(false)} style={{
               background: 'transparent', color: G.muted, border: `1px solid ${G.hairline2}`,
-              borderRadius: 100, padding: '4px 10px', cursor: 'pointer',
-              fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+              borderRadius: 100, padding: '3px 8px', cursor: 'pointer',
+              fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
               textTransform: 'uppercase',
             }}>Keep</button>
           </div>
         )}
       </div>
 
-      {parents.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <GLabel style={{ marginBottom: 6 }}>Parents</GLabel>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {parents.map(p => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <GAvatar name={p.name} size={28} />
-                <span style={{ fontFamily: G.display, fontSize: 13, fontWeight: 500 }}>{shortName(p.name)}</span>
+      {/* Parents + Kids in one row grid */}
+      {(parents.length > 0 || family.kids.length > 0) && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: caregivers.length > 1 ? 8 : 0 }}>
+          {parents.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <GLabel style={{ marginBottom: 5 }}>Parents</GLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {parents.map(p => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <GAvatar name={p.name} size={26} />
+                    <span style={{ fontFamily: G.display, fontSize: 12, fontWeight: 500 }}>{shortName(p.name)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {family.kids.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <GLabel style={{ marginBottom: 6 }}>Kids</GLabel>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {family.kids.map(k => (
-              <div key={k.id} style={{
-                fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2,
-                background: G.bg, border: `1px solid ${G.hairline}`,
-                borderRadius: 100, padding: '3px 10px',
-              }}>{k.name}</div>
-            ))}
-          </div>
+            </div>
+          )}
+          {family.kids.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <GLabel style={{ marginBottom: 5 }}>Kids</GLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {family.kids.map(k => (
+                  <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <GAvatar name={k.name} size={26} />
+                    <span style={{ fontFamily: G.display, fontSize: 12, fontWeight: 500 }}>{shortName(k.name)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {caregivers.length > 1 && (
         <div>
-          <GLabel style={{ marginBottom: 6 }}>Also helping</GLabel>
+          <GLabel style={{ marginBottom: 5 }}>Also helping</GLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {caregivers.map(c => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <GAvatar name={c.name} size={24} />
-                <span style={{ fontFamily: G.sans, fontSize: 11, color: G.ink2 }}>{shortName(c.name)}</span>
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <GAvatar name={c.name} size={22} />
+                <span style={{ fontFamily: G.sans, fontSize: 10, color: G.ink2 }}>{shortName(c.name)}</span>
               </div>
             ))}
           </div>
