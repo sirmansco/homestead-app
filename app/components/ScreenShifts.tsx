@@ -99,86 +99,77 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   const dow = fmtDayOfWeek(s);
 
   return (
-    <article style={{ paddingTop: first ? 4 : 16, paddingBottom: 16, borderBottom: `1px solid ${G.hairline}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <GLabel color={G.ink}>{fmtWhen(row.shift.startsAt)}</GLabel>
-        <div style={{ flex: 1, height: 1, background: G.hairline }} />
-      </div>
-      <div style={{ display: 'flex', gap: 12 }}>
+    <article style={{ paddingTop: first ? 4 : 12, paddingBottom: 12, borderBottom: `1px solid ${G.hairline}` }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        {/* Date widget — compact */}
         <div style={{
-          width: 58, flexShrink: 0,
+          width: 46, flexShrink: 0,
           border: `1px solid ${G.ink}`, borderRadius: 6, overflow: 'hidden',
           textAlign: 'center', background: G.paper,
         }}>
-          <div style={{ background: G.ink, color: '#FBF7F0', fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, padding: '3px 0' }}>{month}</div>
-          <div style={{ fontFamily: G.display, fontSize: 26, fontWeight: 500, color: G.ink, padding: '4px 0 0', lineHeight: 1 }}>{dayLarge}</div>
-          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10, color: G.muted, paddingBottom: 4 }}>{dow}</div>
+          <div style={{ background: G.ink, color: G.bg, fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1.2, padding: '2px 0' }}>{month}</div>
+          <div style={{ fontFamily: G.display, fontSize: 20, fontWeight: 500, color: G.ink, padding: '2px 0 0', lineHeight: 1 }}>{dayLarge}</div>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 9, color: G.muted, paddingBottom: 3 }}>{dow}</div>
         </div>
+        {/* Main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: G.display, fontSize: 18, fontWeight: 500, color: G.ink, lineHeight: 1.15 }}>{row.shift.title}</div>
-          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 2 }}>
-            {fmtTimeRange(row.shift.startsAt, row.shift.endsAt)}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+            <div style={{ fontFamily: G.display, fontSize: 16, fontWeight: 500, color: G.ink, lineHeight: 1.2 }}>{row.shift.title}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, flexShrink: 0 }}>
+              {dollars(row.shift.rateCents) && (
+                <span style={{ fontFamily: G.display, fontSize: 13, color: G.ink }}>{dollars(row.shift.rateCents)}</span>
+              )}
+              {dollars(row.shift.rateCents) && <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted }}>·</span>}
+              <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</span>
+            </div>
+          </div>
+          <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.ink2, marginTop: 1 }}>
+            {fmtWhen(row.shift.startsAt)} · {fmtTimeRange(row.shift.startsAt, row.shift.endsAt)}
             {row.household && <> · <span style={{ fontStyle: 'normal', color: G.muted }}>{row.household.glyph} {row.household.name}</span></>}
           </div>
-          {row.shift.forWhom && (
-            <div style={{ fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.4 }}>For {row.shift.forWhom}</div>
+          {(row.shift.forWhom || row.shift.notes) && (
+            <div style={{ fontSize: 11, color: G.ink2, marginTop: 3, lineHeight: 1.4 }}>
+              {row.shift.forWhom && <>For {row.shift.forWhom}</>}
+              {row.shift.forWhom && row.shift.notes && ' · '}
+              {row.shift.notes}
+            </div>
           )}
-          {row.shift.notes && (
-            <div style={{ fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.4 }}>{row.shift.notes}</div>
-          )}
-        </div>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingLeft: 70 }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {dollars(row.shift.rateCents) && (
-            <>
-              <span style={{ fontFamily: G.display, fontSize: 14, color: G.ink }}>{dollars(row.shift.rateCents)}</span>
-              <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>·</span>
-            </>
-          )}
-          <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>{durationH(row.shift.startsAt, row.shift.endsAt)}</span>
-        </div>
-        {mine && onUnclaim ? (
-          releasingUnclaim ? (
-            <ReleaseForm
-              onConfirm={(reason) => onUnclaim(row.shift.id, reason)}
-              onCancel={onCancelUnclaim!}
-              busy={!!busy}
-            />
-          ) : (
-            <button
-              onClick={() => onUnclaim(row.shift.id, '')}
-              disabled={busy}
-              style={{
-                padding: '7px 14px',
-                background: 'transparent', color: G.ink,
-                border: `1px solid ${G.hairline2}`, borderRadius: 100,
-                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-                textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
-                opacity: busy ? 0.7 : 1,
-              }}>{busy ? 'Releasing…' : 'Release'}</button>
-          )
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            {row.household && (
-              <span style={{
-                fontFamily: G.sans, fontSize: 10, color: G.muted,
-                letterSpacing: 0.2,
-              }}>{row.household.glyph} {row.household.name}</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+            {mine && onUnclaim ? (
+              releasingUnclaim ? (
+                <ReleaseForm
+                  onConfirm={(reason) => onUnclaim(row.shift.id, reason)}
+                  onCancel={onCancelUnclaim!}
+                  busy={!!busy}
+                />
+              ) : (
+                <button
+                  onClick={() => onUnclaim(row.shift.id, '')}
+                  disabled={busy}
+                  style={{
+                    padding: '5px 12px',
+                    background: 'transparent', color: G.ink,
+                    border: `1px solid ${G.hairline2}`, borderRadius: 100,
+                    fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
+                    textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
+                    opacity: busy ? 0.7 : 1,
+                  }}>{busy ? 'Releasing…' : 'Release'}</button>
+              )
+            ) : (
+              <button
+                onClick={() => onClaim(row.shift.id)}
+                disabled={busy}
+                style={{
+                  padding: '5px 12px',
+                  background: G.ink, color: G.bg,
+                  border: 'none', borderRadius: 100,
+                  fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
+                  textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
+                  opacity: busy ? 0.7 : 1,
+                }}>{busy ? 'Claiming…' : 'Claim'}</button>
             )}
-            <button
-              onClick={() => onClaim(row.shift.id)}
-              disabled={busy}
-              style={{
-                padding: '7px 14px',
-                background: G.ink, color: G.bg,
-                border: 'none', borderRadius: 100,
-                fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
-                textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
-                opacity: busy ? 0.7 : 1,
-              }}>{busy ? 'Claiming…' : 'Claim'}</button>
           </div>
-        )}
+        </div>
       </div>
     </article>
   );
