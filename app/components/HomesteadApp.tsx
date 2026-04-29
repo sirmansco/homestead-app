@@ -324,6 +324,7 @@ export function HomesteadApp() {
           fontFamily: G.sans,
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}>
           {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
           <div style={{
