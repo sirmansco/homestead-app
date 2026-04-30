@@ -249,7 +249,7 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
                   display: 'block', width: '100%', marginBottom: 8,
                   padding: '14px 16px', textAlign: 'left',
                   background: g === villageGroup ? G.ink : 'transparent',
-                  color: g === villageGroup ? '#FBF7F0' : G.ink,
+                  color: g === villageGroup ? G.bg : G.ink,
                   border: `1px solid ${g === villageGroup ? G.ink : G.hairline2}`,
                   borderRadius: 8, cursor: 'pointer',
                   fontFamily: G.display, fontSize: 15, fontWeight: 500,
@@ -377,7 +377,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
               <button key={k} onClick={() => { setKind(k); setName(''); setEmail(''); setBirthday(''); setError(null); setLinkUrl(null); }} style={{
                 flex: 1, padding: '8px 12px', borderRadius: 100,
                 background: kind === k ? G.ink : 'transparent',
-                color: kind === k ? '#FBF7F0' : G.ink2,
+                color: kind === k ? G.bg : G.ink2,
                 border: 'none', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase',
