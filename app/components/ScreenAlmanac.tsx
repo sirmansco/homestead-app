@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { G } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
@@ -49,7 +49,7 @@ function bucketOf(iso: string): 'today' | 'tomorrow' | 'week' | 'later' {
   return 'later';
 }
 
-function HouseholdChip({ name, glyph }: { name: string; glyph: string }) {
+const HouseholdChip = React.memo(function HouseholdChip({ name, glyph }: { name: string; glyph: string }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -62,7 +62,7 @@ function HouseholdChip({ name, glyph }: { name: string; glyph: string }) {
       {name}
     </span>
   );
-}
+});
 
 function fmtRate(cents: number | null | undefined) {
   if (cents == null) return null;
@@ -70,7 +70,7 @@ function fmtRate(cents: number | null | undefined) {
   return dollars % 1 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming, showHousehold, onOpen }: {
+const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming, showHousehold, onOpen }: {
   row: ShiftRow; accent: string; tagline: string;
   onCancel?: (id: string) => void; cancelling?: boolean;
   onClaim?: (id: string) => void; claiming?: boolean;
@@ -183,7 +183,7 @@ function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claimi
       )}
     </div>
   );
-}
+});
 
 function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
   row: ShiftRow; onClose: () => void;
@@ -284,7 +284,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
   );
 }
 
-function OnboardStep({ num, done, title, sub, action }: {
+const OnboardStep = React.memo(function OnboardStep({ num, done, title, sub, action }: {
   num: number; done: boolean; title: string; sub: string; action?: React.ReactNode;
 }) {
   return (
@@ -310,7 +310,7 @@ function OnboardStep({ num, done, title, sub, action }: {
       </div>
     </div>
   );
-}
+});
 
 function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted }: {
   onRing?: () => void;
@@ -450,7 +450,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
   );
 }
 
-function BellButton({ onRing }: { onRing: () => void }) {
+const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => void }) {
   return (
     <button
       onClick={onRing}
@@ -466,7 +466,7 @@ function BellButton({ onRing }: { onRing: () => void }) {
       {Icons.bell(G.bg)}
     </button>
   );
-}
+});
 
 export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
   role?: 'parent' | 'caregiver';
@@ -607,7 +607,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     await loadUnavail();
   }
 
-  async function cancelShift(id: string) {
+  const cancelShift = useCallback(async (id: string) => {
     setCancellingId(id);
     try {
       const res = await fetch(`/api/shifts/${id}/cancel`, { method: 'POST' });
@@ -621,9 +621,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     } finally {
       setCancellingId(null);
     }
-  }
+  }, [load]);
 
-  async function claimShift(id: string) {
+  const claimShift = useCallback(async (id: string) => {
     setClaimingId(id);
     try {
       const res = await fetch(`/api/shifts/${id}/claim`, { method: 'POST' });
@@ -637,35 +637,39 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     } finally {
       setClaimingId(null);
     }
-  }
+  }, [load]);
 
-  const upcoming = (rows || []).filter(r => new Date(r.shift.endsAt) >= new Date() && r.shift.status !== 'cancelled');
+  const myHouseholdId = active?.id;
+
+  const upcoming = useMemo(() => {
+    const now = new Date();
+    return (rows || []).filter(r => new Date(r.shift.endsAt) >= now && r.shift.status !== 'cancelled');
+  }, [rows]);
 
   // Dual-role split: own household vs other families needing help
-  const myHouseholdId = active?.id;
-  const ownShifts = isDualRole
+  const ownShifts = useMemo(() => isDualRole
     ? upcoming.filter(r => r.shift.householdId === myHouseholdId)
     // Pure caregiver: only open shifts — claimed shifts live on the Schedule screen
     : role === 'caregiver'
       ? upcoming.filter(r => r.shift.status === 'open')
-      : upcoming;
-  const helpNeeded = isDualRole
+      : upcoming,
+  [upcoming, isDualRole, myHouseholdId, role]);
+
+  const helpNeeded = useMemo(() => isDualRole
     ? upcoming.filter(r => r.shift.householdId !== myHouseholdId && r.shift.status === 'open' && !r.claimedByMe)
-    : [];
-  const myCaregiverClaimed = isDualRole
+    : [],
+  [upcoming, isDualRole, myHouseholdId]);
+
+  const myCaregiverClaimed = useMemo(() => isDualRole
     ? upcoming.filter(r => r.shift.householdId !== myHouseholdId && r.claimedByMe)
-    : [];
+    : [],
+  [upcoming, isDualRole, myHouseholdId]);
 
-  const today    = ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'today');
-  const tomorrow = ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'tomorrow');
-  const week     = ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'week');
-  const later    = ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later');
+  const today    = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'today'), [ownShifts]);
+  const tomorrow = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'tomorrow'), [ownShifts]);
+  const week     = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'week'), [ownShifts]);
+  const later    = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later'), [ownShifts]);
 
-  function possessive(name: string) {
-    // Strip generic suffixes so "Sirmans Household" → "Sirmans"
-    const cleaned = name.replace(/\s+(household|family|home|house)s?$/i, '').trim();
-    return cleaned.endsWith('s') ? `${cleaned}'` : `${cleaned}'s`;
-  }
   const title = role === 'caregiver' ? 'Open Shifts' : 'The Almanac';
   // Pretty name of the active household, shown as a subtitle so multi-household
   // users (Karson) can see which family they're looking at without opening the switcher.
@@ -673,30 +677,30 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
     ? active.name.replace(/\s+(household|family|home|house)s?$/i, '')
     : null;
 
-  let statusLine = 'Loading…';
-  if (rows !== null) {
-    if (isDualRole) {
-      const parts = [
-        ownShifts.filter(r => r.shift.status === 'open').length > 0
-          ? `${ownShifts.filter(r => r.shift.status === 'open').length} open in your household` : null,
-        myCaregiverClaimed.length > 0 ? `${myCaregiverClaimed.length} you're covering` : null,
-        helpNeeded.length > 0 ? `${helpNeeded.length} available to help with` : null,
-      ].filter(Boolean);
-      statusLine = parts.length ? parts.join(' · ') : 'All covered.';
-    } else if (upcoming.length === 0) {
-      statusLine = 'Nothing on the books yet.';
-    } else if (multiHousehold) {
-      statusLine = `${upcoming.filter(r => r.shift.status === 'open').length} open · ${upcoming.filter(r => r.claimedByMe).length} you're covering.`;
-    } else if (role === 'parent') {
-      statusLine = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
-    } else {
-      const openCount = upcoming.filter(r => r.shift.status === 'open').length;
-      statusLine = openCount > 0 ? `${openCount} open` : 'Nothing open right now.';
+  const tagline = useMemo(() => {
+    let statusLine = 'Loading…';
+    if (rows !== null) {
+      if (isDualRole) {
+        const openInHousehold = ownShifts.filter(r => r.shift.status === 'open').length;
+        const parts = [
+          openInHousehold > 0 ? `${openInHousehold} open in your household` : null,
+          myCaregiverClaimed.length > 0 ? `${myCaregiverClaimed.length} you're covering` : null,
+          helpNeeded.length > 0 ? `${helpNeeded.length} available to help with` : null,
+        ].filter(Boolean);
+        statusLine = parts.length ? parts.join(' · ') : 'All covered.';
+      } else if (upcoming.length === 0) {
+        statusLine = 'Nothing on the books yet.';
+      } else if (multiHousehold) {
+        statusLine = `${upcoming.filter(r => r.shift.status === 'open').length} open · ${upcoming.filter(r => r.claimedByMe).length} you're covering.`;
+      } else if (role === 'parent') {
+        statusLine = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
+      } else {
+        const openCount = upcoming.filter(r => r.shift.status === 'open').length;
+        statusLine = openCount > 0 ? `${openCount} open` : 'Nothing open right now.';
+      }
     }
-  }
-  const tagline = activeHouseholdLabel
-    ? `${activeHouseholdLabel} · ${statusLine}`
-    : statusLine;
+    return activeHouseholdLabel ? `${activeHouseholdLabel} · ${statusLine}` : statusLine;
+  }, [rows, isDualRole, ownShifts, myCaregiverClaimed, helpNeeded, upcoming, multiHousehold, role, activeHouseholdLabel]);
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>

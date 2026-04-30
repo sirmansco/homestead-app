@@ -41,7 +41,7 @@ const GROUP_META: Record<VillageGroup, { label: string; note: string }> = {
   sitter:       { label: 'Trusted Sitters', note: 'paid · available on demand' },
 };
 
-function GroupHeader({ count, label, note }: { count: number; label: string; note: string }) {
+const GroupHeader = React.memo(function GroupHeader({ count, label, note }: { count: number; label: string; note: string }) {
   return (
     <div style={{ margin: '4px 0 10px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -51,13 +51,13 @@ function GroupHeader({ count, label, note }: { count: number; label: string; not
       <GLabel style={{ marginTop: 2 }}>{note}</GLabel>
     </div>
   );
-}
+});
 
 const GROUP_CYCLE: VillageGroup[] = ['inner_circle', 'sitter'];
 const GROUP_LABEL: Record<VillageGroup, string> = { inner_circle: 'IC', sitter: 'TS' };
 const GROUP_TITLE: Record<VillageGroup, string> = { inner_circle: 'Inner Circle', sitter: 'Trusted Sitter' };
 
-function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
+const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
   name: string;
   role: string;
   isMe?: boolean;
@@ -268,7 +268,7 @@ function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onC
       )}
     </div>
   );
-}
+});
 
 function EmptyGroup({ label }: { label: string }) {
   return (
@@ -499,7 +499,7 @@ type FamilyData = {
   kids: Kid[];
 };
 
-function FamilyCard({ family, myUserId, onLeave }: {
+const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }: {
   family: FamilyData;
   myUserId?: string;
   onLeave?: () => void;
@@ -597,7 +597,7 @@ function FamilyCard({ family, myUserId, onLeave }: {
       )}
     </div>
   );
-}
+});
 
 function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [families, setFamilies] = useState<FamilyData[] | null>(null);
@@ -767,15 +767,15 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
     }
   }
 
-  const removeAdult = async (id: string) => {
+  const removeAdult = useCallback(async (id: string) => {
     const res = await fetch(`/api/household/members/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setVillageError(data.error || 'Could not remove member. Try again.');
     }
     load();
-  };
-  const changeRole = async (id: string, role: AppRole) => {
+  }, [load]);
+  const changeRole = useCallback(async (id: string, role: AppRole) => {
     const res = await fetch(`/api/household/members/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -786,8 +786,8 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
       setVillageError(data.error || 'Failed to change role');
     }
     load();
-  };
-  const changeGroup = async (id: string, villageGroup: VillageGroup) => {
+  }, [load]);
+  const changeGroup = useCallback(async (id: string, villageGroup: VillageGroup) => {
     const res = await fetch(`/api/household/members/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -798,12 +798,14 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
       setVillageError(data.error || 'Failed to move circle');
     }
     load();
-  };
-  const removeKid = async (id: string) => {
+  }, [load]);
+  const removeKid = useCallback(async (id: string) => {
     setKids(prev => prev.filter(k => k.id !== id));
     await fetch(`/api/village?type=kid&id=${id}`, { method: 'DELETE' });
     load();
-  };
+  }, [load]);
+
+  const onPhotoChange = useCallback(() => { load(); }, [load]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -923,7 +925,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
                               photoUrl={m.photoUrl}
                               targetType="user"
                               targetId={m.id}
-                              onPhotoChange={() => load()}
+                              onPhotoChange={onPhotoChange}
                             />
                           );
                         })}

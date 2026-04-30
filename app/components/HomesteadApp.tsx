@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { G } from './tokens';
 import { GTabBar } from './shared';
@@ -298,12 +298,12 @@ export function HomesteadApp() {
     setScreen('almanac');
   }, []);
 
-  const handleRoleChange = (r: Role) => {
+  const handleRoleChange = useCallback((r: Role) => {
     setRole(r);
     setScreen('almanac');
-  };
+  }, []);
 
-  function renderScreen() {
+  const renderedScreen = useMemo(() => {
     switch (screen) {
       case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('bell')} onPost={() => setScreen('post')} onVillage={() => setScreen('village')} />;
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
@@ -314,7 +314,8 @@ export function HomesteadApp() {
       case 'diagnostics': return <ScreenDiagnostics onBack={() => setScreen('settings')} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, role, isDualRole, bellCompose, canSwitchRole, handleRing, handlePost, navigate]);
 
   // ── MOBILE LAYOUT ────────────────────────────────────────────────────────
   if (isMobile) {
@@ -331,7 +332,7 @@ export function HomesteadApp() {
             flex: 1, overflow: 'hidden', position: 'relative',
             paddingTop: 'env(safe-area-inset-top, 0px)',
           }}>
-            {renderScreen()}
+            {renderedScreen}
           </div>
           <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
           {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
@@ -403,7 +404,7 @@ export function HomesteadApp() {
           </div>
         </div>
         <div style={{ position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-          {renderScreen()}
+          {renderedScreen}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
         <div style={{
