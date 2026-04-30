@@ -478,7 +478,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
               <div style={{ position: 'absolute', left: 14, top: 12, bottom: 12, width: 1, background: G.hairline2 }} />
               <Rung ring={1} label="Inner Circle" status={inner.length > 0 ? 'rung' : 'pending'} time="Now"
                 people={inner.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
-              <Rung ring={2} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="+5 min if no answer"
+              <Rung ring={2} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="If inner circle can't"
                 people={sitter.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
             </div>
           </>
