@@ -6,12 +6,13 @@ import { GTabBar } from './shared';
 import { ScreenPost } from './ScreenPost';
 import { ScreenShifts } from './ScreenShifts';
 import { ScreenAlmanac } from './ScreenAlmanac';
-import { ScreenBell } from './ScreenBell';
-import { ScreenVillage } from './ScreenVillage';
+import { ScreenLantern } from './ScreenLantern';
+import { ScreenCircle } from './ScreenCircle';
 import { ScreenSettings } from './ScreenSettings';
 import { ScreenDiagnostics } from './ScreenDiagnostics';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
 import { InstallHint } from './InstallHint';
+import { getCopy } from '@/lib/copy';
 
 // Role switcher — enabled for emails in NEXT_PUBLIC_DEV_EMAILS (comma-separated).
 // Changes only client-side UI; server APIs still enforce real role via DB.
@@ -20,8 +21,15 @@ const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);
 
-type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell' | 'settings' | 'diagnostics';
+type TabId = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern' | 'settings' | 'diagnostics';
+type LegacyTabId = TabId | 'village' | 'bell';
 type Role = 'parent' | 'caregiver';
+
+function normalizeTabId(id: LegacyTabId): TabId {
+  if (id === 'village') return 'circle';
+  if (id === 'bell') return 'lantern';
+  return id;
+}
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -232,19 +240,19 @@ export function HomesteadApp() {
     // Deep-link from push notification: ?tab=bell (or ?tab=almanac etc.)
     // This runs on app open so tapping a notification lands on the right screen.
     const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab') as TabId | null;
-    const validTabs: TabId[] = ['almanac', 'post', 'village', 'shifts', 'bell', 'settings', 'diagnostics'];
+    const tabParam = params.get('tab') as LegacyTabId | null;
+    const validTabs: LegacyTabId[] = ['almanac', 'post', 'circle', 'village', 'shifts', 'lantern', 'bell', 'settings', 'diagnostics'];
     if (tabParam && validTabs.includes(tabParam)) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setScreen(tabParam);
+      setScreen(normalizeTabId(tabParam));
       // Clean the URL so the param doesn't persist on refresh
       const clean = new URL(window.location.href);
       clean.searchParams.delete('tab');
       window.history.replaceState({}, '', clean.pathname + (clean.search || ''));
       return; // don't apply localStorage over the deep-link
     }
-    const savedScreen = localStorage.getItem('hs.screen') as TabId | null;
-    if (savedScreen) setScreen(savedScreen);
+    const savedScreen = localStorage.getItem('hs.screen') as LegacyTabId | null;
+    if (savedScreen) setScreen(normalizeTabId(savedScreen));
   }, []);
 
   useEffect(() => { localStorage.setItem('hs.screen', screen); }, [screen]);
@@ -253,11 +261,11 @@ export function HomesteadApp() {
   }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
-    // Navigating to bell via tab bar should check for active bells first (not go straight to compose)
-    if (id === 'bell') setBellCompose(false);
+    // Navigating to lantern via tab bar should check for active bells first (not go straight to compose)
+    if (id === 'lantern') setBellCompose(false);
     setScreen(id);
     // Re-poll bell count immediately on navigation so the badge reflects current state
-    if (id === 'bell' || id === 'almanac') {
+    if (id === 'lantern' || id === 'almanac') {
       fetch('/api/bell/active')
         .then(r => r.ok ? r.json() : null)
         .then(data => {
@@ -273,15 +281,15 @@ export function HomesteadApp() {
   // Which tab pill to highlight.
   // For caregivers: bell tab exists, so highlight it. For parents: bell maps to almanac.
   // Settings maps to village for both roles.
-  type NavTab = 'almanac' | 'post' | 'village' | 'shifts' | 'bell';
+  type NavTab = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern';
   const activeTab: NavTab =
-    screen === 'bell' ? (role === 'caregiver' ? 'bell' : 'almanac') :
-    (screen === 'settings' || screen === 'diagnostics') ? 'village' :
+    screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'almanac') :
+    (screen === 'settings' || screen === 'diagnostics') ? 'circle' :
     screen as NavTab;
 
   useEffect(() => {
-    const parentMap:    TabId[] = ['almanac', 'post',   'village'];
-    const caregiverMap: TabId[] = ['almanac', 'shifts', 'bell', 'village'];
+    const parentMap:    TabId[] = ['almanac', 'post',   'circle'];
+    const caregiverMap: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
     const map = role === 'caregiver' ? caregiverMap : parentMap;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
@@ -291,10 +299,10 @@ export function HomesteadApp() {
     return () => window.removeEventListener('keydown', handler);
   }, [role, navigate]);
 
-  const handleRing = useCallback(() => { setBellCompose(true); setScreen('bell'); }, []);
+  const handleRing = useCallback(() => { setBellCompose(true); setScreen('lantern'); }, []);
 
   const handlePost = useCallback((msg?: string) => {
-    setToast({ msg: msg || 'Posted to the Village', key: Date.now() });
+    setToast({ msg: msg || `Posted to ${getCopy().circle.title}`, key: Date.now() });
     setScreen('almanac');
   }, []);
 
@@ -305,12 +313,12 @@ export function HomesteadApp() {
 
   const renderedScreen = useMemo(() => {
     switch (screen) {
-      case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('bell')} onPost={() => setScreen('post')} onVillage={() => setScreen('village')} />;
+      case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('lantern')} onPost={() => setScreen('post')} onVillage={() => setScreen('circle')} />;
       case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
       case 'shifts':  return <ScreenShifts />;
-      case 'bell':    return <ScreenBell key={`bell-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
-      case 'village': return <ScreenVillage role={role} onOpenSettings={() => setScreen('settings')} />;
-      case 'settings': return <ScreenSettings onBack={() => setScreen('village')} role={role} onOpenDiagnostics={canSwitchRole ? () => setScreen('diagnostics') : undefined} />;
+      case 'lantern': return <ScreenLantern key={`lantern-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
+      case 'circle':  return <ScreenCircle role={role} onOpenSettings={() => setScreen('settings')} />;
+      case 'settings': return <ScreenSettings onBack={() => setScreen('circle')} role={role} onOpenDiagnostics={canSwitchRole ? () => setScreen('diagnostics') : undefined} />;
       case 'diagnostics': return <ScreenDiagnostics onBack={() => setScreen('settings')} />;
       default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
     }
@@ -353,12 +361,12 @@ export function HomesteadApp() {
         <div style={{
           fontFamily: G.display, fontStyle: 'italic', fontSize: 18, color: 'var(--bg)',
           marginBottom: 24, lineHeight: 1.2,
-        }}>Homestead</div>
+        }}>{getCopy().brand.name}</div>
         {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
         {(role === 'parent'
-          ? [['1', 'Almanac'], ['2', 'Post'], ['3', 'Village']]
-          : [['1', 'Open'], ['2', 'Schedule'], ['3', 'Bell'], ['4', 'Village']]
+          ? [['1', 'Almanac'], ['2', 'Post'], ['3', getCopy().circle.title]]
+          : [['1', 'Open'], ['2', 'Schedule'], ['3', getCopy().urgentSignal.noun], ['4', getCopy().circle.title]]
         ).map(([k, l]) => (
           <div key={k} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
             <div style={{
@@ -418,7 +426,7 @@ export function HomesteadApp() {
 
       <div style={{ width: 140, flexShrink: 0 }}>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.7 }}>
-          <div>Homestead</div>
+          <div>{getCopy().brand.name}</div>
           <div>Family childcare</div>
           <div>coordination</div>
           <br />

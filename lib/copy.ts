@@ -9,9 +9,11 @@ export type AppCopy = {
     quote: string;
   };
   urgentSignal: {
+    noun: string;
     actionLabel: string;
     tabLabel: string;
     tabIcon: string;
+    towerTitle: string;
     pushTitle: (household: string) => string;
     pushBody: (reason: string, note?: string) => string;
     escalateTitle: (reason: string) => string;
@@ -59,6 +61,13 @@ export type AppCopy = {
     listTitle: string;
     tabLabel: string;
     dbValue: string;
+  };
+  circle: {
+    title: string;
+    innerLabel: string;
+    outerLabel: string;
+    loadingState: string;
+    emptyState: string;
   };
   roles: {
     keeper: { singular: string; plural: string };

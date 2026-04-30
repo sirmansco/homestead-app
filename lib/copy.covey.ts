@@ -9,9 +9,11 @@ export const coveyCopy: AppCopy = {
     quote: '"Tail to tail. Heads out."',
   },
   urgentSignal: {
+    noun: 'Lantern',
     actionLabel: 'Light the Lantern',
     tabLabel: 'Lantern',
     tabIcon: '🪔',
+    towerTitle: 'Lantern Tower',
     pushTitle: (household: string) => `🪔 ${household} needs help`,
     pushBody: (reason: string, note?: string) => reason + (note ? ` — ${note}` : ''),
     escalateTitle: (reason: string) => `🪔 Still needed — ${reason}`,
@@ -59,6 +61,13 @@ export const coveyCopy: AppCopy = {
     listTitle: 'Your Field',
     tabLabel: 'Field',
     dbValue: 'field' as const,
+  },
+  circle: {
+    title: 'Your Circle',
+    innerLabel: 'Your Covey',
+    outerLabel: 'Your Field',
+    loadingState: 'Loading your circle…',
+    emptyState: 'Your circle is empty.',
   },
   roles: {
     keeper: { singular: 'Keeper', plural: 'Keepers' },

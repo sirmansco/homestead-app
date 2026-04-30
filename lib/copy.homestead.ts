@@ -9,9 +9,11 @@ export const homesteadCopy: AppCopy = {
     quote: '"It takes a village."',
   },
   urgentSignal: {
+    noun: 'Bell',
     actionLabel: 'Ring the Bell',
     tabLabel: 'Bell',
     tabIcon: '🔔',
+    towerTitle: 'Bell Tower',
     pushTitle: (household: string) => `🔔 ${household} needs help`,
     pushBody: (reason: string, note?: string) => reason + (note ? ` — ${note}` : ''),
     escalateTitle: (reason: string) => `🔔 Still needed — ${reason}`,
@@ -59,6 +61,13 @@ export const homesteadCopy: AppCopy = {
     listTitle: 'Sitters',
     tabLabel: 'Sitters',
     dbValue: 'sitter' as const,
+  },
+  circle: {
+    title: 'The Village',
+    innerLabel: 'Inner Circle',
+    outerLabel: 'Trusted Sitters',
+    loadingState: 'Loading your village…',
+    emptyState: 'Your village is empty.',
   },
   roles: {
     keeper: { singular: 'Parent', plural: 'Parents' },
