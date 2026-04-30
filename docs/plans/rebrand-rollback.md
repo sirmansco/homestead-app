@@ -54,7 +54,7 @@ Both must be true for full Covey. Either one alone leaves a partial-rebrand stat
 Filled in as work lands:
 
 - Phase 0 complete: SHA `caa8479` (2026-04-30)
-- Phase 1 complete: SHA `___`
+- Phase 1 complete: SHA `7737e2d` (2026-04-30)
 - Phase 2 complete: SHA `___`
 - Phase 3 complete: SHA `___`
 - Phase 4 complete: SHA `___`
