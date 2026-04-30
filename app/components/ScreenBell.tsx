@@ -70,7 +70,7 @@ function Rung({ ring, label, status, time, people }: {
   people: { name: string; state: string; sub: string; highlight?: boolean }[];
 }) {
   const ringStyle = {
-    rung:    { bg: RED,     ink: '#FBF7F0', label: 'Ringing' },
+    rung:    { bg: RED,     ink: 'var(--bg)', label: 'Ringing' },
     queued:  { bg: G.paper, ink: G.ink,     label: 'Queued' },
     pending: { bg: G.paper, ink: G.muted,   label: 'If needed' },
   }[status];
@@ -151,7 +151,7 @@ function PushPermissionBanner() {
             disabled={requesting}
             style={{
               flexShrink: 0, padding: '7px 12px', borderRadius: 6,
-              background: G.ink, color: '#FBF7F0', border: 'none',
+              background: G.ink, color: G.bg, border: 'none',
               fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1,
               textTransform: 'uppercase', cursor: 'pointer',
               opacity: requesting ? 0.6 : 1,
@@ -313,7 +313,7 @@ function BellCompose({ onRing, onBack, onPost }: {
         <button onClick={handleRing} disabled={why === null || submitting} style={{
           marginTop: 22, width: '100%', padding: '18px 14px',
           background: why === null || submitting ? G.hairline2 : RED,
-          color: why === null || submitting ? G.muted : '#FBF7F0',
+          color: why === null || submitting ? G.muted : G.bg,
           border: 'none', borderRadius: 8,
           fontFamily: G.sans, fontSize: 13, fontWeight: 700, letterSpacing: 1.8,
           textTransform: 'uppercase', cursor: why === null || submitting ? 'default' : 'pointer',
@@ -494,7 +494,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleMarkDone} disabled={marking} style={{
             width: '100%', padding: '14px 12px',
-            background: G.ink, color: '#FBF7F0',
+            background: G.ink, color: G.bg,
             border: 'none', borderRadius: 8,
             fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: marking ? 'wait' : 'pointer',
@@ -504,7 +504,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={handleCancel} style={{
                 flex: 1, padding: '12px 12px',
-                background: RED, color: '#FBF7F0', border: 'none', borderRadius: 8,
+                background: RED, color: G.bg, border: 'none', borderRadius: 8,
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase', cursor: 'pointer',
               }}>Yes, cancel bell</button>

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const C = {
-  bg:      '#FBF7F0',
+  bg: 'var(--bg)',
   paper:   '#FFFFFF',
   ink:     '#1B1713',
   ink2:    '#3D3830',

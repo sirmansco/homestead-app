@@ -38,7 +38,7 @@ export function InstallHint() {
     <div style={{
       position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
       left: 16, right: 16, zIndex: 500,
-      background: G.ink, color: '#FBF7F0',
+      background: G.ink, color: G.bg,
       borderRadius: 14, padding: '14px 14px 12px',
       boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
       fontFamily: G.sans,
@@ -57,7 +57,7 @@ export function InstallHint() {
           onClick={dismiss}
           aria-label="Dismiss"
           style={{
-            background: 'transparent', border: 'none', color: '#FBF7F0',
+            background: 'transparent', border: 'none', color: G.bg,
             fontFamily: G.display, fontSize: 22, lineHeight: 1,
             padding: 0, cursor: 'pointer', opacity: 0.6,
           }}

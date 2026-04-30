@@ -163,7 +163,7 @@ export function HouseholdSwitcher() {
                   width: '100%', marginBottom: 6,
                   padding: '12px 14px', textAlign: 'left',
                   background: h.active ? G.ink : 'transparent',
-                  color: h.active ? '#FBF7F0' : G.ink,
+                  color: h.active ? G.bg : G.ink,
                   border: `1px solid ${h.active ? G.ink : G.hairline2}`,
                   borderRadius: 10, cursor: switching ? 'wait' : 'pointer',
                 }}

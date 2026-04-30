@@ -270,7 +270,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
               onClick={() => onClaim(row.shift.id)}
               disabled={claiming}
               style={{
-                flex: 2, padding: '12px', background: G.ink, color: '#FBF7F0',
+                flex: 2, padding: '12px', background: G.ink, color: G.bg,
                 border: 'none', borderRadius: 8,
                 fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
                 textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
@@ -291,7 +291,7 @@ function OnboardStep({ num, done, title, sub, action }: {
     <div style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: `1px solid ${G.hairline}` }}>
       <div style={{
         flexShrink: 0, width: 28, height: 28, borderRadius: 28,
-        background: done ? G.green : G.ink, color: '#FBF7F0',
+        background: done ? G.green : G.ink, color: G.bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: G.display, fontSize: 13, fontWeight: 500,
       }}>
@@ -356,13 +356,13 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
               <button onClick={onPost} style={{
                 width: 56, height: 56, borderRadius: 28,
-                background: G.ink, color: '#FBF7F0',
+                background: G.ink, color: G.bg,
                 border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(27,23,19,0.18)',
               }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 5v14M5 12h14" stroke="#FBF7F0" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M12 5v14M5 12h14" stroke="var(--bg)" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
               <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Post</span>
@@ -420,7 +420,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         action={!step2Done ? (
           <button onClick={onVillage} style={{
             padding: '8px 16px',
-            background: G.ink, color: '#FBF7F0',
+            background: G.ink, color: G.bg,
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
@@ -438,7 +438,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
           <button onClick={onPost} disabled={!step2Done} style={{
             padding: '8px 16px',
             background: step2Done ? G.ink : G.hairline2,
-            color: step2Done ? '#FBF7F0' : G.muted,
+            color: step2Done ? G.bg : G.muted,
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase',
@@ -459,11 +459,11 @@ function BellButton({ onRing }: { onRing: () => void }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 26, height: 26, borderRadius: 26,
         background: G.clay, border: 'none', cursor: 'pointer',
-        padding: 0, color: '#FBF7F0',
+        padding: 0, color: G.bg,
         boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
       }}
     >
-      {Icons.bell('#FBF7F0')}
+      {Icons.bell(G.bg)}
     </button>
   );
 }
@@ -729,7 +729,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={onViewBell ?? onRing} style={{
                 padding: '6px 10px', borderRadius: 6,
-                background: '#B5342B', color: '#FBF7F0', border: 'none',
+                background: '#B5342B', color: G.bg, border: 'none',
                 fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
                 textTransform: 'uppercase', cursor: 'pointer',
               }}>View</button>
@@ -973,7 +973,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                   placeholder="Optional note (vacation, work trip…)"
                   style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${G.hairline2}`, borderRadius: 6, background: G.bg, fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink, outline: 'none' }} />
                 <button onClick={saveUnavail} disabled={savingUnavail || !unavailStart || !unavailEnd} style={{
-                  padding: '10px', background: G.ink, color: '#FBF7F0', border: 'none', borderRadius: 6,
+                  padding: '10px', background: G.ink, color: G.bg, border: 'none', borderRadius: 6,
                   fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase',
                   cursor: (savingUnavail || !unavailStart || !unavailEnd) ? 'not-allowed' : 'pointer',
                   opacity: (savingUnavail || !unavailStart || !unavailEnd) ? 0.5 : 1,

@@ -207,7 +207,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                     style={{
                       padding: '7px 12px', borderRadius: 100,
                       background: on ? G.ink : 'transparent',
-                      color: on ? '#FBF7F0' : G.ink,
+                      color: on ? G.bg : G.ink,
                       border: `1px solid ${on ? G.ink : G.hairline2}`,
                       fontFamily: G.sans, fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
                       cursor: 'pointer',
@@ -245,7 +245,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                 style={{
                   padding: '7px 12px', borderRadius: 100,
                   background: !preferredCaregiverId ? G.ink : 'transparent',
-                  color: !preferredCaregiverId ? '#FBF7F0' : G.ink,
+                  color: !preferredCaregiverId ? G.bg : G.ink,
                   border: `1px solid ${!preferredCaregiverId ? G.ink : G.hairline2}`,
                   fontFamily: G.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 }}
@@ -258,7 +258,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                   style={{
                     padding: '7px 12px', borderRadius: 100,
                     background: preferredCaregiverId === c.id ? G.ink : 'transparent',
-                    color: preferredCaregiverId === c.id ? '#FBF7F0' : G.ink,
+                    color: preferredCaregiverId === c.id ? G.bg : G.ink,
                     border: `1px solid ${preferredCaregiverId === c.id ? G.ink : G.hairline2}`,
                     fontFamily: G.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer',
                   }}
@@ -304,7 +304,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                       <button key={i} type="button" onClick={() => toggleRecurDay(i)} style={{
                         width: 34, height: 34, borderRadius: 17, cursor: 'pointer',
                         background: on ? G.ink : 'transparent',
-                        color: on ? '#FBF7F0' : G.ink,
+                        color: on ? G.bg : G.ink,
                         border: `1px solid ${on ? G.ink : G.hairline2}`,
                         fontFamily: G.sans, fontSize: 10, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -320,7 +320,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
                     <button key={opt} type="button" onClick={() => setRecurEnds(opt)} style={{
                       padding: '5px 12px', borderRadius: 100, cursor: 'pointer',
                       background: recurEnds === opt ? G.ink : 'transparent',
-                      color: recurEnds === opt ? '#FBF7F0' : G.ink,
+                      color: recurEnds === opt ? G.bg : G.ink,
                       border: `1px solid ${recurEnds === opt ? G.ink : G.hairline2}`,
                       fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 0.8,
                       textTransform: 'uppercase',
@@ -403,7 +403,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           disabled={submitting}
           style={{
             marginTop: 24, width: '100%', padding: '16px 14px',
-            background: G.ink, color: '#FBF7F0', border: 'none', borderRadius: 8,
+            background: G.ink, color: G.bg, border: 'none', borderRadius: 8,
             fontFamily: G.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.8,
             textTransform: 'uppercase', cursor: submitting ? 'wait' : 'pointer',
             opacity: submitting ? 0.7 : 1,
