@@ -50,7 +50,7 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
       pointerEvents: 'none',
     }}>
       <div style={{
-        background: G.ink, color: '#FBF7F0',
+        background: G.ink, color: G.bg,
         borderRadius: 100, padding: '12px 20px', textAlign: 'center',
         fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
         boxShadow: '0 4px 16px rgba(27,23,19,0.25)',
@@ -78,14 +78,14 @@ function useLiveClock() {
 function RoleSwitcherDesktop({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FBF7F0', opacity: 0.5, marginBottom: 6 }}>Role</div>
+      <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 6 }}>Role</div>
       <div style={{ display: 'flex', gap: 4 }}>
         {(['parent', 'caregiver'] as Role[]).map(r => (
           <button key={r} onClick={() => onChange(r)} style={{
             flex: 1, padding: '8px 6px', borderRadius: 6,
-            background: role === r ? '#FBF7F0' : 'transparent',
-            color: role === r ? G.ink : '#FBF7F0',
-            border: `1px solid ${role === r ? '#FBF7F0' : 'rgba(255,255,255,0.3)'}`,
+            background: role === r ? 'var(--bg)' : 'transparent',
+            color: role === r ? G.ink : 'var(--bg)',
+            border: `1px solid ${role === r ? 'var(--bg)' : 'rgba(255,255,255,0.3)'}`,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700,
             letterSpacing: 0.8, textTransform: 'capitalize', cursor: 'pointer',
           }}>{r}</button>
@@ -104,8 +104,8 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
         aria-label="Switch role"
         style={{
           position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 78px)', left: 12, zIndex: 200,
-          background: 'rgba(27,23,19,0.85)', color: '#FBF7F0',
-          border: '1px solid rgba(251,247,240,0.25)', borderRadius: 100,
+          background: 'rgba(27,23,19,0.85)', color: 'var(--bg)',
+          border: '1px solid color-mix(in srgb, var(--bg) 25%, transparent)', borderRadius: 100,
           padding: '5px 10px', cursor: 'pointer',
           fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 0.8,
           textTransform: 'uppercase', backdropFilter: 'blur(8px)',
@@ -350,11 +350,11 @@ export function HomesteadApp() {
     }}>
       <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{
-          fontFamily: G.display, fontStyle: 'italic', fontSize: 18, color: '#FBF7F0',
+          fontFamily: G.display, fontStyle: 'italic', fontSize: 18, color: 'var(--bg)',
           marginBottom: 24, lineHeight: 1.2,
         }}>Homestead</div>
         {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
-        <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FBF7F0', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
+        <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
         {(role === 'parent'
           ? [['1', 'Almanac'], ['2', 'Post'], ['3', 'Village']]
           : [['1', 'Open'], ['2', 'Schedule'], ['3', 'Bell'], ['4', 'Village']]
@@ -364,7 +364,7 @@ export function HomesteadApp() {
               width: 18, height: 18, borderRadius: 4,
               background: 'rgba(255,255,255,0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: G.sans, fontSize: 10, fontWeight: 700, color: '#FBF7F0',
+              fontFamily: G.sans, fontSize: 10, fontWeight: 700, color: 'var(--bg)',
             }}>{k}</div>
             <span style={{ fontFamily: G.sans, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{l}</span>
           </div>

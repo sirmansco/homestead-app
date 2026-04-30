@@ -1,6 +1,6 @@
 'use client';
 import React, { CSSProperties } from 'react';
-import { G, avatarColor } from './tokens';
+import { G, RED, avatarColor } from './tokens';
 
 // ── GLabel ────────────────────────────────────────────────────────────────
 export function GLabel({ children, color, style = {} }: {
@@ -46,7 +46,7 @@ export function GAvatar({ name = '', size = 36, style = {} }: {
   return (
     <div style={{
       width: size, height: size, borderRadius: size,
-      background: bg, color: '#FBF7F0',
+      background: bg, color: G.bg,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: G.display, fontSize: size * 0.42, fontWeight: 500,
       flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)', ...style,
@@ -161,6 +161,36 @@ export const Icons = {
   ),
 };
 
+// ── GButton ───────────────────────────────────────────────────────────────
+type GButtonVariant = 'primary' | 'danger' | 'ghost';
+
+export function GButton({ children, variant = 'primary', onClick, disabled, style = {}, type = 'button' }: {
+  children: React.ReactNode;
+  variant?: GButtonVariant;
+  onClick?: () => void;
+  disabled?: boolean;
+  style?: CSSProperties;
+  type?: 'button' | 'submit' | 'reset';
+}) {
+  const base: CSSProperties = {
+    fontFamily: G.sans, fontWeight: 700, fontSize: 13,
+    border: 'none', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.45 : 1, padding: '10px 20px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  };
+  const variants: Record<GButtonVariant, CSSProperties> = {
+    primary: { background: G.ink,         color: G.bg },
+    danger:  { background: RED,           color: G.bg },
+    ghost:   { background: 'transparent', color: G.ink, border: `1px solid ${G.hairline}` },
+  };
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      style={{ ...base, ...variants[variant], ...style }}>
+      {children}
+    </button>
+  );
+}
+
 // ── GTabBar ───────────────────────────────────────────────────────────────
 type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell';
 
@@ -217,7 +247,7 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
                     minWidth: 14, height: 14, borderRadius: 7,
                     background: G.clay, border: `1.5px solid ${G.paper}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: G.sans, fontSize: 8, fontWeight: 700, color: '#FBF7F0',
+                    fontFamily: G.sans, fontSize: 8, fontWeight: 700, color: G.bg,
                     padding: '0 2px',
                   }}>{tab.badge > 9 ? '9+' : tab.badge}</div>
                 )}

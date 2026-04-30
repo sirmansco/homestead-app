@@ -19,7 +19,7 @@ const btnStyle: React.CSSProperties = {
   display: 'inline-block',
   padding: '13px 28px',
   background: G.ink,
-  color: '#FBF7F0',
+  color: G.bg,
   border: 'none',
   borderRadius: 999,
   fontFamily: G.sans,

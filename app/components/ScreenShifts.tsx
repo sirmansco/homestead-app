@@ -83,7 +83,7 @@ function ReleaseForm({ onConfirm, onCancel, busy }: {
           textTransform: 'uppercase', cursor: 'pointer',
         }}>Keep</button>
         <button onClick={() => onConfirm(reason)} disabled={busy} style={{
-          padding: '7px 12px', background: G.ink, color: '#FBF7F0',
+          padding: '7px 12px', background: G.ink, color: G.bg,
           border: 'none', borderRadius: 100,
           fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
           textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',

@@ -31,7 +31,7 @@ function RecurringBlock({ days, time, label }: { days: string[]; time: string; l
               width: 18, height: 18, borderRadius: 3,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: on ? G.ink : 'transparent',
-              color: on ? '#FBF7F0' : G.muted,
+              color: on ? G.bg : G.muted,
               border: `1px solid ${on ? G.ink : G.hairline2}`,
               fontFamily: G.sans, fontSize: 9, fontWeight: 700,
             }}>{d}</div>

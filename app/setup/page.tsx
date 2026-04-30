@@ -96,7 +96,7 @@ export default function SetupPage() {
           style={{
             width: '100%', padding: '14px',
             background: name.trim() && !saving ? G.ink : G.hairline2,
-            color: '#FBF7F0', border: 'none', borderRadius: 8,
+            color: G.bg, border: 'none', borderRadius: 8,
             fontFamily: G.sans, fontSize: 14, fontWeight: 600, letterSpacing: 0.3,
             cursor: name.trim() && !saving ? 'pointer' : 'not-allowed',
           }}
