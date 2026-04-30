@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { PushRegistrar } from './components/PushRegistrar';
 import { AutoUpdate } from './components/AutoUpdate';
@@ -7,24 +8,30 @@ import './globals.css';
 
 const APP_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
 
-// getCopy() is called at module evaluation time for metadata — this is fine for
-// a server module because Next.js re-evaluates server modules per-request in dev
-// and the env var is stable within a deployment in prod.
-const t = getCopy();
+// Covey staging domains are attached to Vercel before TM clearance. Noindex
+// them so search engines don't learn "Homestead is at joincovey.co" during
+// the staging window. Lifted automatically once COVEY_BRAND_ACTIVE goes true.
+const COVEY_STAGING_HOSTS = new Set(['joincovey.co', 'thecovey.app']);
 
-export const metadata: Metadata = {
-  title: t.brand.name,
-  description: 'Family childcare coordination',
-  applicationName: t.brand.name,
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getCopy();
+  const headersList = await headers();
+  const host = headersList.get('host')?.split(':')[0] ?? '';
+  const isCovetyStagingHost = COVEY_STAGING_HOSTS.has(host) && process.env.COVEY_BRAND_ACTIVE !== 'true';
+
+  return {
     title: t.brand.name,
-  },
-  formatDetection: {
-    telephone: false,
-  },
-};
+    description: 'Family childcare coordination',
+    applicationName: t.brand.name,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: t.brand.name,
+    },
+    formatDetection: { telephone: false },
+    ...(isCovetyStagingHost && { robots: { index: false, follow: false } }),
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
