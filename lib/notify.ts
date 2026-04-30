@@ -3,9 +3,9 @@ import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
 import { pushToUser, pushToUsers } from '@/lib/push';
 import { fmtDateTime, fmtDateShort } from '@/lib/format/time';
+import { getCopy } from '@/lib/copy';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM = process.env.NOTIFY_FROM || 'Homestead <notify@homestead.app>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://homestead-app-six.vercel.app';
 
 if (!RESEND_API_KEY) {
@@ -14,6 +14,8 @@ if (!RESEND_API_KEY) {
 
 async function send(to: string[], subject: string, text: string) {
   if (!RESEND_API_KEY || to.length === 0) return;
+  const t = getCopy();
+  const from = process.env.NOTIFY_FROM || `${t.brand.name} <${t.emails.notify}>`;
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -21,7 +23,7 @@ async function send(to: string[], subject: string, text: string) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({ from: FROM, to, subject, text }),
+      body: JSON.stringify({ from, to, subject, text }),
     });
   } catch (err) {
     console.error('[notify:email]', err);
@@ -58,16 +60,17 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   const emails = opted.map(r => r.email).filter(Boolean);
   const optedIds = opted.map(r => r.id);
 
+  const t = getCopy();
   const when = fmtDateShort(row.shift.startsAt);
 
   if (preferredCaregiverId) {
     if (optedIds.includes(preferredCaregiverId)) {
       try {
         await pushToUser(preferredCaregiverId, {
-          title: `📋 ${row.household!.name} needs you`,
+          title: t.request.pushTitleTargeted(row.household!.name),
           body: `${row.shift.title} · ${when}`,
-          url: '/?tab=almanac',
-          tag: `shift-${shiftId}`,
+          url: `/?tab=${t.request.deepLinkTab}`,
+          tag: `${t.request.tagPrefix}-${shiftId}`,
         });
       } catch (err) {
         console.error('[notify:newShift:push:targeted]', err);
@@ -76,10 +79,10 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   } else {
     try {
       await pushToUsers(optedIds, row.shift.householdId, {
-        title: `📋 New shift — ${row.household!.name}`,
+        title: t.request.pushTitle(row.household!.name),
         body: `${row.shift.title} · ${when}`,
-        url: '/?tab=almanac',
-        tag: `shift-${shiftId}`,
+        url: `/?tab=${t.request.deepLinkTab}`,
+        tag: `${t.request.tagPrefix}-${shiftId}`,
       });
     } catch (err) {
       console.error('[notify:newShift:push:broadcast]', err);
@@ -88,16 +91,16 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
 
   if (!emails.length) return;
 
-  const subject = `New shift posted — ${row.shift.title}`;
+  const subject = `New ${t.request.newLabel.toLowerCase()} posted — ${row.shift.title}`;
   const text = [
-    `${row.creator?.name || 'A parent'} posted a new shift for ${row.household.name}:`,
+    `${row.creator?.name || `A ${t.roles.keeper.singular.toLowerCase()}`} posted a new ${t.request.newLabel.toLowerCase()} for ${row.household.name}:`,
     ``,
     `  ${row.shift.title}`,
     `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
     row.shift.forWhom ? `  For ${row.shift.forWhom}` : '',
     row.shift.notes ? `  ${row.shift.notes}` : '',
     ``,
-    `Claim it: ${APP_URL}`,
+    `${t.request.acceptVerb} it: ${APP_URL}`,
   ].filter(Boolean).join('\n');
 
   await send(emails, subject, text);
@@ -121,15 +124,16 @@ export async function notifyShiftClaimed(shiftId: string) {
   // Respect the creator's notifyShiftClaimed preference
   if (creator.notifyShiftClaimed === false) return;
 
-  const claimerName = claimer?.name || 'A caregiver';
+  const t = getCopy();
+  const claimerName = claimer?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
   const when = fmtDateShort(row.shift.startsAt);
 
   try {
     await pushToUser(row.shift.createdByUserId, {
-      title: `✅ ${claimerName} is on it`,
+      title: t.request.coveredTitle(claimerName),
       body: `"${row.shift.title}" · ${when}`,
-      url: '/?tab=almanac',
-      tag: `claimed-${shiftId}`,
+      url: `/?tab=${t.request.deepLinkTab}`,
+      tag: `${t.request.claimedTagPrefix}-${shiftId}`,
     });
   } catch (err) {
     console.error('[notify:shiftClaimed:push]', err);
@@ -137,9 +141,9 @@ export async function notifyShiftClaimed(shiftId: string) {
 
   if (!creator.email) return;
 
-  const subject = `${claimerName} claimed your shift`;
+  const subject = `${claimerName} ${t.request.acceptVerb.toLowerCase()}ed your ${t.request.newLabel.toLowerCase()}`;
   const text = [
-    `${claimerName} just claimed your shift "${row.shift.title}"`,
+    `${claimerName} just ${t.request.acceptVerb.toLowerCase()}ed your ${t.request.newLabel.toLowerCase()} "${row.shift.title}"`,
     `at ${row.household?.name || 'your household'}:`,
     ``,
     `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
@@ -168,15 +172,16 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   // Respect the creator's notifyShiftReleased preference
   if (creator.notifyShiftReleased === false) return;
 
-  const releaserName = releaser?.name || 'A caregiver';
+  const t = getCopy();
+  const releaserName = releaser?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
   const when = fmtDateShort(row.shift.startsAt);
 
   try {
     await pushToUser(row.shift.createdByUserId, {
-      title: `↩️ ${releaserName} released your shift`,
-      body: `"${row.shift.title}" · ${when} — now open again`,
-      url: '/?tab=almanac',
-      tag: `released-${shiftId}`,
+      title: t.request.releasedTitle(releaserName),
+      body: t.request.releasedBody(row.shift.title, when),
+      url: `/?tab=${t.request.deepLinkTab}`,
+      tag: `${t.request.releasedTagPrefix}-${shiftId}`,
     });
   } catch (err) {
     console.error('[notify:shiftReleased:push]', err);
@@ -202,14 +207,15 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
   if (!recipient) return;
   if (recipient.notifyShiftReleased === false) return;
 
+  const t = getCopy();
   const when = fmtDateShort(row.shift.startsAt);
 
   try {
     await pushToUser(recipientUserId, {
-      title: '❌ Shift cancelled',
+      title: t.request.cancelledTitle,
       body: `"${row.shift.title}" · ${when}`,
-      url: '/?tab=shifts',
-      tag: `cancel-${shiftId}`,
+      url: `/?tab=${t.request.shiftsDeepLinkTab}`,
+      tag: `${t.request.cancelTagPrefix}-${shiftId}`,
     });
   } catch (err) {
     console.error('[notify:shiftCancelled:push]', err);
@@ -217,20 +223,21 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
 
   if (!recipient.email) return;
 
-  const subject = `Shift cancelled — ${row.shift.title}`;
+  const subject = `${t.request.newLabel} cancelled — ${row.shift.title}`;
   const text = [
-    `Your shift was cancelled at ${row.household?.name || 'your household'}:`,
+    `Your ${t.request.newLabel.toLowerCase()} was cancelled at ${row.household?.name || 'your household'}:`,
     ``,
     `  ${row.shift.title}`,
     `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
     ``,
-    `View other open shifts: ${APP_URL}`,
+    `View other open ${t.request.tabLabel.toLowerCase()}: ${APP_URL}`,
   ].join('\n');
 
   await send([recipient.email], subject, text);
 }
 
 export async function notifyBellRing(bellId: string) {
+  const t = getCopy();
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
   if (!bell) return;
 
@@ -249,10 +256,10 @@ export async function notifyBellRing(bellId: string) {
 
   try {
     await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
-      title: `🔔 ${household.name} needs help`,
-      body: bell.reason + (bell.note ? ` — ${bell.note}` : ''),
-      url: '/?tab=bell',
-      tag: `bell-${bell.id}`,
+      title: t.urgentSignal.pushTitle(household.name),
+      body: t.urgentSignal.pushBody(bell.reason, bell.note ?? undefined),
+      url: `/?tab=${t.urgentSignal.deepLinkTab}`,
+      tag: `${t.urgentSignal.tagPrefix}-${bell.id}`,
     });
   } catch (err) {
     console.error('[notify:bellRing:push]', err);
@@ -260,6 +267,7 @@ export async function notifyBellRing(bellId: string) {
 }
 
 export async function notifyBellEscalated(bellId: string) {
+  const t = getCopy();
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
   if (!bell) return;
 
@@ -275,10 +283,10 @@ export async function notifyBellEscalated(bellId: string) {
 
   try {
     await pushToUsers(sitters.map(s => s.id), bell.householdId, {
-      title: `🔔 Still needed — ${bell.reason}`,
-      body: 'Inner circle unavailable. Can you help?',
-      url: '/?tab=bell',
-      tag: `bell-escalate-${bellId}`,
+      title: t.urgentSignal.escalateTitle(bell.reason),
+      body: t.urgentSignal.escalateBody,
+      url: `/?tab=${t.urgentSignal.deepLinkTab}`,
+      tag: `${t.urgentSignal.escalateTagPrefix}-${bellId}`,
     });
   } catch (err) {
     console.error('[notify:bellEscalated:push]', err);
@@ -307,11 +315,12 @@ export async function notifyBellResponse(
   const optedParents = parents.filter(p => p.notifyBellResponse !== false);
   if (optedParents.length === 0) return;
 
+  const t = getCopy();
   const msg = response === 'on_my_way'
-    ? { title: `✅ ${name} is on the way`, body: 'Bell handled — someone is coming.', tag: `bell-handled-${bellId}` }
+    ? { title: t.urgentSignal.respondedTitles.onWay(name), body: t.urgentSignal.respondedBodies.onWay, tag: `${t.urgentSignal.respondedTagPrefix}-${bellId}` }
     : response === 'in_thirty'
-    ? { title: `⏱ ${name} can help in 30 min`, body: 'Still looking for someone sooner…', tag: `bell-thirty-${bellId}` }
-    : { title: `${name} can't make it`, body: 'Bell continuing to next circle…', tag: `bell-cannot-${bellId}` };
+    ? { title: t.urgentSignal.respondedTitles.thirty(name), body: t.urgentSignal.respondedBodies.thirty, tag: `${t.urgentSignal.thirtyTagPrefix}-${bellId}` }
+    : { title: t.urgentSignal.respondedTitles.cannot(name), body: t.urgentSignal.respondedBodies.cannot, tag: `${t.urgentSignal.cannotTagPrefix}-${bellId}` };
 
   for (const parent of optedParents) {
     try {
