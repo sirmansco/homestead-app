@@ -2,18 +2,24 @@ import type { Metadata, Viewport } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
 import { PushRegistrar } from './components/PushRegistrar';
 import { AutoUpdate } from './components/AutoUpdate';
+import { getCopy } from '@/lib/copy';
 import './globals.css';
 
 const APP_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
 
+// getCopy() is called at module evaluation time for metadata — this is fine for
+// a server module because Next.js re-evaluates server modules per-request in dev
+// and the env var is stable within a deployment in prod.
+const t = getCopy();
+
 export const metadata: Metadata = {
-  title: 'Homestead',
+  title: t.brand.name,
   description: 'Family childcare coordination',
-  applicationName: 'Homestead',
+  applicationName: t.brand.name,
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Homestead',
+    title: t.brand.name,
   },
   formatDetection: {
     telephone: false,
