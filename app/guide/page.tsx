@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getCopy } from '@/lib/copy';
 
 export const metadata: Metadata = {
-  title: 'Homestead — How It Works',
-  description: 'A guide for parents and caregivers using Homestead.',
+  title: 'How It Works',
+  description: 'A guide for Keepers and Watchers.',
 };
 
 const C = {
@@ -81,6 +82,7 @@ function Tab({ icon, label, desc }: { icon: string; label: string; desc: string 
 }
 
 export default function GuidePage() {
+  const t = getCopy();
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.ink }}>
 
@@ -124,43 +126,43 @@ export default function GuidePage() {
         maxWidth: 680, margin: '0 auto',
       }}>
         <div style={{ fontFamily: C.sans, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
-          Homestead Press · Est. 2025
+          {t.brand.pressLine}
         </div>
         <h1 style={{ fontFamily: C.display, fontStyle: 'italic', fontSize: 38, fontWeight: 500, color: C.ink, margin: 0, lineHeight: 1.1 }}>
-          How Homestead Works
+          How {t.brand.name} Works
         </h1>
         <div style={{ fontFamily: C.serif, fontStyle: 'italic', fontSize: 15, color: C.muted, marginTop: 8 }}>
-          A guide for parents and caregivers
+          A guide for {t.roles.keeper.plural.toLowerCase()} and {t.roles.watcher.plural.toLowerCase()}
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-          <a href="#parents" style={{ fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.clay, textDecoration: 'none', borderBottom: `1px solid ${C.clay}`, paddingBottom: 1 }}>For Parents</a>
+          <a href="#parents" style={{ fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.clay, textDecoration: 'none', borderBottom: `1px solid ${C.clay}`, paddingBottom: 1 }}>For {t.roles.keeper.plural}</a>
           <span style={{ color: C.muted }}>·</span>
-          <a href="#caregivers" style={{ fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.green, textDecoration: 'none', borderBottom: `1px solid ${C.green}`, paddingBottom: 1 }}>For Caregivers</a>
+          <a href="#caregivers" style={{ fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.green, textDecoration: 'none', borderBottom: `1px solid ${C.green}`, paddingBottom: 1 }}>For {t.roles.watcher.plural}</a>
         </div>
       </div>
 
       {/* Body */}
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px 80px' }}>
 
-        {/* What is Homestead */}
-        <Section title="What is Homestead?" sub="The big picture">
+        {/* What is the app */}
+        <Section title={t.guide.whatIsTitle} sub="The big picture">
           <p style={{ fontFamily: C.serif, fontSize: 15, color: C.ink2, lineHeight: 1.7, margin: '0 0 14px' }}>
-            Homestead is a private coordination app for families who rely on a village of caregivers — grandparents, sitters, close friends — to keep life running. It&apos;s not a marketplace. Everyone here already knows each other.
+            {t.guide.whatIsBody1}
           </p>
           <p style={{ fontFamily: C.serif, fontSize: 15, color: C.ink2, lineHeight: 1.7, margin: 0 }}>
-            Parents post what they need. Caregivers claim it or respond to urgent bells. No group texts, no scheduling back-and-forth.
+            {t.guide.whatIsBody2}
           </p>
         </Section>
 
         <Rule />
 
-        {/* ── PARENTS ── */}
+        {/* ── KEEPERS / PARENTS ── */}
         <div id="parents" style={{
           fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 2,
           textTransform: 'uppercase', color: C.clay, marginBottom: 20,
           paddingBottom: 8, borderBottom: `2px solid ${C.clay}`,
         }}>
-          For Parents
+          {t.guide.parentSection}
         </div>
 
         <Section title="Your four tabs" sub="Navigation">
@@ -231,13 +233,13 @@ export default function GuidePage() {
 
         <Rule />
 
-        {/* ── CAREGIVERS ── */}
+        {/* ── WATCHERS / CAREGIVERS ── */}
         <div id="caregivers" style={{
           fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 2,
           textTransform: 'uppercase', color: C.green, marginBottom: 20,
           paddingBottom: 8, borderBottom: `2px solid ${C.green}`,
         }}>
-          For Caregivers
+          {t.guide.caregiverSection}
         </div>
 
         <Section title="Your four tabs" sub="Navigation">
@@ -275,12 +277,12 @@ export default function GuidePage() {
         <Rule />
 
         {/* Tips */}
-        <Section title="Tips for everyone" sub="Getting the most out of Homestead">
+        <Section title={t.guide.tipsTitle} sub={t.guide.tipsSub}>
           {[
             ['Enable push notifications', 'The app is significantly less useful without them. When asked, tap Allow. You can manage notification settings in your phone\'s Settings app.'],
             ['Add it to your home screen', 'On iPhone: tap the Share button in Safari → Add to Home Screen. On Android: tap the menu → Add to Home Screen. It behaves like a native app.'],
-            ['Updates happen automatically', 'When Homestead is updated, your app refreshes silently in the background. No App Store, no manual update required.'],
-            ['It\'s private — always', 'Your household is invitation-only. Nothing is public. Caregivers only see what\'s relevant to them.'],
+            ['Updates happen automatically', `When ${t.brand.name} is updated, your app refreshes silently in the background. No App Store, no manual update required.`],
+            ['It\'s private — always', 'Your household is invitation-only. Nothing is public. Watchers only see what\'s relevant to them.'],
           ].map(([title, body]) => (
             <div key={title} style={{ padding: '14px 0', borderBottom: `1px solid ${C.hairline}` }}>
               <div style={{ fontFamily: C.sans, fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{title}</div>
@@ -292,10 +294,10 @@ export default function GuidePage() {
         {/* Footer */}
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: `2px solid ${C.ink}`, textAlign: 'center' }}>
           <div style={{ fontFamily: C.display, fontStyle: 'italic', fontSize: 18, color: C.ink, marginBottom: 6 }}>
-            &ldquo;It takes a village.&rdquo;
+            {t.guide.footerQuote}
           </div>
           <div style={{ fontFamily: C.serif, fontStyle: 'italic', fontSize: 12, color: C.muted }}>
-            Homestead — built for the people who keep your family running.
+            {t.brand.name} — {t.brand.tagline}
           </div>
           <Link href="/" style={{ display: 'inline-block', marginTop: 20, fontFamily: C.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: C.ink, textDecoration: 'none', borderBottom: `1px solid ${C.ink}`, paddingBottom: 2 }}>
             Back to the app →
