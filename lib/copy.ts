@@ -1,0 +1,111 @@
+// Semantic copy type — keys are brand-independent. Both homesteadCopy and
+// coveyCopy implement this shape so components never know which brand is active.
+export type AppCopy = {
+  brand: {
+    name: string;
+    legal: string;
+    pressLine: string;
+    tagline: string;
+    quote: string;
+  };
+  urgentSignal: {
+    noun: string;
+    actionLabel: string;
+    tabLabel: string;
+    tabIcon: string;
+    towerTitle: string;
+    pushTitle: (household: string) => string;
+    pushBody: (reason: string, note?: string) => string;
+    escalateTitle: (reason: string) => string;
+    escalateBody: string;
+    respondedTitles: {
+      onWay: (name: string) => string;
+      thirty: (name: string) => string;
+      cannot: (name: string) => string;
+    };
+    respondedBodies: {
+      onWay: string;
+      thirty: string;
+      cannot: string;
+    };
+    deepLinkTab: string;
+    tagPrefix: string;
+    escalateTagPrefix: string;
+    respondedTagPrefix: string;
+    thirtyTagPrefix: string;
+    cannotTagPrefix: string;
+  };
+  request: {
+    newLabel: string;
+    acceptVerb: string;
+    tabLabel: string;
+    pushTitle: (household: string) => string;
+    pushTitleTargeted: (household: string) => string;
+    coveredTitle: (name: string) => string;
+    releasedTitle: (name: string) => string;
+    releasedBody: (title: string, when: string) => string;
+    cancelledTitle: string;
+    deepLinkTab: string;
+    shiftsDeepLinkTab: string;
+    tagPrefix: string;
+    claimedTagPrefix: string;
+    releasedTagPrefix: string;
+    cancelTagPrefix: string;
+  };
+  innerRing: {
+    listTitle: string;
+    tabLabel: string;
+    dbValue: string;
+  };
+  outerRing: {
+    listTitle: string;
+    tabLabel: string;
+    dbValue: string;
+  };
+  circle: {
+    title: string;
+    innerLabel: string;
+    outerLabel: string;
+    loadingState: string;
+    emptyState: string;
+  };
+  roles: {
+    keeper: { singular: string; plural: string };
+    watcher: { singular: string; plural: string };
+  };
+  icalendar: {
+    prodId: string;
+    calName: string;
+    uidDomain: string;
+    filename: string;
+  };
+  emails: {
+    contact: string;
+    notify: string;
+  };
+  api: {
+    urgentSignal: string;
+    request: string;
+    circle: string;
+  };
+  guide: {
+    whatIsTitle: string;
+    whatIsBody1: string;
+    whatIsBody2: string;
+    parentSection: string;
+    caregiverSection: string;
+    tipsTitle: string;
+    tipsSub: string;
+    footerQuote: string;
+    footerTagline: string;
+  };
+};
+
+import { homesteadCopy } from './copy.homestead';
+import { coveyCopy } from './copy.covey';
+
+// Server-side selector — reads process.env at call time so the flag can be
+// changed between test cases without re-importing the module.
+export function getCopy(): AppCopy {
+  return process.env.COVEY_BRAND_ACTIVE === 'true' ? coveyCopy : homesteadCopy;
+}

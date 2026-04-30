@@ -1,6 +1,7 @@
 'use client';
 import React, { CSSProperties } from 'react';
 import { G, RED, avatarColor } from './tokens';
+import { getCopy } from '@/lib/copy';
 
 // ── GLabel ────────────────────────────────────────────────────────────────
 export function GLabel({ children, color, style = {} }: {
@@ -192,7 +193,7 @@ export function GButton({ children, variant = 'primary', onClick, disabled, styl
 }
 
 // ── GTabBar ───────────────────────────────────────────────────────────────
-type TabId = 'almanac' | 'post' | 'village' | 'shifts' | 'bell';
+type TabId = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern';
 
 export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellCount = 0 }: {
   active?: TabId;
@@ -205,13 +206,13 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   const parentTabs: Tab[] = [
     { id: 'almanac', label: 'Almanac', icon: Icons.almanac },
     { id: 'post',    label: 'Post',    icon: Icons.post },
-    { id: 'village', label: 'Village', icon: Icons.village },
+    { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
     { id: 'almanac', label: 'Open',     icon: Icons.almanac },
     { id: 'shifts',  label: 'Schedule', icon: Icons.shifts },
-    { id: 'bell',    label: 'Alerts',   icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
-    { id: 'village', label: 'Village',  icon: Icons.village },
+    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
+    { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 

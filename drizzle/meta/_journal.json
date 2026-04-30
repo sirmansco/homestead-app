@@ -29,6 +29,13 @@
       "when": 1777260580612,
       "tag": "0003_empty_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777592806688,
+      "tag": "0004_covey_enum_values",
+      "breakpoints": true
     }
   ]
 }

@@ -1,18 +1,20 @@
 import Link from 'next/link';
+import { getCopy } from '@/lib/copy';
 
 export const metadata = {
-  title: 'Privacy Policy · Homestead',
-  description: 'How Homestead handles your data.',
+  title: 'Privacy Policy',
+  description: 'How we handle your data.',
 };
 
 export default function PrivacyPage() {
+  const t = getCopy();
   return (
     <main style={{
       maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px',
       fontFamily: 'Georgia, serif', color: '#1B1713', lineHeight: 1.6,
     }}>
       <nav style={{ marginBottom: 32, fontSize: 13 }}>
-        <Link href="/" style={{ color: '#7A6C5D' }}>← Homestead</Link>
+        <Link href="/" style={{ color: '#7A6C5D' }}>← {t.brand.name}</Link>
       </nav>
 
       <h2 style={{ fontStyle: 'italic', fontSize: 32, margin: '0 0 8px', fontWeight: 500 }}>
@@ -24,7 +26,7 @@ export default function PrivacyPage() {
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>What we collect</h3>
       <p>
-        Homestead is a coordination tool for families and their trusted villages. We collect only what&rsquo;s
+        {t.brand.name} is a coordination tool for families and their trusted circles. We collect only what&rsquo;s
         necessary to run the app:
       </p>
       <ul>
@@ -41,15 +43,15 @@ export default function PrivacyPage() {
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Children&rsquo;s data (COPPA)</h3>
       <p>
-        Homestead is intended for use by parents and caregivers — adults 18 and older. Children do not create
+        {t.brand.name} is intended for use by parents and caregivers — adults 18 and older. Children do not create
         accounts or use the app directly. Any information about children is entered and controlled by their
         parent or legal guardian.
       </p>
       <p>
         We collect the minimum necessary to coordinate care: first name, birthday (optional), and any notes
         the parent chooses to add (e.g., allergies, preferred bedtime). Parents can delete this information
-        at any time from the Village tab. We do not share children&rsquo;s information with any third party
-        beyond the people the parent has explicitly invited to their village.
+        at any time from the circle tab. We do not share children&rsquo;s information with any third party
+        beyond the people the parent has explicitly invited to their circle.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>How we use your data</h3>
@@ -61,7 +63,7 @@ export default function PrivacyPage() {
       </ul>
       <p>
         We don&rsquo;t sell your data. We don&rsquo;t use your data for advertising. There are no ad trackers
-        on Homestead.
+        on {t.brand.name}.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Who we share data with</h3>
@@ -86,9 +88,9 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li><strong>See your data</strong> — everything you&rsquo;ve added is visible in the app.</li>
-        <li><strong>Edit or delete</strong> — change or remove children, shifts, village members, or blocked
+        <li><strong>Edit or delete</strong> — change or remove children, shifts, circle members, or blocked
           times at any time.</li>
-        <li><strong>Export your data</strong> — email us at <a href="mailto:hello@homestead.app">hello@homestead.app</a> and
+        <li><strong>Export your data</strong> — email us at <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a> and
           we&rsquo;ll send you a JSON export within 30 days.</li>
         <li><strong>Delete your account</strong> — email us and we&rsquo;ll permanently delete your account,
           your household&rsquo;s data, and associated records within 30 days. Push subscriptions are removed immediately.</li>
@@ -114,7 +116,7 @@ export default function PrivacyPage() {
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Contact</h3>
       <p>
-        Questions? <a href="mailto:hello@homestead.app">hello@homestead.app</a>
+        Questions? <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a>
       </p>
     </main>
   );

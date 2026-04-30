@@ -3,7 +3,7 @@ import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean,
 export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
 export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'cancelled']);
 export const bellResponseEnum = pgEnum('bell_response', ['on_my_way', 'in_thirty', 'cannot']);
-export const villageGroupEnum = pgEnum('village_group', ['inner_circle', 'sitter']);
+export const villageGroupEnum = pgEnum('village_group', ['inner_circle', 'sitter', 'covey', 'field']);
 export const shiftStatusEnum = pgEnum('shift_status', ['open', 'claimed', 'cancelled', 'done']);
 
 export const households = pgTable('households', {

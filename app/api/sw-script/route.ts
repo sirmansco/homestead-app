@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getCopy } from '@/lib/copy';
 
 // Serves the service worker JS with the current deploy SHA embedded.
 // Because the SW file content changes on every deploy (the SHA changes),
@@ -10,8 +11,11 @@ import { NextResponse } from 'next/server';
 const DEPLOY_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'dev';
 
 export async function GET() {
+  const t = getCopy();
+  const brandName = t.brand.name;
+  const defaultTag = brandName.toLowerCase();
   const swContent = `
-// Homestead Service Worker — build ${DEPLOY_SHA}
+// ${brandName} Service Worker — build ${DEPLOY_SHA}
 // This comment changes every deploy so the browser detects a new SW automatically.
 
 self.addEventListener('install', () => {
@@ -40,15 +44,15 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: 'Homestead', body: event.data.text() };
+    payload = { title: '${brandName}', body: event.data.text() };
   }
 
-  const title = payload.title || 'Homestead';
+  const title = payload.title || '${brandName}';
   const options = {
     body: payload.body || '',
     icon: '/icon-192',
     badge: '/icon-192',
-    tag: payload.tag || 'homestead',
+    tag: payload.tag || '${defaultTag}',
     data: { url: payload.url || '/' },
     requireInteraction: payload.urgent === true,
   };
