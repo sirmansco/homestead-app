@@ -138,7 +138,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
                 display: 'block', width: '100%', marginBottom: 8,
                 padding: '14px 16px', textAlign: 'left',
                 background: role === r ? G.ink : 'transparent',
-                color: role === r ? '#FBF7F0' : G.ink,
+                color: role === r ? G.bg : G.ink,
                 border: `1px solid ${role === r ? G.ink : G.hairline2}`,
                 borderRadius: 8, cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 13, fontWeight: 600, letterSpacing: 0.3,
@@ -148,7 +148,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
                 </div>
                 <div style={{
                   fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
-                  color: role === r ? 'rgba(251,247,240,0.7)' : G.muted, marginTop: 2,
+                  color: role === r ? G.muted : G.muted, marginTop: 2,
                 }}>
                   {r === 'parent' ? 'Post needs · manage village' : 'Claim shifts · answer bells'}
                 </div>
