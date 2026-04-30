@@ -56,8 +56,8 @@ Filled in as work lands:
 - Phase 0 complete: SHA `caa8479` (2026-04-30)
 - Phase 1 complete: SHA `7737e2d` (2026-04-30)
 - Phase 2 complete: SHA `___`
-- Phase 3 complete: SHA `___`
-- Phase 4 complete: SHA `___`
+- Phase 3 complete: SHA `948d4f5` (2026-04-30)
+- Phase 4 complete: SHA `a9a14ce` (2026-04-30)
 - Phase 5 complete: SHA `___`
 
 ## Rollback decision owner
