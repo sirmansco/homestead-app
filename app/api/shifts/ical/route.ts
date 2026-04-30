@@ -3,6 +3,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
 import { db } from '@/lib/db';
 import { shifts, users, households } from '@/lib/db/schema';
+import { getCopy } from '@/lib/copy';
 
 function escapeIcs(s: string) {
   return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
@@ -13,13 +14,14 @@ function fmtIcsDate(d: Date) {
 }
 
 function buildIcs(events: { uid: string; summary: string; description: string; location: string; dtstart: Date; dtend: Date; dtstamp: Date }[]) {
+  const t = getCopy();
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Homestead//Shifts//EN',
+    `PRODID:${t.icalendar.prodId}`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Homestead Shifts',
+    `X-WR-CALNAME:${t.icalendar.calName}`,
     'X-WR-TIMEZONE:UTC',
   ];
 
@@ -94,14 +96,15 @@ export async function GET(req: NextRequest) {
   }
 
   // Fetch household for location field
+  const t = getCopy();
   const [household] = await db.select().from(households).where(eq(households.id, user.householdId)).limit(1);
-  const location = household?.name ? `${household.name} (Homestead)` : 'Homestead';
+  const location = household?.name ? `${household.name} (${t.brand.name})` : t.brand.name;
 
   const now = new Date();
   const events = userShifts.map(s => {
     const parts = [s.forWhom && `For ${s.forWhom}`, s.notes].filter(Boolean);
     return {
-      uid: `shift-${s.id}@homestead.app`,
+      uid: `shift-${s.id}@${t.icalendar.uidDomain}`,
       summary: s.title,
       description: parts.join(' · '),
       location,
@@ -117,7 +120,7 @@ export async function GET(req: NextRequest) {
     status: 200,
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="homestead-shifts.ics"',
+      'Content-Disposition': `attachment; filename="${t.icalendar.filename}"`,
       'Cache-Control': 'no-store',
     },
   });
