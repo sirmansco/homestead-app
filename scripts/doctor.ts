@@ -52,7 +52,7 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
 };
 
 const EXPECTED_ENUMS: Record<string, string[]> = {
-  village_group: ['inner_circle', 'sitter'],
+  village_group: ['inner_circle', 'sitter', 'covey', 'field'],
 };
 
 async function main() {
