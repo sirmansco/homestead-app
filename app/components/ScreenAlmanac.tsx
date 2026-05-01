@@ -600,7 +600,16 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
         boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
       }}
     >
-      {Icons.bell(G.bg)}
+      {/* Single bobwhite quail — brand kit mark */}
+      <svg width="15" height="15" viewBox="-12 -20 24 36" fill="none">
+        <ellipse cx="0" cy="0" rx="7" ry="11" fill={G.bg}/>
+        <circle cx="0" cy="-11" r="4.5" fill={G.bg}/>
+        <path d="M 0,-15 L -1.5,-18 L 1.5,-18 Z" fill="#D9A441"/>
+        <path d="M 0,-15 Q -2,-19 -0.5,-21" stroke={G.bg} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <circle cx="-1.5" cy="-11.5" r="0.9" fill="#1B1713"/>
+        <path d="M -3,9 L 0,15 L 3,9 Z" fill="rgba(255,255,255,0.5)"/>
+        <path d="M -5,-1 Q 0,-4 5,-1" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" fill="none"/>
+      </svg>
     </button>
   );
 });
