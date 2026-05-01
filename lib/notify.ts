@@ -331,7 +331,7 @@ export async function notifyBellResponse(
 
   for (const parent of optedParents) {
     try {
-      await pushToUser(parent.id, { ...msg, url: '/?tab=bell' });
+      await pushToUser(parent.id, { ...msg, url: `/?tab=${t.urgentSignal.deepLinkTab}` });
     } catch (err) {
       console.error('[notify:bellResponse:push]', err);
     }

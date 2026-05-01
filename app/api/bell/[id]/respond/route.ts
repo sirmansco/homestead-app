@@ -50,13 +50,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const cu = await client.users.getUser(userId);
       const email = cu.primaryEmailAddress?.emailAddress ?? '';
       const name = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || email;
+      const meta = (cu.publicMetadata ?? {}) as { villageGroup?: 'covey' | 'field' | 'inner_circle' | 'sitter' };
       [userRow] = await db.insert(users).values({
         clerkUserId: userId,
         householdId: bell.householdId,
         email,
         name,
         role: 'caregiver',
-        villageGroup: 'field',
+        villageGroup: meta.villageGroup || 'field',
       }).returning();
     }
 
