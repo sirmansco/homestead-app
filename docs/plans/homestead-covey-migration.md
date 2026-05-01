@@ -65,7 +65,7 @@ Ordered steps (each has a verification gate — stop if any gate fails):
 1. **DNS prep (48h before)** — add `joincovey.co` + `thecovey.app` to Vercel, configure MX/SPF/DKIM/DMARC, verify with authoritative nameserver queries, send test email
 2. **Clerk allowed origins** — add `joincovey.co` + `thecovey.app` to dev Clerk instance; keep existing origins
 3. **Clerk email templates** — update app name + logo + copy in Clerk dashboard; send test email from each template
-4. **Vercel env var flip** (the cutover moment) — set `COVEY_BRAND_ACTIVE=true` + `NEXT_PUBLIC_COVEY_BRAND_ACTIVE=true` + update `NEXT_PUBLIC_APP_URL=https://joincovey.co` + update `NOTIFY_FROM` — all at once, then redeploy
+4. **Vercel env var flip** (the cutover moment) — set `COVEY_BRAND_ACTIVE=true` + update `NEXT_PUBLIC_APP_URL=https://joincovey.co` + update `NOTIFY_FROM` — all at once, then redeploy
 5. **Smoke test production immediately** — `joincovey.co` serves app, Clerk sign-in shows "Covey", manifest returns Covey name/icons, push notification renders Covey copy, iOS PWA icon
 6. **Domain primary swap** — set `joincovey.co` as primary in Vercel; old vercel.app URL redirects to it
 7. **PWA cache invalidation** — bump SW version + manifest `id` field + redeploy; document iOS remove-and-readd for existing installs
@@ -117,7 +117,6 @@ Owner: Matt. Decision date: 4 weeks after Phase 6 completes.
 | Var | Scope | Current value | Cutover value |
 |---|---|---|---|
 | `COVEY_BRAND_ACTIVE` | Server (Production) | `false` | `true` |
-| `NEXT_PUBLIC_COVEY_BRAND_ACTIVE` | Client (Production) | `false` | `true` |
 | `NEXT_PUBLIC_APP_URL` | Production | `https://homestead-app-six.vercel.app` | `https://joincovey.co` |
 | `NOTIFY_FROM` | Production | `Homestead <notify@homestead.app>` (or similar) | `Covey <notify@joincovey.co>` |
 
