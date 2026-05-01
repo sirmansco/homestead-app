@@ -19,8 +19,8 @@ const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | '
   { key: 'notifyShiftPosted', label: 'New shifts available', forRole: 'caregiver' },
   { key: 'notifyShiftClaimed', label: 'Shift claimed by caregiver', forRole: 'parent' },
   { key: 'notifyShiftReleased', label: 'Shift released / unclaimed', forRole: 'parent' },
-  { key: 'notifyBellRinging', label: 'Family rings the bell', forRole: 'caregiver' },
-  { key: 'notifyBellResponse', label: 'Caregiver responds to bell', forRole: 'parent' },
+  { key: 'notifyBellRinging', label: `Family rings the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
+  { key: 'notifyBellResponse', label: `Caregiver responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'parent' },
 ];
 
 type Theme = 'system' | 'light' | 'dark';
@@ -46,7 +46,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
-  const [exportFilename, setExportFilename] = useState<string>('homestead-export.json');
+  const [exportFilename, setExportFilename] = useState<string>('covey-export.json');
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -128,7 +128,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       setExportUrl(url);
-      setExportFilename(`homestead-export-${Date.now()}.json`);
+      setExportFilename(`covey-export-${Date.now()}.json`);
       setExportingState('idle');
     } catch (e) {
       setExportingState('error');

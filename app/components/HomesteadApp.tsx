@@ -158,7 +158,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
                   fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
                   color: role === r ? G.muted : G.muted, marginTop: 2,
                 }}>
-                  {r === 'parent' ? 'Post needs · manage village' : 'Claim shifts · answer bells'}
+                  {r === 'parent' ? `Post needs · manage ${getCopy().circle.title.toLowerCase()}` : `Cover ${getCopy().request.tabLabel.toLowerCase()} · answer ${getCopy().urgentSignal.noun.toLowerCase()}s`}
                 </div>
               </button>
             ))}

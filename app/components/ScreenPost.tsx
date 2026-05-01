@@ -5,6 +5,7 @@ import { GMasthead, GLabel } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
 import { WhenPickerWindow, WhenPickerDate, shiftWindowPresets, datePresets } from './WhenPicker';
+import { getCopy } from '@/lib/copy';
 
 type Kid = { id: string; name: string };
 type Caregiver = { id: string; name: string; role: string };
@@ -143,7 +144,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
       const data = await res.json();
       resetForm();
       const count = data.count ?? 1;
-      onPost?.(count > 1 ? `${count} shifts posted` : 'Posted to the Village');
+      onPost?.(count > 1 ? `${count} shifts posted` : `Posted to ${getCopy().circle.title}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post');
     } finally {
@@ -161,7 +162,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           }}>×</button>
         }
         title="Post a Need"
-        tagline="For a last-minute need, ring the bell instead."
+        tagline={`For a last-minute need, ring the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
@@ -222,7 +223,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               background: G.paper, border: `1px dashed ${G.hairline2}`, borderRadius: 8,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted,
             }}>
-              No children added yet. Add them on the Village tab.
+              No children added yet. Add them on the {getCopy().circle.title} tab.
             </div>
           )}
           <input
@@ -408,7 +409,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
             textTransform: 'uppercase', cursor: submitting ? 'wait' : 'pointer',
             opacity: submitting ? 0.7 : 1,
           }}
-        >{submitting ? 'Posting…' : 'Post to the Village'}</button>
+        >{submitting ? 'Posting…' : `Post to ${getCopy().circle.title}`}</button>
 
         <div style={{
           marginTop: 14, textAlign: 'center',
@@ -419,7 +420,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
             color: G.clay, borderBottom: `1px solid ${G.clay}`, paddingBottom: 1,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
-          }}>Ring the bell instead →</button>
+          }}>Ring the {getCopy().urgentSignal.noun.toLowerCase()} instead →</button>
         </div>
       </div>
     </div>

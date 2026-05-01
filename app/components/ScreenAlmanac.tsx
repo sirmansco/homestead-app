@@ -6,6 +6,7 @@ import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
 import { fmtTimeRange, durationH, fmtDateShort, fmtDateLong, fmtDateMonthDay, fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerDateRange, unavailRangePresets } from './WhenPicker';
+import { getCopy } from '@/lib/copy';
 
 type UnavailRow = {
   id: string;
@@ -330,7 +331,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
           All clear.
         </div>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-          No shifts posted yet. Check the Shifts tab for open needs from your village.
+          No shifts posted yet. Check the Shifts tab for open needs from your circle.
         </div>
       </div>
     );
@@ -349,7 +350,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
           Nothing on the books yet.
         </div>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-          Post a need or ring the bell for something urgent.
+          Post a need or ring the {getCopy().urgentSignal.noun.toLowerCase()} for something urgent.
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 24 }}>
           {onPost && (
@@ -381,7 +382,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
                     stroke={G.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Ring Bell</span>
+              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Ring {getCopy().urgentSignal.noun}</span>
             </div>
           )}
         </div>
@@ -402,21 +403,21 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         Let&apos;s get set up.
       </div>
       <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 16 }}>
-        A few steps and your homestead is ready.
+        A few steps and your {getCopy().brand.name} is ready.
       </div>
       <OnboardStep
         num={1}
         done={true}
-        title="Name your homestead"
+        title={`Name your ${getCopy().brand.name}`}
         sub="Your household has a name. Good start."
       />
       <OnboardStep
         num={2}
         done={step2Done}
-        title="Invite your village"
+        title={`Invite your ${getCopy().circle.title.toLowerCase()}`}
         sub={step2Done
-          ? 'Village members added. They can claim shifts and answer the bell.'
-          : 'Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the bell.'}
+          ? `Circle members added. They can claim shifts and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`
+          : `Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`}
         action={!step2Done ? (
           <button onClick={onVillage} style={{
             padding: '8px 16px',
@@ -424,7 +425,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
-          }}>Go to Village →</button>
+          }}>Go to {getCopy().circle.title} →</button>
         ) : undefined}
       />
       <OnboardStep
@@ -433,7 +434,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         title="Post your first need"
         sub={step3Done
           ? "You've posted your first need."
-          : "Pick a date, a time, and who it's for. Your village gets notified instantly."}
+          : `Pick a date, a time, and who it's for. Your ${getCopy().circle.title.toLowerCase()} gets notified instantly.`}
         action={!step3Done ? (
           <button onClick={onPost} disabled={!step2Done} style={{
             padding: '8px 16px',
@@ -443,7 +444,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase',
             cursor: step2Done ? 'pointer' : 'not-allowed',
-          }}>{step2Done ? 'Post a need →' : 'Invite village first'}</button>
+          }}>{step2Done ? 'Post a need →' : `Invite ${getCopy().circle.title.toLowerCase()} first`}</button>
         ) : undefined}
       />
     </div>
@@ -454,7 +455,7 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
   return (
     <button
       onClick={onRing}
-      aria-label="Ring the bell"
+      aria-label={`Ring the ${getCopy().urgentSignal.noun}`}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 26, height: 26, borderRadius: 26,
@@ -903,7 +904,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             }}>
               <GLabel color={G.ink}>Also helping with</GLabel>
               <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 2 }}>
-                Open requests from other families in your village
+                Open requests from other families in your circle
               </div>
             </div>
 

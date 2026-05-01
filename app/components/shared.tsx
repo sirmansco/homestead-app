@@ -210,7 +210,7 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   ];
   const caregiverTabs: Tab[] = [
     { id: 'almanac', label: 'Open',     icon: Icons.almanac },
-    { id: 'shifts',  label: 'Schedule', icon: Icons.shifts },
+    { id: 'shifts',  label: getCopy().request.tabLabel, icon: Icons.shifts },
     { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
     { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
