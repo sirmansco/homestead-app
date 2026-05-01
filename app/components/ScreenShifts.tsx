@@ -237,12 +237,15 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
   const loadActiveBell = useCallback(async () => {
     try {
       const res = await fetch('/api/bell/active');
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn('[ScreenShifts] bell/active non-ok', res.status, res.statusText);
+        return;
+      }
       const data = await res.json();
       const bell = (data.bells || []).find((b: ActiveBellData) => b.status === 'ringing') as ActiveBellData | undefined;
       setActiveBell(bell ?? null);
-    } catch {
-      // Silent: the schedule should still be usable if lantern polling fails.
+    } catch (err) {
+      console.warn('[ScreenShifts] bell/active fetch error', err);
     }
   }, []);
 

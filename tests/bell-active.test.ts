@@ -213,4 +213,27 @@ describe('GET /api/bell/active', () => {
     expect(body.bells[0].id).toBe('bell-ringing');
     expect(body.bells[1].id).toBe('bell-handled');
   });
+
+  // Regression: caregiver belonging to multiple households must see bells from all of them,
+  // not just the active-org household. /api/bell/active uses requireUser() (not requireHousehold())
+  // and queries across all users rows for this clerkUserId.
+  it('returns bells across all households for a multi-household caregiver', async () => {
+    const HH2 = 'hh-002';
+    const CAREGIVER_ROW_HH1 = { id: 'user-cg-hh1', householdId: HOUSEHOLD_ID, role: 'caregiver' };
+    const CAREGIVER_ROW_HH2 = { id: 'user-cg-hh2', householdId: HH2, role: 'caregiver' };
+    const bellHH1 = makeBell({ id: 'bell-hh1', householdId: HOUSEHOLD_ID, handledByUserId: null });
+    const bellHH2 = makeBell({ id: 'bell-hh2', householdId: HH2, handledByUserId: null });
+
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([CAREGIVER_ROW_HH1, CAREGIVER_ROW_HH2])) // users rows
+      .mockReturnValueOnce(makeSelectStub([bellHH1, bellHH2]))                      // bells
+      .mockReturnValueOnce(makeSelectStub([]));                                      // bellResponses
+
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.bells).toHaveLength(2);
+    expect(body.bells.map((b: { id: string }) => b.id)).toContain('bell-hh1');
+    expect(body.bells.map((b: { id: string }) => b.id)).toContain('bell-hh2');
+  });
 });
