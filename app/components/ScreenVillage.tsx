@@ -4,6 +4,7 @@ import { G } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
+import { getCopy } from '@/lib/copy';
 
 async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: string): Promise<string | null> {
   const form = new FormData();
@@ -696,7 +697,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
           borderTop: `1px solid ${G.hairline2}`,
         }}>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 12, lineHeight: 1.5 }}>
-            Helping another family? Send them an invite to link up on Homestead.
+            Helping another family? Send them an invite to link up on {getCopy().brand.name}.
           </div>
           <button onClick={() => setShowInvite(true)} style={btnStyle}>
             Invite a family

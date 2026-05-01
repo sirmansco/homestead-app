@@ -107,5 +107,7 @@ import { coveyCopy } from './copy.covey';
 // Server-side selector — reads process.env at call time so the flag can be
 // changed between test cases without re-importing the module.
 export function getCopy(): AppCopy {
-  return process.env.COVEY_BRAND_ACTIVE === 'true' ? coveyCopy : homesteadCopy;
+  return process.env.COVEY_BRAND_ACTIVE === 'true' || process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true'
+    ? coveyCopy
+    : homesteadCopy;
 }

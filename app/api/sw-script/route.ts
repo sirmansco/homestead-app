@@ -9,13 +9,14 @@ import { getCopy } from '@/lib/copy';
 // Mapped from /sw.js via next.config.ts rewrites so the SW scope stays at /.
 
 const DEPLOY_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'dev';
+const CACHE_VERSION = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true' ? 'covey-v1' : 'hs-v1';
 
 export async function GET() {
   const t = getCopy();
   const brandName = t.brand.name;
   const defaultTag = brandName.toLowerCase();
   const swContent = `
-// ${brandName} Service Worker — build ${DEPLOY_SHA}
+// ${brandName} Service Worker — build ${DEPLOY_SHA} — cache ${CACHE_VERSION}
 // This comment changes every deploy so the browser detects a new SW automatically.
 
 self.addEventListener('install', () => {

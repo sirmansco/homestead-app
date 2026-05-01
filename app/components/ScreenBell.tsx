@@ -6,6 +6,7 @@ import { requestPushPermission } from './PushRegistrar';
 import { shortName } from '@/lib/format';
 import { fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerWindow, bellWindowPresets } from './WhenPicker';
+import { getCopy } from '@/lib/copy';
 
 function BellPill({ label, value, emphasized }: { label: string; value: string; emphasized?: boolean }) {
   return (
@@ -539,14 +540,14 @@ function BellIncoming() {
     try {
       const res = await fetch('/api/bell/active');
       if (!res.ok) {
-        setPollError("Can't reach Homestead. Bells will appear once you're back online.");
+        setPollError(`Can't reach ${getCopy().brand.name}. Bells will appear once you're back online.`);
         return;
       }
       const data = await res.json();
       setBells(data.bells || []);
       setPollError(null);
     } catch {
-      setPollError("Can't reach Homestead. Bells will appear once you're back online.");
+      setPollError(`Can't reach ${getCopy().brand.name}. Bells will appear once you're back online.`);
     }
   }, []);
 

@@ -1,4 +1,4 @@
-// Homestead Service Worker — local dev fallback.
+// Service Worker — local dev fallback.
 // In production, /sw.js is served by /api/sw-script with the deploy SHA
 // embedded so the browser auto-detects new deployments.
 
@@ -29,10 +29,10 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: 'Homestead', body: event.data.text() };
+    payload = { title: 'App', body: event.data.text() };
   }
 
-  const title = payload.title || 'Homestead';
+  const title = payload.title || 'App';
   const options = {
     body: payload.body || '',
     icon: '/icon-192',
@@ -59,4 +59,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-

@@ -1,11 +1,13 @@
 import type { MetadataRoute } from 'next';
+import { getCopy } from '@/lib/copy';
 
 export default function manifest(): MetadataRoute.Manifest {
+  const t = getCopy();
   const coveyActive = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true';
   if (coveyActive) {
     return {
-      name: 'Covey',
-      short_name: 'Covey',
+      name: t.brand.name,
+      short_name: t.brand.name,
       description: 'The small, watching circle around your children.',
       start_url: '/',
       display: 'standalone',
@@ -22,8 +24,8 @@ export default function manifest(): MetadataRoute.Manifest {
   }
 
   return {
-    name: 'Homestead',
-    short_name: 'Homestead',
+    name: t.brand.name,
+    short_name: t.brand.name,
     description: 'Family childcare coordination',
     start_url: '/',
     display: 'standalone',
