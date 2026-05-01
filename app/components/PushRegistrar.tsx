@@ -23,11 +23,19 @@ export function PushRegistrar() {
         const reg = await navigator.serviceWorker.register('/sw.js');
         await navigator.serviceWorker.ready;
 
-        // Force the browser to check for a new SW on every app open.
-        // /sw.js is served dynamically with the deploy SHA embedded, so any
-        // new deploy produces a different file → browser installs + activates
-        // the new SW → SW_ACTIVATED message → AutoUpdate reloads the page.
-        try { await reg.update(); } catch { /* ignore — non-critical */ }
+        // Check for a new SW at most once per 24 hours. The browser already
+        // checks on every navigation; calling reg.update() on every mount was
+        // forcing a SW byte-fetch on every page load, which triggered a SW
+        // re-install cycle and a visible reload on every PWA open after a deploy.
+        const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+        const lastUpdateKey = 'hs.sw.lastUpdate';
+        const lastUpdate = Number(localStorage.getItem(lastUpdateKey) || '0');
+        if (Date.now() - lastUpdate > UPDATE_INTERVAL_MS) {
+          try {
+            await reg.update();
+            localStorage.setItem(lastUpdateKey, String(Date.now()));
+          } catch { /* ignore — non-critical */ }
+        }
 
         // Only subscribe if permission already granted — don't prompt here
         if (Notification.permission !== 'granted') return;

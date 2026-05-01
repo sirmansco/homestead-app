@@ -26,7 +26,7 @@ const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | '
 type Theme = 'system' | 'light' | 'dark';
 
 function getStoredTheme(): Theme {
-  try { return (localStorage.getItem('covey-theme') as Theme) || 'system'; } catch { return 'system'; }
+  try { return (localStorage.getItem('covey-theme') as Theme) || (localStorage.getItem('homestead-theme') as Theme) || 'system'; } catch { return 'system'; }
 }
 
 function applyTheme(t: Theme) {
