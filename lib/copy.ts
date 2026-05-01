@@ -62,6 +62,10 @@ export type AppCopy = {
     tabLabel: string;
     dbValue: string;
   };
+  schedule: {
+    title: string;
+    caregiverTitle: string;
+  };
   circle: {
     title: string;
     innerLabel: string;

@@ -62,6 +62,10 @@ export const homesteadCopy: AppCopy = {
     tabLabel: 'Sitters',
     dbValue: 'sitter' as const,
   },
+  schedule: {
+    title: 'The Almanac',
+    caregiverTitle: 'Open Shifts',
+  },
   circle: {
     title: 'The Village',
     innerLabel: 'Inner Circle',

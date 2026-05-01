@@ -671,7 +671,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const week     = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'week'), [ownShifts]);
   const later    = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later'), [ownShifts]);
 
-  const title = role === 'caregiver' ? `Open ${getCopy().request.tabLabel}` : 'The Almanac';
+  const title = role === 'caregiver' ? getCopy().schedule.caregiverTitle : getCopy().schedule.title;
   // Pretty name of the active household, shown as a subtitle so multi-household
   // users (Karson) can see which family they're looking at without opening the switcher.
   const activeHouseholdLabel = active?.name

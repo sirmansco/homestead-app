@@ -62,6 +62,10 @@ export const coveyCopy: AppCopy = {
     tabLabel: 'Field',
     dbValue: 'field' as const,
   },
+  schedule: {
+    title: 'The Roost',
+    caregiverTitle: 'Open Whistles',
+  },
   circle: {
     title: 'Your Circle',
     innerLabel: 'Your Covey',

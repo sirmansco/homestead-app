@@ -204,12 +204,12 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   type Tab = { id: TabId; label: string; icon: (c: string) => React.ReactNode; badge?: number };
 
   const parentTabs: Tab[] = [
-    { id: 'almanac', label: 'Almanac', icon: Icons.almanac },
+    { id: 'almanac', label: getCopy().schedule.title, icon: Icons.almanac },
     { id: 'post',    label: 'Post',    icon: Icons.post },
     { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
-    { id: 'almanac', label: 'Open',     icon: Icons.almanac },
+    { id: 'almanac', label: getCopy().schedule.caregiverTitle, icon: Icons.almanac },
     { id: 'shifts',  label: getCopy().request.tabLabel, icon: Icons.shifts },
     { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
     { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
