@@ -103,7 +103,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   const size = 36;
   return (
     <div style={{
-      background: G.bg, border: `1px solid ${G.hairline}`,
+      background: G.paper, border: `1px solid ${G.hairline}`,
       borderRadius: 8, padding: '10px 12px', position: 'relative',
       userSelect: 'none', WebkitUserSelect: 'none',
     }}>
@@ -127,7 +127,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                 style={{
                   position: 'absolute', bottom: -2, right: -2,
                   width: 14, height: 14, borderRadius: 14,
-                  background: G.ink, border: `1.5px solid ${G.bg}`,
+                  background: G.green, border: `1.5px solid ${G.bg}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: uploading ? 'wait' : 'pointer',
                 }}
@@ -147,7 +147,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>{name}</div>
+            <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 400, lineHeight: 1.15 }}>{name}</div>
             {isMe && (
               <span style={{ fontFamily: G.sans, fontSize: 8, letterSpacing: 1, fontWeight: 700, color: G.muted, textTransform: 'uppercase' }}>· you</span>
             )}
@@ -162,7 +162,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
               <button
                 onClick={() => setPickerOpen(true)}
                 style={{
-                  background: G.paper, color: G.ink,
+                  background: G.green, color: G.bg,
                   border: `1px solid ${G.hairline2}`, borderRadius: 100,
                   padding: '3px 8px', cursor: 'pointer',
                   fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
@@ -177,9 +177,9 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
             )}
             {onToggleRole && appRole && (
               <button onClick={onToggleRole} title={`Switch to ${appRole === 'parent' ? 'caregiver' : 'parent'}`} style={{
-                background: appRole === 'parent' ? G.ink : 'transparent',
+                background: appRole === 'parent' ? G.green : 'transparent',
                 color: appRole === 'parent' ? G.bg : G.ink,
-                border: `1px solid ${G.ink}`, borderRadius: 100,
+                border: `1px solid ${G.green}`, borderRadius: 100,
                 padding: '3px 7px', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
                 textTransform: 'uppercase',
@@ -191,7 +191,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                   <button
                     onClick={() => { setConfirmingDelete(false); onDelete(); }}
                     style={{
-                      padding: '3px 8px', background: G.ink, color: G.bg,
+                      padding: '3px 8px', background: G.green, color: G.bg,
                       border: 'none', borderRadius: 100,
                       fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
                       textTransform: 'uppercase', cursor: 'pointer',
@@ -233,10 +233,10 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
           <div onClick={e => e.stopPropagation()} style={{
             background: G.bg, width: '100%', maxWidth: 480,
             borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
-            borderTop: `1px solid ${G.ink}`,
+            borderTop: `1px solid ${G.hairline}`,
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 4 }}>
+            <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.green, marginBottom: 4 }}>
               Move {name} to…
             </div>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 14 }}>
@@ -249,9 +249,9 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                 style={{
                   display: 'block', width: '100%', marginBottom: 8,
                   padding: '14px 16px', textAlign: 'left',
-                  background: g === villageGroup ? G.ink : 'transparent',
+                  background: g === villageGroup ? G.green : 'transparent',
                   color: g === villageGroup ? G.bg : G.ink,
-                  border: `1px solid ${g === villageGroup ? G.ink : G.hairline2}`,
+                  border: `1px solid ${g === villageGroup ? G.green : G.hairline2}`,
                   borderRadius: 8, cursor: 'pointer',
                   fontFamily: G.display, fontSize: 15, fontWeight: 500,
                 }}
@@ -359,7 +359,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
       <div onClick={e => e.stopPropagation()} style={{
         background: G.bg, width: '100%', maxWidth: 480,
         borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
-        borderTop: `1px solid ${G.ink}`, maxHeight: '85vh', overflowY: 'auto',
+        borderTop: `1px solid ${G.hairline}`, maxHeight: '85vh', overflowY: 'auto',
       }}>
         <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
 
@@ -377,7 +377,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             {(['adult', 'kid'] as const).map(k => (
               <button key={k} onClick={() => { setKind(k); setName(''); setEmail(''); setBirthday(''); setError(null); setLinkUrl(null); }} style={{
                 flex: 1, padding: '8px 12px', borderRadius: 100,
-                background: kind === k ? G.ink : 'transparent',
+                background: kind === k ? G.green : 'transparent',
                 color: kind === k ? G.bg : G.ink2,
                 border: 'none', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
@@ -427,7 +427,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
 
             {linkUrl ? (
               <div style={{
-                background: G.paper, border: `1px solid ${G.ink}`, borderRadius: 8,
+                background: G.paper, border: `1px solid ${G.hairline2}`, borderRadius: 8,
                 padding: 12, marginBottom: 12,
               }}>
                 <div style={labelStyle}>Share this link</div>
@@ -482,14 +482,14 @@ const inputStyle: React.CSSProperties = {
 
 const btnStyle: React.CSSProperties = {
   padding: '12px 20px',
-  background: G.ink, color: G.bg, border: 'none', borderRadius: 100,
+  background: G.green, color: G.bg, border: 'none', borderRadius: 100,
   fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
   textTransform: 'uppercase', cursor: 'pointer',
 };
 
 const btnStyleAlt: React.CSSProperties = {
   ...btnStyle,
-  background: 'transparent', color: G.ink, border: `1px solid ${G.ink}`,
+  background: 'transparent', color: G.green, border: `1px solid ${G.green}`,
 };
 
 // ── Caregiver view: My Families ──────────────────────────────────────────
@@ -536,7 +536,7 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
               disabled={leaving}
               onClick={async () => { setLeaving(true); await onLeave(); }}
               style={{
-                background: G.clay, color: G.bg, border: 'none',
+                background: G.green, color: G.bg, border: 'none',
                 borderRadius: 100, padding: '3px 8px', cursor: leaving ? 'wait' : 'pointer',
                 fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
                 textTransform: 'uppercase', opacity: leaving ? 0.6 : 1,
