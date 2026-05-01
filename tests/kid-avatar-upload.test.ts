@@ -7,11 +7,11 @@ const src = readFileSync(
   'utf8',
 );
 
-// Extract only the parent-view kids rendering block (after "The Kids" GroupHeader).
+// Extract only the kids rendering block (kids.map call with MemberCard entries).
 const kidsSection = (() => {
-  const marker = '"The Kids"';
-  const start = src.indexOf(marker);
-  const end = src.indexOf('</div>\n          )}\n\n', start);
+  const start = src.indexOf('{kids.map');
+  if (start === -1) return '';
+  const end = src.indexOf('))}\n', start) + 4;
   return src.slice(start, end);
 })();
 

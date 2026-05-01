@@ -22,7 +22,7 @@ describe('MemberCard layout — action row below name row', () => {
     // then close. Action buttons must appear after that closing tag.
     //
     // Invariant: the flex row `display: 'flex', alignItems: 'center', gap: 10`
-    // closes (its </div>) before any reference to GROUP_LABEL / onToggleRole /
+    // closes (its </div>) before any reference to getGroupLabel / onToggleRole /
     // onDelete appears as JSX.
     const flexRowOpen = cardSrc.indexOf("display: 'flex', alignItems: 'center', gap: 10");
     expect(flexRowOpen).toBeGreaterThan(-1);
@@ -37,13 +37,13 @@ describe('MemberCard layout — action row below name row', () => {
     expect(closingDivBetween).toBeGreaterThan(flexRowOpen);
   });
 
-  it('GROUP_LABEL reference is outside the top flex row', () => {
+  it('getGroupLabel reference is outside the top flex row', () => {
     const flexRowOpen = cardSrc.indexOf("display: 'flex', alignItems: 'center', gap: 10");
     const actionRowCondition = cardSrc.indexOf('(villageGroup && onChangeGroup) || (onToggleRole && appRole) || onDelete');
 
-    // GROUP_LABEL (tier badge) must not appear between the flex-row opener and
+    // getGroupLabel (tier badge) must not appear between the flex-row opener and
     // the action-row condition boundary — i.e. it is not inside the top row.
-    const groupLabelInRow = cardSrc.indexOf('GROUP_LABEL', flexRowOpen);
+    const groupLabelInRow = cardSrc.indexOf('getGroupLabel', flexRowOpen);
     expect(groupLabelInRow).toBeGreaterThan(actionRowCondition);
   });
 
