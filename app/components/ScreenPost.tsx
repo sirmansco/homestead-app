@@ -144,7 +144,12 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
       const data = await res.json();
       resetForm();
       const count = data.count ?? 1;
-      onPost?.(count > 1 ? `${count} ${getCopy().request.tabLabel.toLowerCase()} posted` : `Posted to ${getCopy().circle.title}`);
+      const notifyWarning = data.notifyEligible === 0
+        ? ` No caregivers have notifications enabled — they'll see it when they open the app.`
+        : data.notifySent === 0
+        ? ` Push delivery failed — caregivers will see it when they open the app.`
+        : '';
+      onPost?.((count > 1 ? `${count} ${getCopy().request.tabLabel.toLowerCase()} posted` : `Posted to ${getCopy().circle.title}`) + notifyWarning);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post');
     } finally {

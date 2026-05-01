@@ -42,13 +42,15 @@ export async function POST(req: NextRequest) {
 
     // Notify covey caregivers (spec: Bell pings covey first).
     // Recipient resolution + preference filter live in notify.ts.
+    let notifySent = 0;
+    let notifyEligible = 0;
     try {
-      await notifyBellRing(bell.id);
+      ({ sent: notifySent, eligible: notifyEligible } = await notifyBellRing(bell.id));
     } catch (err) {
       console.error('[bell:ring:notify]', err);
     }
 
-    return NextResponse.json({ bell });
+    return NextResponse.json({ bell, notifySent, notifyEligible });
   } catch (err) {
     return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
   }

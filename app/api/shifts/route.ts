@@ -264,20 +264,18 @@ export async function POST(req: NextRequest) {
 
     const created = await db.insert(shifts).values(valuesList).returning();
 
+    let notifySent = 0;
+    let notifyEligible = 0;
     if (created[0]) {
       try {
-        await notifyShiftPosted(created[0].id, preferredCaregiverId ?? undefined);
+        ({ sent: notifySent, eligible: notifyEligible } = await notifyNewShift(created[0].id, preferredCaregiverId ?? undefined));
       } catch (err) {
         console.error('[shifts:post:notify]', err);
       }
     }
 
-    return NextResponse.json({ shift: created[0], count: created.length });
+    return NextResponse.json({ shift: created[0], count: created.length, notifySent, notifyEligible });
   } catch (err) {
     return authError(err, 'shifts:POST', `Could not post ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}. Try again.`);
   }
-}
-
-async function notifyShiftPosted(shiftId: string, preferredCaregiverId?: string) {
-  await notifyNewShift(shiftId, preferredCaregiverId);
 }
