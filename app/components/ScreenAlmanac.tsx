@@ -600,15 +600,14 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
         boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
       }}
     >
-      {/* Single bobwhite quail — brand kit mark */}
-      <svg width="15" height="15" viewBox="-12 -20 24 36" fill="none">
-        <ellipse cx="0" cy="0" rx="7" ry="11" fill={G.bg}/>
-        <circle cx="0" cy="-11" r="4.5" fill={G.bg}/>
-        <path d="M 0,-15 L -1.5,-18 L 1.5,-18 Z" fill="#D9A441"/>
-        <path d="M 0,-15 Q -2,-19 -0.5,-21" stroke={G.bg} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <circle cx="-1.5" cy="-11.5" r="0.9" fill="#1B1713"/>
-        <path d="M -3,9 L 0,15 L 3,9 Z" fill="rgba(255,255,255,0.5)"/>
-        <path d="M -5,-1 Q 0,-4 5,-1" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" fill="none"/>
+      {/* Lantern icon — matches tab bar and empty-state glyph */}
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2v2" stroke={G.bg} strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M8 4h8" stroke={G.bg} strokeWidth="1.8" strokeLinecap="round"/>
+        <rect x="7" y="6" width="10" height="13" rx="2" stroke={G.bg} strokeWidth="1.5"/>
+        <path d="M7 10h10" stroke={G.bg} strokeWidth="1" strokeOpacity="0.5"/>
+        <ellipse cx="12" cy="14" rx="2.5" ry="3" fill={G.bg} fillOpacity="0.9"/>
+        <path d="M9 19h6" stroke={G.bg} strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     </button>
   );

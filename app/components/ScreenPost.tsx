@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { G } from './tokens';
-import { GMasthead, GLabel } from './shared';
+import { GMasthead, GLabel, Icons } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
 import { WhenPickerWindow, WhenPickerDate, shiftWindowPresets, datePresets } from './WhenPicker';
@@ -161,6 +161,21 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
             background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
           }}>×</button>
         }
+        rightAction={onRing ? (
+          <button
+            onClick={onRing}
+            aria-label={getCopy().urgentSignal.actionLabel}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 26, height: 26, borderRadius: 26,
+              background: G.clay, border: 'none', cursor: 'pointer',
+              padding: 0,
+              boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
+            }}
+          >
+            {Icons.lantern(G.bg)}
+          </button>
+        ) : undefined}
         title="Post a Need"
         tagline={`For a last-minute need, light the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />

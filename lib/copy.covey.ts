@@ -5,7 +5,7 @@ export const coveyCopy: AppCopy = {
     name: 'Covey',
     legal: 'Covey & Co.',
     pressLine: 'Covey & Co. · Est. 2025',
-    tagline: 'the small, watching circle around your children.',
+    tagline: 'the small, watching circle around your chicks.',
     quote: '"Tail to tail. Heads out."',
     // Founding thesis — use on press/about pages, pitch decks, guide screen footer
     thesis: '"The small, watching circle is the unit of human flourishing that software has spent twenty years dissolving. The work of the next twenty is to put it back."',

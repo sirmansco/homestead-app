@@ -8,14 +8,14 @@ export const metadata: Metadata = {
 };
 
 const C = {
-  bg: 'var(--bg)',
-  paper:   '#FFFFFF',
-  ink:     '#1B1713',
-  ink2:    '#3D3830',
-  muted:   '#8C8070',
-  clay:    '#B5342B',
-  green:   '#2D6A4F',
-  hairline:'#E8E0D5',
+  bg:      'var(--bg)',
+  paper:   'var(--paper)',
+  ink:     'var(--ink)',
+  ink2:    'var(--ink2)',
+  muted:   'var(--muted)',
+  clay:    'var(--clay)',
+  green:   'var(--green)',
+  hairline:'var(--hairline)',
   serif:   `'Georgia', 'Times New Roman', serif`,
   sans:    `'Inter', 'Helvetica Neue', Arial, sans-serif`,
   display: `'Georgia', 'Times New Roman', serif`,

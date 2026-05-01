@@ -19,7 +19,7 @@ const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | '
   { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'caregiver' },
   { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by caregiver`, forRole: 'parent' },
   { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'parent' },
-  { key: 'notifyBellRinging', label: `Family rings the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
+  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
   { key: 'notifyBellResponse', label: `Caregiver responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'parent' },
 ];
 
