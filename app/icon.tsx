@@ -17,18 +17,14 @@ export default function Icon() {
           borderRadius: 6,
         }}
       >
-        {/* Lantern / flame glyph */}
-        <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
-          {/* body */}
-          <rect x="4" y="7" width="12" height="11" rx="2" fill="#FBF7F0" opacity="0.9" />
-          {/* flame */}
-          <ellipse cx="10" cy="13" rx="3" ry="3.5" fill="#B05A3A" />
-          <path d="M10 9.5 Q12 11.5 10 15 Q8 11.5 10 9.5Z" fill="#4A5340" opacity="0.5" />
-          {/* handle top */}
-          <path d="M7 7V5M13 7V5" stroke="#FBF7F0" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-          <path d="M7 5h6" stroke="#FBF7F0" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-          {/* base */}
-          <path d="M4 18h12" stroke="#FBF7F0" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+        {/* Bobwhite quail — matches masthead SVG */}
+        <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none">
+          <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill="#EDE5D6"/>
+          <circle cx="-7" cy="-4" r="4.6" fill="#EDE5D6"/>
+          <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke="#EDE5D6" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+          <circle cx="-8.2" cy="-4.8" r="0.8" fill="#3A3F3D"/>
+          <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill="#D9A441"/>
+          <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill="#EDE5D6" opacity="0.85"/>
         </svg>
       </div>
     ),
