@@ -48,7 +48,7 @@ export const coveyCopy: AppCopy = {
     releasedBody: (title: string, when: string) => `"${title}" · ${when} — open again`,
     cancelledTitle: '❌ Whistle cancelled',
     deepLinkTab: 'almanac',
-    shiftsDeepLinkTab: 'whistles',
+    shiftsDeepLinkTab: 'shifts',
     tagPrefix: 'whistle',
     claimedTagPrefix: 'covered',
     releasedTagPrefix: 'released',
