@@ -172,7 +172,7 @@ function PushPermissionBanner() {
 }
 
 function BellCompose({ onRing, onBack, onPost }: {
-  onRing: (bellId: string, label: string) => void;
+  onRing: (bellId: string, label: string, warning?: string) => void;
   onBack?: () => void;
   onPost?: () => void;
 }) {
@@ -217,7 +217,12 @@ function BellCompose({ onRing, onBack, onPost }: {
       // Parse JSON once — calling .json() twice on the same response throws "body already used"
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Failed to ${getCopy().urgentSignal.actionLabel.toLowerCase()}`);
-      onRing(data.bell.id, reasons[why].label);
+      const warning = data.notifyEligible === 0
+        ? `${getCopy().urgentSignal.noun} lit — but no caregivers have notifications enabled. They'll see it when they open the app.`
+        : data.notifySent === 0
+        ? `${getCopy().urgentSignal.noun} lit — push delivery failed. Caregivers will see it when they open the app.`
+        : null;
+      onRing(data.bell.id, reasons[why].label, warning ?? undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
       setSubmitting(false);
@@ -356,7 +361,7 @@ type ActiveBell = {
 
 type BellResponse = { userId: string; response: string };
 
-function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; onDone?: () => void; bellId?: string; reason?: string }) {
+function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () => void; onDone?: () => void; bellId?: string; reason?: string; warning?: string }) {
   const [members, setMembers] = useState<VillageMember[] | null>(null);
   const [responses, setResponses] = useState<BellResponse[]>([]);
   const [marking, setMarking] = useState(false);
@@ -492,6 +497,14 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
           </>
         )}
 
+        {warning && (
+          <div style={{
+            marginTop: 16, padding: '10px 14px', borderRadius: 8,
+            background: G.paper, border: `1px solid ${G.clay}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.clay,
+          }}>{warning}</div>
+        )}
+
         {bellError && (
           <div style={{
             marginTop: 16, padding: '10px 14px', borderRadius: 8,
@@ -542,6 +555,7 @@ function BellIncoming() {
   const [bells, setBells] = useState<ActiveBell[] | null>(null);
   const [responding, setResponding] = useState<string | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [respondError, setRespondError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -570,13 +584,24 @@ function BellIncoming() {
 
   async function respond(bellId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
     setResponding(bellId + response);
-    await fetch(`/api/bell/${bellId}/respond`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ response }),
-    }).catch(() => {});
-    await load();
-    setResponding(null);
+    setRespondError(null);
+    try {
+      const res = await fetch(`/api/bell/${bellId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRespondError(data.error || `Couldn't save your response. Tap to try again.`);
+        return;
+      }
+      await load();
+    } catch {
+      setRespondError(`Couldn't reach ${getCopy().brand.name}. Tap to try again.`);
+    } finally {
+      setResponding(null);
+    }
   }
 
   const activeBells = (bells || []).filter(b => b.status === 'ringing');
@@ -697,6 +722,14 @@ function BellIncoming() {
                       fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, cursor: 'pointer',
                       opacity: responding ? 0.7 : 1,
                     }}>Can&apos;t — pass to next circle</button>
+                  {respondError && (
+                    <div style={{
+                      padding: '10px 12px', borderRadius: 8,
+                      background: G.paper, border: `1px solid ${G.clay}`,
+                      fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
+                      color: G.clay, lineHeight: 1.5,
+                    }}>{respondError}</div>
+                  )}
                 </div>
               ) : myResp === 'on_my_way' ? (
                 <div style={{ marginTop: 14, padding: 14, background: G.paper, border: `1px solid ${G.green}`, borderRadius: 10, textAlign: 'center' }}>
@@ -749,6 +782,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
   );
   const [ringReason, setRingReason] = useState('');
   const [ringBellId, setRingBellId] = useState<string | undefined>();
+  const [ringWarning, setRingWarning] = useState<string | undefined>();
 
   // On mount (parent only): check if there's already a ringing bell to resume
   useEffect(() => {
@@ -778,18 +812,19 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
     );
   }
 
-  const resetToCompose = () => { setRingBellId(undefined); setRingReason(''); setMode('compose'); };
+  const resetToCompose = () => { setRingBellId(undefined); setRingReason(''); setRingWarning(undefined); setMode('compose'); };
 
   return mode === 'compose'
     ? <BellCompose
-        onRing={(bellId, label) => { setRingBellId(bellId); setRingReason(label); setMode('ringing'); }}
+        onRing={(bellId, label, warning) => { setRingBellId(bellId); setRingReason(label); setRingWarning(warning); setMode('ringing'); }}
         onBack={onBack}
         onPost={onPost}
       />
     : <BellRinging
-        onBack={() => { resetToCompose(); onBack?.(); }}  // ‹ Back exits Bell tab
-        onDone={resetToCompose}                           // mark-done / cancel stays on Bell
+        onBack={() => { resetToCompose(); onBack?.(); }}
+        onDone={resetToCompose}
         bellId={ringBellId}
         reason={ringReason}
+        warning={ringWarning}
       />;
 }

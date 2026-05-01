@@ -48,7 +48,7 @@ function buildIcs(events: { uid: string; summary: string; description: string; l
 // Returns ICS feed for the user's claimed shifts (caregiver) or posted shifts (parent).
 // Also accepts GET /api/shifts/ical (authenticated via Clerk session) — generates+saves token, redirects to token URL.
 export async function GET(req: NextRequest) {
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://homestead-app-six.vercel.app';
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
   const token = req.nextUrl.searchParams.get('token');
 
   let user: typeof users.$inferSelect | undefined;

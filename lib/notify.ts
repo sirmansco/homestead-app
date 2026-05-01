@@ -6,7 +6,7 @@ import { fmtDateTime, fmtDateShort } from '@/lib/format/time';
 import { getCopy } from '@/lib/copy';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://homestead-app-six.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
 
 if (!RESEND_API_KEY) {
   console.warn('[notify] RESEND_API_KEY not set — email notifications disabled');
@@ -30,7 +30,7 @@ async function send(to: string[], subject: string, text: string) {
   }
 }
 
-export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string) {
+export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string): Promise<{ sent: number; eligible: number }> {
   const [row] = await db.select({
     shift: shifts,
     household: households,
@@ -41,7 +41,7 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
     .leftJoin(users, eq(shifts.createdByUserId, users.id))
     .where(eq(shifts.id, shiftId))
     .limit(1);
-  if (!row?.shift || !row.household) return;
+  if (!row?.shift || !row.household) return { sent: 0, eligible: 0 };
 
   // If a preferred caregiver is set, only notify that one person
   let recipients;
@@ -59,10 +59,12 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   const opted = recipients.filter(r => r.notifyShiftPosted !== false);
   const emails = opted.map(r => r.email).filter(Boolean);
   const optedIds = opted.map(r => r.id);
+  const eligible = opted.length;
 
   const t = getCopy();
   const when = fmtDateShort(row.shift.startsAt);
 
+  let pushSent = 0;
   if (preferredCaregiverId) {
     if (optedIds.includes(preferredCaregiverId)) {
       try {
@@ -72,6 +74,7 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
           url: `/?tab=${t.request.deepLinkTab}`,
           tag: `${t.request.tagPrefix}-${shiftId}`,
         });
+        pushSent = 1;
       } catch (err) {
         console.error('[notify:newShift:push:targeted]', err);
       }
@@ -84,26 +87,28 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
         url: `/?tab=${t.request.deepLinkTab}`,
         tag: `${t.request.tagPrefix}-${shiftId}`,
       });
+      pushSent = optedIds.length;
     } catch (err) {
       console.error('[notify:newShift:push:broadcast]', err);
     }
   }
 
-  if (!emails.length) return;
+  if (emails.length) {
+    const subject = `New ${t.request.newLabel.toLowerCase()} posted — ${row.shift.title}`;
+    const text = [
+      `${row.creator?.name || `A ${t.roles.keeper.singular.toLowerCase()}`} posted a new ${t.request.newLabel.toLowerCase()} for ${row.household.name}:`,
+      ``,
+      `  ${row.shift.title}`,
+      `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
+      row.shift.forWhom ? `  For ${row.shift.forWhom}` : '',
+      row.shift.notes ? `  ${row.shift.notes}` : '',
+      ``,
+      `${t.request.acceptVerb} it: ${APP_URL}`,
+    ].filter(Boolean).join('\n');
+    await send(emails, subject, text);
+  }
 
-  const subject = `New ${t.request.newLabel.toLowerCase()} posted — ${row.shift.title}`;
-  const text = [
-    `${row.creator?.name || `A ${t.roles.keeper.singular.toLowerCase()}`} posted a new ${t.request.newLabel.toLowerCase()} for ${row.household.name}:`,
-    ``,
-    `  ${row.shift.title}`,
-    `  ${fmtDateTime(row.shift.startsAt)} – ${fmtDateTime(row.shift.endsAt)}`,
-    row.shift.forWhom ? `  For ${row.shift.forWhom}` : '',
-    row.shift.notes ? `  ${row.shift.notes}` : '',
-    ``,
-    `${t.request.acceptVerb} it: ${APP_URL}`,
-  ].filter(Boolean).join('\n');
-
-  await send(emails, subject, text);
+  return { sent: pushSent, eligible };
 }
 
 export async function notifyShiftClaimed(shiftId: string) {
@@ -236,13 +241,13 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
   await send([recipient.email], subject, text);
 }
 
-export async function notifyBellRing(bellId: string) {
+export async function notifyBellRing(bellId: string): Promise<{ sent: number; eligible: number }> {
   const t = getCopy();
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
-  if (!bell) return;
+  if (!bell) return { sent: 0, eligible: 0 };
 
   const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
-  if (!household) return;
+  if (!household) return { sent: 0, eligible: 0 };
 
   const innerCircle = await db.select({ id: users.id })
     .from(users)
@@ -252,7 +257,7 @@ export async function notifyBellRing(bellId: string) {
       eq(users.villageGroup, 'covey'),
       eq(users.notifyBellRinging, true),
     ));
-  if (innerCircle.length === 0) return;
+  if (innerCircle.length === 0) return { sent: 0, eligible: 0 };
 
   try {
     await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
@@ -261,8 +266,10 @@ export async function notifyBellRing(bellId: string) {
       url: `/?tab=${t.urgentSignal.deepLinkTab}`,
       tag: `${t.urgentSignal.tagPrefix}-${bell.id}`,
     });
+    return { sent: innerCircle.length, eligible: innerCircle.length };
   } catch (err) {
     console.error('[notify:bellRing:push]', err);
+    return { sent: 0, eligible: innerCircle.length };
   }
 }
 
