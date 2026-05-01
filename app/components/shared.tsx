@@ -29,8 +29,8 @@ export function GHead({ children, size = 32, italic = false, color, style = {} }
   return (
     <h2 style={{
       fontFamily: G.display, fontSize: size, lineHeight: 1.05,
-      fontWeight: 500, letterSpacing: '-0.02em',
-      color: color || G.ink, margin: 0,
+      fontWeight: 400, letterSpacing: '-0.01em',
+      color: color || G.green, margin: 0,
       fontStyle: italic ? 'italic' : 'normal', ...style,
     }}>{children}</h2>
   );
@@ -49,60 +49,56 @@ export function GAvatar({ name = '', size = 36, style = {} }: {
       width: size, height: size, borderRadius: size,
       background: bg, color: G.bg,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: G.display, fontSize: size * 0.42, fontWeight: 500,
+      fontFamily: G.display, fontSize: size * 0.42, fontWeight: 400,
       flexShrink: 0, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)', ...style,
     }}>{init}</div>
   );
 }
 
 // ── GMasthead ─────────────────────────────────────────────────────────────
-const APP_SHA = process.env.NEXT_PUBLIC_APP_SHA || 'dev';
-
+// Old props (left, right, title, tagline, folioLeft, folioRight, leftAction, titleColor)
+// are accepted but ignored — the new masthead is a fixed wordmark bar.
 export function GMasthead({
-  left, right, title, tagline,
-  folioLeft = APP_SHA, folioRight = '',
-  leftAction, rightAction, titleColor,
+  rightAction,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ...rest
 }: {
-  left?: string;
-  right?: string;
-  title: string;
-  tagline?: string;
-  folioLeft?: string;
-  folioRight?: string;
-  leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
-  titleColor?: string;
+  [key: string]: unknown;
 }) {
   return (
-    <div style={{ padding: '6px 24px 14px', flexShrink: 0, height: 164, boxSizing: 'border-box' }}>
+    <div style={{
+      padding: '12px 20px',
+      flexShrink: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottom: `1px solid ${G.hairline}`,
+      background: 'transparent',
+    }}>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 20,
+        fontFamily: G.display,
+        fontStyle: 'italic',
+        fontWeight: 400,
+        fontSize: 20,
+        color: G.green,
+        lineHeight: 1,
+        letterSpacing: '-0.01em',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 20 }}>
-          {leftAction ? leftAction : (left ? <GLabel>{left}</GLabel> : null)}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 20 }}>
-          {rightAction ? rightAction : (right ? <GLabel color={G.clay}>{right}</GLabel> : null)}
-        </div>
+        {getCopy().brand.name}
       </div>
-      <div style={{ height: 1, background: G.ink, margin: '6px 0 10px', opacity: 0.85 }} />
-      <div style={{
-        fontFamily: G.display, fontSize: title.length > 18 ? 26 : 34, lineHeight: 1.05, fontWeight: 500,
-        fontStyle: 'italic', letterSpacing: '-0.02em',
-        color: titleColor || G.ink,
-        height: 38, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-      }}>{title}</div>
-      <div style={{
-        fontFamily: G.serif, fontStyle: 'italic', color: G.ink2,
-        fontSize: 12.5, marginTop: 6, lineHeight: 1.35,
-        height: 34, overflow: 'hidden',
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-      } as CSSProperties}>{tagline || '\u00A0'}</div>
-      <div style={{ height: 1, background: G.ink, marginTop: 10, opacity: 0.85 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        <GLabel>{folioLeft}</GLabel>
-        <GLabel>{folioRight}</GLabel>
-      </div>
+      {rightAction ? rightAction : (
+        <div style={{
+          width: 28, height: 28, borderRadius: 14,
+          background: 'rgba(74,83,64,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: G.green,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="9" />
+          </svg>
+        </div>
+      )}
     </div>
   );
 }
@@ -174,15 +170,15 @@ export function GButton({ children, variant = 'primary', onClick, disabled, styl
   type?: 'button' | 'submit' | 'reset';
 }) {
   const base: CSSProperties = {
-    fontFamily: G.sans, fontWeight: 700, fontSize: 13,
+    fontFamily: G.sans, fontWeight: 600, fontSize: 13,
     border: 'none', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.45 : 1, padding: '10px 20px',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
   };
   const variants: Record<GButtonVariant, CSSProperties> = {
-    primary: { background: G.ink,         color: G.bg },
-    danger:  { background: RED,           color: G.bg },
-    ghost:   { background: 'transparent', color: G.ink, border: `1px solid ${G.hairline}` },
+    primary: { background: G.green,        color: G.bg },
+    danger:  { background: RED,            color: G.bg },
+    ghost:   { background: 'transparent',  color: G.ink, border: `1px solid ${G.hairline}` },
   };
   return (
     <button type={type} onClick={onClick} disabled={disabled}
@@ -219,34 +215,32 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
-      paddingBottom: 8,
-      background: `linear-gradient(180deg, transparent 0%, ${G.bg} 30%)`,
+      background: G.bg,
+      borderTop: `1px solid ${G.hairline}`,
+      paddingBottom: 'env(safe-area-inset-bottom, 8px)',
     }}>
       <div style={{
-        margin: '0 16px', height: 62,
-        background: G.paper,
-        border: `1px solid ${G.hairline}`,
-        borderRadius: 18,
         display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
         alignItems: 'center',
-        boxShadow: '0 4px 16px rgba(27,23,19,0.07)',
+        height: 56,
       }}>
         {tabs.map(tab => {
           const isActive = active === tab.id;
-          const color = isActive ? G.ink : G.muted;
+          const color = isActive ? G.green : `color-mix(in srgb, ${G.muted} 50%, transparent)`;
+          const solidColor = isActive ? G.green : G.muted;
           return (
             <button key={tab.id} onClick={() => onNavigate?.(tab.id)} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              background: 'transparent', border: 'none', padding: '6px 0', cursor: 'pointer',
-              position: 'relative',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              background: 'transparent', border: 'none', padding: '8px 0', cursor: 'pointer',
+              position: 'relative', opacity: isActive ? 1 : 0.5,
             }}>
               <div style={{ position: 'relative' }}>
-                {tab.icon(color)}
+                {tab.icon(solidColor)}
                 {!!tab.badge && (
                   <div style={{
                     position: 'absolute', top: -3, right: -3,
                     minWidth: 14, height: 14, borderRadius: 7,
-                    background: G.clay, border: `1.5px solid ${G.paper}`,
+                    background: G.clay, border: `1.5px solid ${G.bg}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: G.sans, fontSize: 8, fontWeight: 700, color: G.bg,
                     padding: '0 2px',
@@ -254,15 +248,9 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
                 )}
               </div>
               <span style={{
-                fontFamily: G.sans, fontSize: 9.5, fontWeight: 600, letterSpacing: 0.4,
-                textTransform: 'uppercase', color,
+                fontFamily: G.sans, fontSize: 9, fontWeight: 500, letterSpacing: '0.1em',
+                textTransform: 'uppercase', color: solidColor,
               }}>{tab.label}</span>
-              {isActive && (
-                <div style={{
-                  position: 'absolute', bottom: 3, width: 16, height: 2,
-                  borderRadius: 1, background: G.ink,
-                }} />
-              )}
             </button>
           );
         })}

@@ -12,8 +12,8 @@ export const G = {
   claySoft:  'var(--clay-soft)',
   mustard:   'var(--mustard)',
   cream:     'var(--cream)',
-  display: '"IM Fell English", "Spectral", Georgia, serif',
-  serif:   '"Spectral", Georgia, serif',
+  display: '"Libre Caslon Text", Georgia, serif',
+  serif:   '"Libre Caslon Text", Georgia, serif',
   sans:    '"Inter", -apple-system, system-ui, sans-serif',
 } as const;
 
