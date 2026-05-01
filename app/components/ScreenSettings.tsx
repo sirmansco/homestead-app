@@ -26,17 +26,17 @@ const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | '
 type Theme = 'system' | 'light' | 'dark';
 
 function getStoredTheme(): Theme {
-  try { return (localStorage.getItem('homestead-theme') as Theme) || 'system'; } catch { return 'system'; }
+  try { return (localStorage.getItem('covey-theme') as Theme) || 'system'; } catch { return 'system'; }
 }
 
 function applyTheme(t: Theme) {
   try {
     if (t === 'system') {
       document.documentElement.removeAttribute('data-theme');
-      localStorage.removeItem('homestead-theme');
+      localStorage.removeItem('covey-theme');
     } else {
       document.documentElement.setAttribute('data-theme', t);
-      localStorage.setItem('homestead-theme', t);
+      localStorage.setItem('covey-theme', t);
     }
   } catch { /* ignore private-mode errors */ }
 }
