@@ -141,9 +141,12 @@ export const Icons = {
     </svg>
   ),
   bell: (c: string) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 3v1.5M6.5 19.5h11M8 19.5L8 12a4 4 0 018 0v7.5M10.5 22h3a1.5 1.5 0 01-3 0z"
-        stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="22" viewBox="0 0 48 48" fill="none">
+      <path d="M24 4 L24 8" stroke={c} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M16 8 L32 8" stroke={c} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M18 8 L18 14 L14 14 L14 38 L34 38 L34 14 L30 14 L30 8 Z" fill={c}/>
+      <rect x="17" y="17" width="14" height="18" fill="rgba(255,233,168,0.85)"/>
+      <path d="M14 38 L34 38" stroke={c} strokeWidth="2"/>
     </svg>
   ),
   village: (c: string) => (
