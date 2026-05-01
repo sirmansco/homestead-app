@@ -3,7 +3,7 @@ import { getCopy } from '@/lib/copy';
 
 export default function manifest(): MetadataRoute.Manifest {
   const t = getCopy();
-  const coveyActive = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true';
+  const coveyActive = process.env.COVEY_BRAND_ACTIVE === 'true';
   if (coveyActive) {
     return {
       name: t.brand.name,
