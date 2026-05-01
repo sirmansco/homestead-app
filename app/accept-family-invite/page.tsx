@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { G } from '../components/tokens';
+import { getCopy } from '@/lib/copy';
 
 type InviteInfo = {
   fromName: string;
@@ -61,7 +62,7 @@ function InviteContent() {
         fontFamily: G.display, fontStyle: 'italic', fontSize: 32,
         color: G.ink, marginBottom: 24,
       }}>
-        Homestead
+        {getCopy().brand.name}
       </div>
 
       {state === 'loading' && (
@@ -110,7 +111,7 @@ function InviteContent() {
             You&apos;ve been invited
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, marginBottom: 20, lineHeight: 1.5 }}>
-            <strong style={{ color: G.ink2 }}>{invite.fromName}</strong> invited you to join their village on Homestead as{' '}
+            <strong style={{ color: G.ink2 }}>{invite.fromName}</strong> invited you to join their circle on {getCopy().brand.name} as{' '}
             <strong style={{ color: G.ink2 }}>{GROUP_LABEL[invite.villageGroup] ?? invite.villageGroup}</strong>.
           </div>
 

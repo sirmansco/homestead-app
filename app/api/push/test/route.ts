@@ -20,7 +20,7 @@ export async function POST() {
       .where(eq(pushSubscriptions.userId, user.id));
 
     const result = await pushToUser(user.id, {
-      title: 'Homestead · push test',
+      title: `${(await import('@/lib/copy')).getCopy().brand.name} · push test`,
       body: 'Push notifications are working.',
       tag: 'push-test',
     });

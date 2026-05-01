@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next';
 
-const coveyActive = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true';
-
 export default function manifest(): MetadataRoute.Manifest {
+  const coveyActive = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true';
   if (coveyActive) {
     return {
       name: 'Covey',
