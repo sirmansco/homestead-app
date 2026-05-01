@@ -1,9 +1,11 @@
+import { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { PushRegistrar } from './components/PushRegistrar';
 import { AutoUpdate } from './components/AutoUpdate';
 import { getCopy } from '@/lib/copy';
+import { StaffToolbar } from './components/StaffToolbar';
 import './globals.css';
 
 const APP_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
@@ -68,6 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AutoUpdate />
           <PushRegistrar />
           {children}
+          <Suspense fallback={null}>
+            <StaffToolbar />
+          </Suspense>
         </body>
       </html>
     </ClerkProvider>
