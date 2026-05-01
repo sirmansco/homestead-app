@@ -474,14 +474,14 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
               fontFamily: G.display,
               fontStyle: 'italic',
               fontSize: 18,
-              color: '#2D3328',
+              color: G.ink,
               lineHeight: 1.2,
               marginBottom: 4,
             }}>Need help?</div>
             <div style={{
               fontFamily: G.sans,
               fontSize: 12,
-              color: '#2D3328',
+              color: G.ink,
               opacity: 0.8,
             }}>Post a planned need or light the lantern for something urgent.</div>
           </div>
@@ -506,8 +506,8 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
               <button onClick={onRing} style={{
                 flex: 1,
                 background: 'transparent',
-                color: '#2D3328',
-                border: '1.5px solid #2D3328',
+                color: G.ink,
+                border: `1.5px solid ${G.ink}`,
                 borderRadius: 10,
                 padding: '10px 0',
                 fontFamily: G.sans,
@@ -593,12 +593,18 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
       aria-label={`${getCopy().urgentSignal.actionLabel}`}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 26, height: 26, borderRadius: 26,
-        background: G.clay, border: 'none', cursor: 'pointer',
-        padding: 0, color: G.bg,
-        boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
+        width: 44, height: 44, borderRadius: 44,
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        padding: 0,
       }}
     >
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 26, height: 26, borderRadius: 26,
+        background: G.clay, color: G.bg,
+        boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
+        pointerEvents: 'none',
+      }}>
       {/* Lantern icon — matches tab bar and empty-state glyph */}
       <svg width="14" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M12 2v2" stroke={G.bg} strokeWidth="1.8" strokeLinecap="round"/>
@@ -608,6 +614,7 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
         <ellipse cx="12" cy="14" rx="2.5" ry="3" fill={G.bg} fillOpacity="0.9"/>
         <path d="M9 19h6" stroke={G.bg} strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
+      </div>
     </button>
   );
 });

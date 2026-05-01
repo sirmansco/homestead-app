@@ -233,7 +233,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
       {uploadError && (
         <div style={{
           marginTop: 6, padding: '6px 10px', borderRadius: 6,
-          background: '#FFE6DA', border: `1px solid ${G.clay}`,
+          background: G.claySoft, border: `1px solid ${G.clay}`,
           fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.clay,
         }}>{uploadError}</div>
       )}
@@ -448,7 +448,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
               </div>
             ) : null}
 
-            {error && <div style={{ color: '#B5342B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+            {error && <div style={{ color: G.clay, fontSize: 12, marginBottom: 10 }}>{error}</div>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <button onClick={() => sendInvite('email')} disabled={busy || !email.trim()} style={{ ...btnStyle, opacity: (busy || !email.trim()) ? 0.4 : 1 }}>
@@ -469,7 +469,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
               <div style={labelStyle}>Birthday (optional)</div>
               <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={inputStyle} />
             </label>
-            {error && <div style={{ color: '#B5342B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+            {error && <div style={{ color: G.clay, fontSize: 12, marginBottom: 10 }}>{error}</div>}
             <button onClick={addKid} disabled={busy || !name.trim()} style={{ ...btnStyle, width: '100%', opacity: (busy || !name.trim()) ? 0.4 : 1 }}>
               Add {getCopy().circle.kidLabel.toLowerCase()}
             </button>
@@ -616,6 +616,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [families, setFamilies] = useState<FamilyData[] | null>(null);
   const [myUserIds, setMyUserIds] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -623,15 +624,22 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
         fetch('/api/village?scope=all'),
         fetch('/api/household'),
       ]);
-      const data = villageRes.ok ? await villageRes.json() : { families: [] };
+      if (!villageRes.ok) {
+        setLoadError("Couldn't load your families. Tap Retry.");
+        setFamilies(prev => prev ?? []);
+        return;
+      }
+      const data = await villageRes.json();
       setFamilies(data.families || []);
+      setLoadError(null);
       // Build set of my own users.id values across all households
       if (householdRes.ok) {
         const hh = await householdRes.json();
         if (hh.user?.id) setMyUserIds(new Set([hh.user.id]));
       }
     } catch {
-      setFamilies([]);
+      setLoadError("Couldn't load your families. Tap Retry.");
+      setFamilies(prev => prev ?? []);
     }
   }, []);
 
@@ -674,6 +682,17 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+        {loadError && (
+          <div style={{
+            margin: '8px 0', padding: '10px 14px', borderRadius: 8,
+            background: G.claySoft, border: `1px solid ${G.clay}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.clay,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>{loadError}</span>
+            <button onClick={() => load()} style={{ background: 'none', border: 'none', color: G.clay, fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer', padding: 0 }}>Retry</button>
+          </div>
+        )}
         {families === null ? (
           <div style={{ padding: 40, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted }}>
             Loading…
@@ -729,6 +748,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
   const [myUserId, setMyUserId] = useState<string | null>(null);
@@ -739,10 +759,13 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         fetch('/api/village'),
         fetch('/api/household'),
       ]);
-      const data = await villageRes.json();
-      if (villageRes.ok) {
+      if (!villageRes.ok) {
+        setLoadError(`Couldn't load ${getCopy().circle.title.toLowerCase()}. Pull to refresh.`);
+      } else {
+        const data = await villageRes.json();
         setAdults(data.adults || []);
         setKids(data.kids || []);
+        setLoadError(null);
       }
       if (meRes.ok) {
         const me = await meRes.json();
@@ -750,11 +773,15 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
+    } catch {
+      setLoadError(`Couldn't load ${getCopy().circle.title.toLowerCase()}. Pull to refresh.`);
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const [renaming, setRenaming] = useState(false);
@@ -870,12 +897,23 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         {villageError && (
           <div style={{
             margin: '8px 0', padding: '10px 14px', borderRadius: 8,
-            background: '#FFE6DA', color: '#7A2F12',
+            background: G.claySoft, color: G.clay,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <span>{villageError}</span>
-            <button onClick={() => setVillageError(null)} style={{ background: 'none', border: 'none', color: '#7A2F12', fontSize: 16, cursor: 'pointer', padding: 0 }}>×</button>
+            <button onClick={() => setVillageError(null)} style={{ background: 'none', border: 'none', color: G.clay, fontSize: 16, cursor: 'pointer', padding: 0 }}>×</button>
+          </div>
+        )}
+        {loadError && (
+          <div style={{
+            margin: '8px 0', padding: '10px 14px', borderRadius: 8,
+            background: G.claySoft, border: `1px solid ${G.clay}`,
+            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.clay,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>{loadError}</span>
+            <button onClick={() => load()} style={{ background: 'none', border: 'none', color: G.clay, fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer', padding: 0 }}>Retry</button>
           </div>
         )}
         {loading ? (
