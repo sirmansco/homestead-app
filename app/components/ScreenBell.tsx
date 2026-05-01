@@ -24,18 +24,13 @@ function BellPill({ label, value, emphasized }: { label: string; value: string; 
 
 function BellGlyph({ size = 72 }: { size?: number }) {
   return (
-    <svg width={size} height={size * (100 / 84)} viewBox="0 0 84 100">
-      <g stroke={RED} strokeWidth="1" fill="none" opacity="0.35">
-        <path d="M 8 50 Q 2 58 8 66" />
-        <path d="M 76 50 Q 82 58 76 66" />
-        <path d="M 2 46 Q -6 58 2 70" />
-        <path d="M 82 46 Q 90 58 82 70" />
-      </g>
-      <path d="M 42 14 L 42 20 M 26 72 Q 26 38 42 22 Q 58 38 58 72 Z"
-        fill={RED} stroke={RED_DARK} strokeWidth="1.5" strokeLinejoin="round" />
-      <line x1="22" y1="72" x2="62" y2="72" stroke={RED_DARK} strokeWidth="2" />
-      <circle cx="42" cy="78" r="4" fill={RED_DARK} />
-      <circle cx="42" cy="14" r="3" fill={RED_DARK} />
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M24 4 L24 8" stroke="#3A4232" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M16 8 L32 8" stroke="#3A4232" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M18 8 L18 14 L14 14 L14 38 L34 38 L34 14 L30 14 L30 8 Z" fill="#3A4232" stroke="#3A4232" strokeWidth="1.5"/>
+      <rect x="17" y="17" width="14" height="18" fill="#FFE9A8"/>
+      <circle cx="24" cy="26" r="4" fill="#FFFFFF" opacity="0.9"/>
+      <path d="M14 38 L34 38" stroke="#3A4232" strokeWidth="2"/>
     </svg>
   );
 }
@@ -458,7 +453,39 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
-          <BellGlyph size={72} />
+          <svg width="220" height="220" viewBox="0 0 320 320">
+            <circle cx="160" cy="160" r="150" fill="none" stroke="#7A6A4F" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5"/>
+            <text x="160" y="20" textAnchor="middle" fontFamily="IM Fell English SC, serif" fontSize="11" fill="#7A6A4F" letterSpacing="2">YOUR FIELD</text>
+            <circle cx="80" cy="80" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="240" cy="60" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="270" cy="180" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="220" cy="270" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="80" cy="260" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="40" cy="180" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="50" cy="120" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="290" cy="120" r="6" fill="#7A6A4F" opacity="0.4"/>
+            <circle cx="160" cy="160" r="80" fill="#4A5340" opacity="0.08" stroke="#4A5340" strokeWidth="2"/>
+            <text x="160" y="105" textAnchor="middle" fontFamily="Libre Caslon Text, serif" fontStyle="italic" fontSize="14" fill="#4A5340">your Covey</text>
+            <g fill="#4A5340">
+              <g transform="translate(160,160)">
+                <g transform="rotate(0) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(45) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(90) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(135) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(180) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(225) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(270) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+                <g transform="rotate(315) translate(0,-50)"><circle cx="0" cy="0" r="6"/></g>
+              </g>
+            </g>
+            <g transform="translate(160,160)">
+              <path d="M0 -8 L0 -6" stroke="#D9A441" strokeWidth="2"/>
+              <path d="M-5 -6 L5 -6" stroke="#D9A441" strokeWidth="2"/>
+              <rect x="-4" y="-4" width="8" height="10" fill="#D9A441" opacity="0.9"/>
+              <circle cx="0" cy="1" r="2" fill="#FFFFFF"/>
+            </g>
+            <text x="160" y="190" textAnchor="middle" fontFamily="IM Fell English SC, serif" fontSize="9" fill="#7A6A4F" letterSpacing="2">THE LANTERN</text>
+          </svg>
         </div>
 
         {members === null ? (
