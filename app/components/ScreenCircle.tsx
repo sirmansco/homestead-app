@@ -467,11 +467,17 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             </label>
             <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>Birthday (optional)</div>
-              <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={inputStyle} />
+              <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={{ ...inputStyle, maxWidth: '100%' }} />
             </label>
-            {error && <div style={{ color: '#B5342B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+            {error && (
+              <div style={{
+                padding: '10px 12px', borderRadius: 8, marginBottom: 12,
+                background: G.claySoft, border: `1px solid ${G.clay}`,
+                fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.clay,
+              }}>{error}</div>
+            )}
             <button onClick={addKid} disabled={busy || !name.trim()} style={{ ...btnStyle, width: '100%', opacity: (busy || !name.trim()) ? 0.4 : 1 }}>
-              Add {getCopy().circle.kidLabel.toLowerCase()}
+              {busy ? 'Adding…' : `Add ${getCopy().circle.kidLabel.toLowerCase()}`}
             </button>
           </>
         )}
