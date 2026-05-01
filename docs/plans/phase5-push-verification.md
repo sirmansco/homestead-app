@@ -16,7 +16,7 @@ Verify that all four push notification types render Covey brand copy — not Hom
 4. **Covered-Whistle response** — triggered by claim (`/api/shifts/[id]/claim`) → `notifyShiftClaimed()`. Title: `✅ <name> covered it`. Deep link: `/?tab=almanac`.
 
 **SW fallback test:**
-When push payload JSON parse fails, the SW falls back to `{ title: 'Covey', body: event.data.text() }`. Cache version under `COVEY_BRAND_ACTIVE=true` is `covey-v1` (set in `app/api/sw-script/route.ts`).
+When push payload JSON parse fails, the SW falls back to `{ title: 'Covey', body: event.data.text() }`. Cache version under `COVEY_BRAND_ACTIVE=true` is `covey-v2` (set in `app/api/sw-script/route.ts`).
 
 **Success criteria (all must pass):**
 - [ ] Lantern push title reads `🪔 <household> needs help` (Covey copy, not "Homestead")
@@ -26,7 +26,7 @@ When push payload JSON parse fails, the SW falls back to `{ title: 'Covey', body
 - [ ] Tapping Lantern / escalation notification opens `/?tab=lantern`
 - [ ] Tapping Whistle / covered notification opens `/?tab=almanac`
 - [ ] SW fallback shows "Covey" as title (not "Homestead")
-- [ ] SW cache version header reads `covey-v1` (verify: `curl -I <preview-url>/sw.js | grep cache-version` or check SW console logs)
+- [ ] SW cache version header reads `covey-v2` (verify: `curl -I joincovey.co/sw.js | grep cache-version` or check SW console logs)
 - [ ] iOS + Android both tested (or noted if only one available)
 
 ---
@@ -84,7 +84,7 @@ Expected push:
 ### Test 3 — Escalation push
 ```
 Device A (Keeper): Light a Lantern, then wait 5+ minutes without any Watcher responding
-  (or: manually trigger cron via curl -H "Authorization: Bearer $CRON_SECRET" <preview-url>/api/bell/cron)
+  (or: manually trigger cron via curl -H "Authorization: Bearer $CRON_SECRET" joincovey.co/api/bell/cron)
 Device C (Watcher, villageGroup=field, notifyBellRinging=true): Wait for push
 Expected push:
   Title: 🪔 Still needed — <reason>
@@ -108,9 +108,9 @@ Expected push:
 In browser console on the preview URL:
   const sw = await navigator.serviceWorker.ready;
   sw.active.postMessage({type: 'SW_PING'}); // observe SW response
-Check sw.js response header: should include covey-v1 in script comment
-  curl -s <preview-url>/sw.js | head -1
-  Expected: // Covey Service Worker — build <sha> — cache covey-v1
+Check sw.js response header: should include covey-v2 in script comment
+  curl -s joincovey.co/sw.js | head -1
+  Expected: // Covey Service Worker — build <sha> — cache covey-v2
 ```
 
 ---
