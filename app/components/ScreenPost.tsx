@@ -169,18 +169,25 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 26, height: 26, borderRadius: 26,
               background: G.clay, border: 'none', cursor: 'pointer',
-              padding: 0,
+              padding: 0, color: G.bg,
               boxShadow: '0 1px 4px rgba(181,52,43,0.35)',
             }}
           >
-            {Icons.lantern(G.bg)}
+            <svg width="14" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2v2" stroke={G.bg} strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M8 4h8" stroke={G.bg} strokeWidth="1.8" strokeLinecap="round"/>
+              <rect x="7" y="6" width="10" height="13" rx="2" stroke={G.bg} strokeWidth="1.5"/>
+              <path d="M7 10h10" stroke={G.bg} strokeWidth="1" strokeOpacity="0.5"/>
+              <ellipse cx="12" cy="14" rx="2.5" ry="3" fill={G.bg} fillOpacity="0.9"/>
+              <path d="M9 19h6" stroke={G.bg} strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </button>
         ) : undefined}
         title="Post a Need"
         tagline={`For a last-minute need, light the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 20px 88px' }}>
         {multi && active && (
           <div style={{
             marginTop: 4, padding: '10px 12px',
@@ -210,7 +217,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           />
         </Field>
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 14 }}>
           <GLabel>For</GLabel>
           {kids.length > 0 ? (
             <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -249,7 +256,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         </div>
 
         {caregivers.length > 0 && (
-          <div style={{ marginTop: 22 }}>
+          <div style={{ marginTop: 14 }}>
             <GLabel>Notify</GLabel>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 3, marginBottom: 8 }}>
               Send to everyone, or pick one person.
@@ -284,7 +291,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           </div>
         )}
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 14 }}>
           <GLabel>When</GLabel>
           <div style={{ marginTop: 8 }}>
             <WhenPickerWindow
@@ -298,7 +305,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           </div>
         </div>
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 14 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
             <input
               type="checkbox" checked={isRecurring}
@@ -368,21 +375,21 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           )}
         </div>
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 14 }}>
           <GLabel>What</GLabel>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)}
             placeholder="Pickup, dinner, bedtime routine…"
             style={{
-              marginTop: 8, padding: 14, borderRadius: 8, width: '100%', boxSizing: 'border-box',
+              marginTop: 8, padding: 12, borderRadius: 8, width: '100%', boxSizing: 'border-box',
               border: `1px solid ${G.hairline2}`, background: G.paper,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.ink, lineHeight: 1.5,
-              minHeight: 88, resize: 'vertical', outline: 'none',
+              minHeight: 64, resize: 'vertical', outline: 'none',
             }}
           />
         </div>
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 14 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
             <input
               type="checkbox" checked={isPaid}

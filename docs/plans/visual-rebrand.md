@@ -27,7 +27,7 @@ Post-rebrand UI polish: copy corrections, icon alignment, dark mode fidelity, la
 - [ ] D14 — App icon: update to side-profile bobwhite sentinel (Image #7)
 
 ## Graveyard
-*(empty at session start)*
+- D6 — Lantern banner on ScreenShifts (2026-05-01) — Code is wired correctly (poll + conditional render). Banner does not appear. Root cause unconfirmed: suspect `/api/bell/active` returns `{ bells: [] }` for caregiver session due to household auth resolution mismatch. Cannot fix without repro (network log from real caregiver device with active bell).
 
 ## Anchors
 - Caregiver tab bar unchanged

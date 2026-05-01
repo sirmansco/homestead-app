@@ -74,7 +74,7 @@ export function GMasthead({
       alignItems: 'center',
       justifyContent: 'space-between',
       borderBottom: `1px solid ${G.hairline}`,
-      background: 'transparent',
+      background: G.bg,
     }}>
       <div style={{
         fontFamily: G.display,
