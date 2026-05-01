@@ -45,14 +45,19 @@ export async function GET() {
       // dbOk stays false
     }
 
+    // Push (web-push) needs all three of: VAPID_PRIVATE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    // VAPID_SUBJECT. See lib/push.ts — it short-circuits with `vapid_not_configured` if any
+    // are missing. The legacy `VAPID_PUBLIC_KEY` (no prefix) is unused; do not surface it
+    // here, it caused stale "configured" reads while pushes were silently no-ops.
     const envVars = {
       DATABASE_URL: !!process.env.DATABASE_URL,
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
       CLERK_SECRET_KEY: !!process.env.CLERK_SECRET_KEY,
       BLOB_READ_WRITE_TOKEN: !!process.env.BLOB_READ_WRITE_TOKEN,
-      VAPID_PUBLIC_KEY: !!process.env.VAPID_PUBLIC_KEY,
       VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      VAPID_SUBJECT: !!process.env.VAPID_SUBJECT,
+      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
       COVEY_BRAND_ACTIVE: process.env.COVEY_BRAND_ACTIVE ?? '(unset)',
     };
 

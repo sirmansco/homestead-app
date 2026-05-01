@@ -56,7 +56,7 @@ const RESPONSE_LABEL: Record<string, string> = {
 function LanternCard({ bell, onView, onCancel, cancelling }: {
   bell: ActiveBellData;
   onView: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   cancelling: boolean;
 }) {
   const AMBER = G.mustard;
@@ -135,19 +135,23 @@ function LanternCard({ bell, onView, onCancel, cancelling }: {
       {/* Actions */}
       <div style={{ display: 'flex', gap: 8, padding: '8px 14px 12px' }}>
         <button onClick={onView} style={{
-          flex: 1, padding: '7px 10px', borderRadius: 6,
+          flex: onCancel ? 1 : undefined,
+          width: onCancel ? undefined : '100%',
+          padding: '7px 10px', borderRadius: 6,
           background: AMBER, color: '#1B1713', border: 'none',
           fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
           textTransform: 'uppercase', cursor: 'pointer',
         }}>See details</button>
-        <button onClick={onCancel} disabled={cancelling} style={{
-          flex: 1, padding: '7px 10px', borderRadius: 6,
-          background: 'transparent', color: AMBER,
-          border: `1px solid ${AMBER}`,
-          fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-          textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
-          opacity: cancelling ? 0.6 : 1,
-        }}>{cancelling ? '…' : getCopy().urgentSignal.actionLabel.replace('Light the ', 'Mark ') === 'Mark Lantern' ? 'Mark done' : 'Mark done'}</button>
+        {onCancel && (
+          <button onClick={onCancel} disabled={cancelling} style={{
+            flex: 1, padding: '7px 10px', borderRadius: 6,
+            background: 'transparent', color: AMBER,
+            border: `1px solid ${AMBER}`,
+            fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+            textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
+            opacity: cancelling ? 0.6 : 1,
+          }}>{cancelling ? '…' : 'Mark done'}</button>
+        )}
       </div>
     </div>
   );
@@ -793,12 +797,13 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {/* Active lantern card — parent only */}
-        {role === 'parent' && activeBell && (
+        {/* Active lantern card — visible to caregivers and parents.
+            Cancel action is parent-only (PATCH /api/bell/:id is gated server-side). */}
+        {activeBell && (
           <LanternCard
             bell={activeBell}
             onView={onViewBell ?? (() => {})}
-            onCancel={async () => {
+            onCancel={role === 'parent' ? async () => {
               if (cancellingBell) return;
               setCancellingBell(true);
               try {
@@ -811,7 +816,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
               } finally {
                 setCancellingBell(false);
               }
-            }}
+            } : undefined}
             cancelling={cancellingBell}
           />
         )}
