@@ -39,7 +39,7 @@ export async function requireHousehold() {
 
     const meta = (clerkUser.publicMetadata ?? {}) as {
       appRole?: 'parent' | 'caregiver';
-      villageGroup?: 'inner_circle' | 'sitter';
+      villageGroup?: 'covey' | 'field' | 'inner_circle' | 'sitter';
       name?: string;
     };
 
@@ -52,7 +52,7 @@ export async function requireHousehold() {
       email,
       name: meta.name || name,
       role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
-      villageGroup: meta.villageGroup || (isFirstUser ? 'inner_circle' : 'sitter'),
+      villageGroup: meta.villageGroup || (isFirstUser ? 'covey' : 'field'),
       isAdmin: isFirstUser,
     }).onConflictDoNothing();
     [user] = await db.select().from(users).where(and(

@@ -68,7 +68,7 @@ const HOUSEHOLD_ROW = { id: HH_ID, clerkOrgId: CLERK_ORG_ID, name: 'Smith Family
 const USER_ROW = {
   id: USER_ID, clerkUserId: CLERK_USER_ID, householdId: HH_ID,
   email: 'alice@example.com', name: 'Alice Smith',
-  role: 'parent', villageGroup: 'inner_circle',
+  role: 'parent', villageGroup: 'covey',
 };
 const KID_ROW = {
   id: KID_ID, householdId: HH_ID, name: 'Emma', birthday: '2021-03-14', notes: null,
@@ -198,7 +198,7 @@ describe('POST /api/village', () => {
 
   it('inserts an adult placeholder and returns the row', async () => {
     wireHousehold();
-    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'caregiver', villageGroup: 'inner_circle' };
+    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'caregiver', villageGroup: 'covey' };
     vi.mocked(db.insert).mockReturnValue(makeInsertStub([adult]));
 
     const res = await POST(makeReq({ type: 'adult', name: 'Bob', email: 'bob@example.com' }));

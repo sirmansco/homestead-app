@@ -121,7 +121,7 @@ function plusHours(h: number) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-type VillageMember = { id: string; name: string; villageGroup: 'inner_circle' | 'sitter' };
+type VillageMember = { id: string; name: string; villageGroup: 'covey' | 'field' };
 
 function PushPermissionBanner() {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
@@ -406,11 +406,11 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
     return 'notified';
   }
 
-  const byGroup = (g: 'inner_circle' | 'sitter') =>
+  const byGroup = (g: 'covey' | 'field') =>
     (members || []).filter(m => m.villageGroup === g);
 
-  const inner  = byGroup('inner_circle');
-  const sitter = byGroup('sitter');
+  const inner  = byGroup('covey');
+  const sitter = byGroup('field');
 
   async function handleMarkDone() {
     if (!bellId || marking) return;

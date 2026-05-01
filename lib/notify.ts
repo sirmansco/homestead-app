@@ -249,7 +249,7 @@ export async function notifyBellRing(bellId: string) {
     .where(and(
       eq(users.householdId, bell.householdId),
       eq(users.role, 'caregiver'),
-      eq(users.villageGroup, 'inner_circle'),
+      eq(users.villageGroup, 'covey'),
       eq(users.notifyBellRinging, true),
     ));
   if (innerCircle.length === 0) return;
@@ -276,7 +276,7 @@ export async function notifyBellEscalated(bellId: string) {
     .where(and(
       eq(users.householdId, bell.householdId),
       eq(users.role, 'caregiver'),
-      eq(users.villageGroup, 'sitter'),
+      eq(users.villageGroup, 'field'),
       eq(users.notifyBellRinging, true),
     ));
   if (sitters.length === 0) return;

@@ -36,6 +36,13 @@
       "when": 1777592806688,
       "tag": "0004_covey_enum_values",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777645484001,
+      "tag": "0005_enum_backfill",
+      "breakpoints": true
     }
   ]
 }
