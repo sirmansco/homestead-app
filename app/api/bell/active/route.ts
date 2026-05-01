@@ -47,22 +47,26 @@ export async function GET() {
       ? await db.select().from(bellResponses).where(inArray(bellResponses.bellId, bellIds))
       : [];
 
-    // Resolve handler display names
+    // Resolve handler + responder display names in one query
     const handlerIds = activeBells
       .map(b => b.handledByUserId)
       .filter((id): id is string => id !== null);
-    const handlerRows = handlerIds.length
-      ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, handlerIds))
+    const responderIds = responses.map(r => r.userId);
+    const allUserIds = [...new Set([...handlerIds, ...responderIds])];
+    const nameRows = allUserIds.length
+      ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, allUserIds))
       : [];
-    const handlerMap = new Map(handlerRows.map(u => [u.id, u.name]));
+    const nameMap = new Map(nameRows.map(u => [u.id, u.name]));
 
     // My user IDs across all households
     const myUserIds = new Set(myRows.map(r => r.id));
 
     const result = activeBells.map(b => ({
       ...b,
-      handledByName: b.handledByUserId ? (handlerMap.get(b.handledByUserId) ?? null) : null,
-      responses: responses.filter(r => r.bellId === b.id),
+      handledByName: b.handledByUserId ? (nameMap.get(b.handledByUserId) ?? null) : null,
+      responses: responses
+        .filter(r => r.bellId === b.id)
+        .map(r => ({ ...r, name: nameMap.get(r.userId) ?? null })),
       myResponse: responses.find(r => r.bellId === b.id && myUserIds.has(r.userId))?.response ?? null,
     }));
 

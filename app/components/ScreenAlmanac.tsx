@@ -65,6 +65,124 @@ const HouseholdChip = React.memo(function HouseholdChip({ name, glyph }: { name:
   );
 });
 
+// ── LanternCard ─────────────────────────────────────────────────────────────
+type ActiveBellData = {
+  id: string;
+  reason: string;
+  status: string;
+  handledByName: string | null;
+  createdAt: string;
+  endsAt: string;
+  escalatedAt: string | null;
+  responses: { userId: string; response: string; name: string | null }[];
+};
+
+const RESPONSE_LABEL: Record<string, string> = {
+  on_my_way: 'On the way',
+  in_thirty: 'In 30 min',
+  cannot: 'Can\'t cover',
+};
+
+function LanternCard({ bell, onView, onCancel, cancelling }: {
+  bell: ActiveBellData;
+  onView: () => void;
+  onCancel: () => void;
+  cancelling: boolean;
+}) {
+  const AMBER = G.mustard;
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const created = new Date(bell.createdAt);
+  const escalated = bell.escalatedAt ? new Date(bell.escalatedAt) : null;
+  const now = new Date();
+  const elapsedMs = now.getTime() - created.getTime();
+  const elapsedMin = Math.floor(elapsedMs / 60_000);
+  const elapsedLabel = elapsedMin < 1 ? 'just now' : elapsedMin === 1 ? '1 min ago' : `${elapsedMin} min ago`;
+
+  const isHandled = bell.status === 'handled';
+  const isEscalated = !!escalated && now >= escalated;
+
+  // Responses grouped by type
+  const onWay   = bell.responses.filter(r => r.response === 'on_my_way');
+  const inThirty = bell.responses.filter(r => r.response === 'in_thirty');
+  const cannot  = bell.responses.filter(r => r.response === 'cannot');
+
+  const statusLabel = isHandled
+    ? 'Help is on the way'
+    : isEscalated
+      ? `Widened to ${getCopy().outerRing.listTitle}`
+      : `${getCopy().innerRing.listTitle} notified`;
+
+  return (
+    <div style={{
+      margin: '10px 0 4px', borderRadius: 12,
+      border: `1.5px solid ${AMBER}`,
+      background: 'rgba(var(--mustard-rgb, 217,151,64),0.08)',
+      overflow: 'hidden',
+    }}>
+      {/* Header row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px 8px',
+        borderBottom: `1px solid ${AMBER}22`,
+      }}>
+        <span style={{ fontSize: 18, flexShrink: 0 }}>🪔</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: AMBER, marginBottom: 1 }}>
+            {statusLabel} · {elapsedLabel}
+          </div>
+          <div style={{ fontFamily: G.display, fontSize: 15, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {bell.reason}
+          </div>
+        </div>
+      </div>
+
+      {/* Responses */}
+      {bell.responses.length > 0 && (
+        <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {[...onWay, ...inThirty, ...cannot].map(r => (
+            <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11 }}>
+                {r.response === 'on_my_way' ? '✅' : r.response === 'in_thirty' ? '⏱' : '✗'}
+              </span>
+              <span style={{ fontFamily: G.sans, fontSize: 11, color: r.response === 'cannot' ? G.muted : G.ink }}>
+                {r.name ?? 'Someone'} — {RESPONSE_LABEL[r.response] ?? r.response}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {bell.responses.length === 0 && !isHandled && (
+        <div style={{ padding: '6px 14px', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
+          Waiting for responses…
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, padding: '8px 14px 12px' }}>
+        <button onClick={onView} style={{
+          flex: 1, padding: '7px 10px', borderRadius: 6,
+          background: AMBER, color: '#1B1713', border: 'none',
+          fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+          textTransform: 'uppercase', cursor: 'pointer',
+        }}>See details</button>
+        <button onClick={onCancel} disabled={cancelling} style={{
+          flex: 1, padding: '7px 10px', borderRadius: 6,
+          background: 'transparent', color: AMBER,
+          border: `1px solid ${AMBER}`,
+          fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
+          textTransform: 'uppercase', cursor: cancelling ? 'wait' : 'pointer',
+          opacity: cancelling ? 0.6 : 1,
+        }}>{cancelling ? '…' : getCopy().urgentSignal.actionLabel.replace('Light the ', 'Mark ') === 'Mark Lantern' ? 'Mark done' : 'Mark done'}</button>
+      </div>
+    </div>
+  );
+}
+
 function fmtRate(cents: number | null | undefined) {
   if (cents == null) return null;
   const dollars = cents / 100;
@@ -503,7 +621,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
   const [villageSize, setVillageSize] = useState(0);
-  const [activeBell, setActiveBell] = useState<{ id: string; reason: string; status: string; handledByName: string | null } | null>(null);
+  const [activeBell, setActiveBell] = useState<ActiveBellData | null>(null);
   const [cancellingBell, setCancellingBell] = useState(false);
   const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
   const [showUnavailForm, setShowUnavailForm] = useState(false);
@@ -546,8 +664,8 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       if (bellRes?.ok) {
         const bd = await bellRes.json();
         // API returns ringing-first, so first entry is most urgent. No client-side status filter needed.
-        const bell = (bd.bells || [])[0] as { id: string; reason: string; status: string; handledByName: string | null } | undefined;
-        setActiveBell(bell ? { id: bell.id, reason: bell.reason, status: bell.status, handledByName: bell.handledByName ?? null } : null);
+        const bell = (bd.bells || [])[0] as ActiveBellData | undefined;
+        setActiveBell(bell ?? null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load');
@@ -732,56 +850,27 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {/* Active bell banner — parent only */}
+        {/* Active lantern card — parent only */}
         {role === 'parent' && activeBell && (
-          <div style={{
-            margin: '10px 0 4px', padding: '12px 14px', borderRadius: 10,
-            background: '#FFF0E8', border: `1.5px solid #B5342B`,
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{ fontSize: 20, flexShrink: 0 }}>{activeBell.status === 'handled' ? '✅' : '🔔'}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: '#B5342B', marginBottom: 2 }}>
-                {activeBell.status === 'handled' ? 'Help is on the way' : `${getCopy().urgentSignal.noun} ringing`}
-              </div>
-              <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeBell.reason}</div>
-              {activeBell.status === 'handled' && activeBell.handledByName && (
-                <div style={{ fontFamily: G.sans, fontSize: 11, color: G.muted, marginTop: 2 }}>{activeBell.handledByName} is on the way</div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              <button onClick={onViewBell ?? onRing} style={{
-                padding: '6px 10px', borderRadius: 6,
-                background: '#B5342B', color: G.bg, border: 'none',
-                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                textTransform: 'uppercase', cursor: 'pointer',
-              }}>View</button>
-              <button
-                disabled={cancellingBell}
-                onClick={async () => {
-                  if (cancellingBell) return;
-                  setCancellingBell(true);
-                  try {
-                    const res = await fetch(`/api/bell/${activeBell.id}`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: 'cancelled' }),
-                    });
-                    if (res.ok) setActiveBell(null);
-                  } finally {
-                    setCancellingBell(false);
-                  }
-                }}
-                style={{
-                  padding: '6px 10px', borderRadius: 6,
-                  background: 'transparent', color: '#B5342B',
-                  border: `1px solid #B5342B`,
-                  fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                  textTransform: 'uppercase', cursor: cancellingBell ? 'wait' : 'pointer',
-                  opacity: cancellingBell ? 0.6 : 1,
-                }}>{cancellingBell ? '…' : 'Cancel'}</button>
-            </div>
-          </div>
+          <LanternCard
+            bell={activeBell}
+            onView={onViewBell ?? (() => {})}
+            onCancel={async () => {
+              if (cancellingBell) return;
+              setCancellingBell(true);
+              try {
+                const res = await fetch(`/api/bell/${activeBell.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status: 'cancelled' }),
+                });
+                if (res.ok) setActiveBell(null);
+              } finally {
+                setCancellingBell(false);
+              }
+            }}
+            cancelling={cancellingBell}
+          />
         )}
         {error && (
           <div style={{
