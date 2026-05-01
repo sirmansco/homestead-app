@@ -342,49 +342,67 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
   // Once there are village members, show the familiar quick-action buttons
   if (hasVillage) {
     return (
-      <div style={{
-        margin: '18px 0', padding: '26px 20px', textAlign: 'center',
-        border: `1px dashed ${G.hairline2}`, borderRadius: 10, background: G.paper,
-      }}>
-        <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, lineHeight: 1.3 }}>
-          Nothing on the books yet.
-        </div>
-        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-          Post a need or ring the {getCopy().urgentSignal.noun.toLowerCase()} for something urgent.
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 24 }}>
-          {onPost && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div style={{ margin: '16px 0 12px' }}>
+        <div style={{
+          borderRadius: 20,
+          padding: 20,
+          background: G.mustard,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}>
+          <div style={{ fontSize: 32, lineHeight: 1 }}>🪔</div>
+          <div>
+            <div style={{
+              fontFamily: G.display,
+              fontStyle: 'italic',
+              fontSize: 18,
+              color: '#2D3328',
+              lineHeight: 1.2,
+              marginBottom: 4,
+            }}>{getCopy().urgentSignal.actionLabel}</div>
+            <div style={{
+              fontFamily: G.sans,
+              fontSize: 12,
+              color: '#2D3328',
+              opacity: 0.8,
+            }}>For something urgent — your circle answers.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {onPost && (
               <button onClick={onPost} style={{
-                width: 56, height: 56, borderRadius: 28,
-                background: G.ink, color: G.bg,
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(27,23,19,0.18)',
+                flex: 1,
+                background: G.green,
+                color: G.paper,
+                border: 'none',
+                borderRadius: 10,
+                padding: '10px 0',
+                fontFamily: G.sans,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
               }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 5v14M5 12h14" stroke="var(--bg)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                {getCopy().request.newLabel}
               </button>
-              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Post</span>
-            </div>
-          )}
-          {onRing && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            )}
+            {onRing && (
               <button onClick={onRing} style={{
-                width: 56, height: 56, borderRadius: 28,
-                background: 'transparent', color: G.ink,
-                border: `1.5px solid ${G.ink}`, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flex: 1,
+                background: 'transparent',
+                color: '#2D3328',
+                border: '1.5px solid #2D3328',
+                borderRadius: 10,
+                padding: '10px 0',
+                fontFamily: G.sans,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                opacity: 0.85,
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 3v1.5M6.5 19.5h11M8 19.5L8 12a4 4 0 018 0v7.5M10.5 22h3a1.5 1.5 0 01-3 0z"
-                    stroke={G.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                {getCopy().urgentSignal.actionLabel}
               </button>
-              <span style={{ fontFamily: G.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: G.ink }}>Ring {getCopy().urgentSignal.noun}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );
@@ -421,7 +439,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         action={!step2Done ? (
           <button onClick={onVillage} style={{
             padding: '8px 16px',
-            background: G.ink, color: G.bg,
+            background: G.green, color: G.bg,
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
@@ -438,7 +456,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         action={!step3Done ? (
           <button onClick={onPost} disabled={!step2Done} style={{
             padding: '8px 16px',
-            background: step2Done ? G.ink : G.hairline2,
+            background: step2Done ? G.green : G.hairline2,
             color: step2Done ? G.bg : G.muted,
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
@@ -455,7 +473,7 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
   return (
     <button
       onClick={onRing}
-      aria-label={`Ring the ${getCopy().urgentSignal.noun}`}
+      aria-label={`${getCopy().urgentSignal.actionLabel}`}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 26, height: 26, borderRadius: 26,

@@ -16,20 +16,20 @@ export default function Page() {
     }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{
-          fontFamily: '"IM Fell English", Georgia, serif',
+          fontFamily: '"Libre Caslon Text", Georgia, serif',
           fontSize: 40,
           fontStyle: 'italic',
-          fontWeight: 500,
-          color: '#3A3F3D',
+          fontWeight: 400,
+          color: '#4A5340',
           letterSpacing: '-0.01em',
         }}>
           {getCopy().brand.name}
         </div>
         <div style={{
-          fontFamily: '"Spectral", Georgia, serif',
+          fontFamily: '"Libre Caslon Text", Georgia, serif',
           fontStyle: 'italic',
           fontSize: 14,
-          color: '#8A8478',
+          color: '#7A6A4F',
           marginTop: 4,
         }}>
           {getCopy().brand.tagline}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=IM+Fell+English+SC&display=swap');
 @import "tailwindcss";
 
 /* ── Design tokens — light (default) ──────────────────────────────────── */
@@ -7,9 +7,9 @@
   --paper:      #F4EFE3;
   --ink:        #3A3F3D;
   --ink2:       #5A5F5C;
-  --muted:      #8A8478;
-  --hairline:   rgba(58,63,61,0.12);
-  --hairline2:  rgba(58,63,61,0.22);
+  --muted:      #7A6A4F;
+  --hairline:   rgba(58,63,61,0.10);
+  --hairline2:  rgba(58,63,61,0.20);
   --green:      #4A5340;
   --green-soft: #D8DDD2;
   --clay:       #A03B2A;
@@ -24,13 +24,13 @@
 /* ── Dark overrides — system preference ───────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg:         #1A1C18;
-    --paper:      #222620;
+    --bg:         #1F2420;
+    --paper:      #2D3328;
     --ink:        #E8DFCE;
     --ink2:       #B8AF9F;
     --muted:      #7A7468;
-    --hairline:   rgba(232,223,206,0.12);
-    --hairline2:  rgba(232,223,206,0.22);
+    --hairline:   rgba(232,223,206,0.10);
+    --hairline2:  rgba(232,223,206,0.20);
     --green:      #6B7A5E;
     --green-soft: #2A2E26;
     --clay:       #C4614A;
@@ -45,13 +45,13 @@
 
 /* ── Dark overrides — explicit user preference ────────────────────────── */
 [data-theme="dark"] {
-  --bg:         #1A1C18;
-  --paper:      #222620;
+  --bg:         #1F2420;
+  --paper:      #2D3328;
   --ink:        #E8DFCE;
   --ink2:       #B8AF9F;
   --muted:      #7A7468;
-  --hairline:   rgba(232,223,206,0.12);
-  --hairline2:  rgba(232,223,206,0.22);
+  --hairline:   rgba(232,223,206,0.10);
+  --hairline2:  rgba(232,223,206,0.20);
   --green:      #6B7A5E;
   --green-soft: #2A2E26;
   --clay:       #C4614A;

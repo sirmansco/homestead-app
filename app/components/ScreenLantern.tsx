@@ -665,18 +665,17 @@ function BellIncoming() {
                     onClick={() => respond(bell.id, 'on_my_way')}
                     disabled={responding !== null}
                     style={{
-                      padding: '14px 18px', background: RED, color: '#FFF',
+                      padding: '14px 18px', background: G.green, color: G.bg,
                       border: 'none', borderRadius: 8,
                       fontFamily: G.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
-                      boxShadow: `0 4px 0 ${RED_DARK}`,
                       opacity: responding ? 0.7 : 1,
                     }}>I&apos;m on my way</button>
                   <button
                     onClick={() => respond(bell.id, 'in_thirty')}
                     disabled={responding !== null}
                     style={{
-                      padding: '12px 18px', background: 'transparent', color: G.ink,
+                      padding: '12px 18px', background: 'transparent', color: G.muted,
                       border: `1px solid ${G.hairline2}`, borderRadius: 8,
                       fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
@@ -686,7 +685,8 @@ function BellIncoming() {
                     onClick={() => respond(bell.id, 'cannot')}
                     disabled={responding !== null}
                     style={{
-                      padding: '10px 18px', background: 'transparent', color: G.muted, border: 'none',
+                      padding: '10px 18px', background: 'transparent', color: G.clay,
+                      border: `1px solid ${G.clay}`, borderRadius: 8,
                       fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, cursor: 'pointer',
                       opacity: responding ? 0.7 : 1,
                     }}>Can&apos;t — pass to next circle</button>
