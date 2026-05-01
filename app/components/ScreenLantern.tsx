@@ -194,9 +194,7 @@ function BellCompose({ onRing, onBack, onPost }: {
   const reasons = [
     { id: 0, label: 'Sick kid',             desc: 'need someone home, now' },
     { id: 1, label: 'Last-minute conflict', desc: 'appointment, meeting, something came up' },
-    { id: 2, label: 'Pickup mixup',         desc: "I can't get to school/daycare" },
-    { id: 3, label: 'Emergency',            desc: "something's wrong — help" },
-    { id: 4, label: 'Other',               desc: 'something else came up' },
+    { id: 2, label: 'Other',               desc: 'something else came up' },
   ];
 
   async function handleRing() {
