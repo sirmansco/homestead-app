@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { G } from '../components/tokens';
+import { getCopy } from '@/lib/copy';
 
 const GLYPHS = ['🏡', '🌾', '🌲', '🏔️', '🌻', '🪺', '🍎', '🐓', '🫐', '🌵', '🦌', '🌊'];
 
 export default function SetupPage() {
   const router = useRouter();
+  const t = getCopy();
   const [name, setName] = useState('');
   const [glyph, setGlyph] = useState('🏡');
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ export default function SetupPage() {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>{glyph}</div>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 28, color: G.ink, lineHeight: 1.1 }}>
-            Name your homestead
+            Name your {t.brand.name.toLowerCase()}
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, marginTop: 6 }}>
             This is how caregivers will see it.
