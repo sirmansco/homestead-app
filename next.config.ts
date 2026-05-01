@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from '@sentry/nextjs';
 const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
 
 const nextConfig: NextConfig = {
@@ -38,4 +39,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: 'sirmans-co',
+  project: 'covey',
+  // Upload source maps only in CI to avoid slowing local builds
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});
