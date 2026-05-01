@@ -68,7 +68,7 @@ export function GMasthead({
 }) {
   return (
     <div style={{
-      padding: '12px 20px',
+      padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 20px 12px',
       flexShrink: 0,
       display: 'flex',
       alignItems: 'center',

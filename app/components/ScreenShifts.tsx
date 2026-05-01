@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
-import { G } from './tokens';
+import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
 import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
@@ -351,7 +351,7 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
           style={{
             position: 'fixed', left: 16, right: 16, bottom: 92, zIndex: 50,
             padding: '12px 14px', borderRadius: 10,
-            background: '#FFE6DA', color: '#7A2F12',
+            background: ERROR_BG, color: ERROR_TEXT,
             border: `1px solid ${G.hairline2}`,
             boxShadow: '0 8px 24px rgba(27,23,19,0.12)',
             display: 'flex', alignItems: 'center', gap: 10,
@@ -364,7 +364,7 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
             aria-label="Dismiss"
             style={{
               background: 'transparent', border: 'none', cursor: 'pointer',
-              color: '#7A2F12', fontFamily: G.sans, fontSize: 11, fontWeight: 700,
+              color: ERROR_TEXT, fontFamily: G.sans, fontSize: 11, fontWeight: 700,
               letterSpacing: 1.2, textTransform: 'uppercase', padding: '4px 6px',
             }}
           >Dismiss</button>

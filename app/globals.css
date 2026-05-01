@@ -19,6 +19,9 @@
   --red:        #A03B2A;
   --red-dark:   #6E2218;
   --bell-bg:    #FBF6EC;
+  --error-bg:   #FFE6DA;
+  --error-text: #7A2F12;
+  --scrim:      rgba(27,23,19,0.5);
 }
 
 /* ── Dark overrides — system preference ───────────────────────────────── */
@@ -40,6 +43,9 @@
     --red:        #C4614A;
     --red-dark:   #8E3A2A;
     --bell-bg:    #1E2018;
+    --error-bg:   #2E1510;
+    --error-text: #F0A090;
+    --scrim:      rgba(0,0,0,0.6);
   }
 }
 
@@ -61,6 +67,9 @@
   --red:        #C4614A;
   --red-dark:   #8E3A2A;
   --bell-bg:    #1E2018;
+  --error-bg:   #2E1510;
+  --error-text: #F0A090;
+  --scrim:      rgba(0,0,0,0.6);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
