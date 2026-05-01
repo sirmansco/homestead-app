@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <script dangerouslySetInnerHTML={{ __html: `
 (function(){
   try {
-    var t = localStorage.getItem('homestead-theme');
+    var t = localStorage.getItem('covey-theme') || localStorage.getItem('homestead-theme');
     if (t === 'dark' || t === 'light') {
       document.documentElement.setAttribute('data-theme', t);
     }
