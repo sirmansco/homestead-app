@@ -469,7 +469,6 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
           flexDirection: 'column',
           gap: 12,
         }}>
-          <div style={{ fontSize: 32, lineHeight: 1 }}>🪔</div>
           <div>
             <div style={{
               fontFamily: G.display,
@@ -478,13 +477,13 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
               color: '#2D3328',
               lineHeight: 1.2,
               marginBottom: 4,
-            }}>{getCopy().urgentSignal.actionLabel}</div>
+            }}>Need help?</div>
             <div style={{
               fontFamily: G.sans,
               fontSize: 12,
               color: '#2D3328',
               opacity: 0.8,
-            }}>For something urgent — your circle answers.</div>
+            }}>Post a planned need or light the lantern for something urgent.</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {onPost && (
