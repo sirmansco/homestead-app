@@ -33,11 +33,12 @@ function normalizeTabId(id: LegacyTabId): TabId {
 }
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 820px)').matches : false
+  );
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 820px)');
     const update = () => setIsMobile(mq.matches);
-    update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
