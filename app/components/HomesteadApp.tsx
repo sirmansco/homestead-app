@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { G, BELL_BG } from './tokens';
+import { G } from './tokens';
 import { GTabBar } from './shared';
 import { ScreenPost } from './ScreenPost';
 import { ScreenShifts } from './ScreenShifts';
@@ -331,7 +331,7 @@ export function HomesteadApp() {
       <HouseholdProvider>
         <div style={{
           position: 'fixed', inset: 0,
-          background: (activeTab === 'lantern') ? BELL_BG : G.bg, color: G.ink,
+          background: G.bg, color: G.ink,
           fontFamily: G.sans,
           display: 'flex', flexDirection: 'column',
         }}>
