@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { bells, users, bellResponses } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { getCopy } from '@/lib/copy';
 
 // GET /api/bell/active
 // Returns active bells visible to this user — status 'ringing' or 'handled', endsAt in the future.
@@ -67,6 +68,6 @@ export async function GET() {
 
     return NextResponse.json({ bells: result });
   } catch (err) {
-    return authError(err, 'bell:active', 'Could not load active bell');
+    return authError(err, 'bell:active', `Could not load active ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }
 }

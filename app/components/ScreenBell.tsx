@@ -209,7 +209,7 @@ function BellCompose({ onRing, onBack, onPost }: {
       });
       // Parse JSON once — calling .json() twice on the same response throws "body already used"
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Failed to ring bell');
+      if (!res.ok) throw new Error(data.error || `Failed to ${getCopy().urgentSignal.actionLabel.toLowerCase()}`);
       onRing(data.bell.id, reasons[why].label);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -223,8 +223,8 @@ function BellCompose({ onRing, onBack, onPost }: {
         leftAction={
           <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: G.ink, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
         }
-        right="Ring the bell"
-        title="Bell Tower"
+        right={getCopy().urgentSignal.actionLabel}
+        title={getCopy().urgentSignal.towerTitle}
         titleColor={RED}
         tagline="Something came up — we'll reach the inner circle first, then widen if no one answers."
       />
@@ -298,8 +298,8 @@ function BellCompose({ onRing, onBack, onPost }: {
         }}>
           <GLabel color={RED}>How it&apos;ll ring</GLabel>
           <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; inner circle</div>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; sitters</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
           </div>
         </div>
 
@@ -320,7 +320,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           textTransform: 'uppercase', cursor: why === null || submitting ? 'default' : 'pointer',
           boxShadow: why === null || submitting ? 'none' : `0 4px 0 ${RED_DARK}`,
           transition: 'background 0.15s, color 0.15s',
-        }}>{submitting ? 'Ringing…' : why === null ? 'Select a reason above' : 'Ring the Bell'}</button>
+        }}>{submitting ? 'Ringing…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
 
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           Not urgent?{' '}
@@ -434,10 +434,10 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
         });
-        if (!res.ok) throw new Error('Could not cancel bell');
+        if (!res.ok) throw new Error(`Could not cancel ${getCopy().urgentSignal.noun.toLowerCase()}`);
         onDone?.();   // go to compose, stay on Bell tab
       } catch {
-        setBellError('Could not cancel the bell. Try again.');
+        setBellError(`Could not cancel the ${getCopy().urgentSignal.noun.toLowerCase()}. Try again.`);
       }
     } else {
       onDone?.();
@@ -451,9 +451,9 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
           <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: G.ink, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
         ) : undefined}
         right="Urgent"
-        title={reason || 'Bell ringing'}
+        title={reason || `${getCopy().urgentSignal.noun} ringing`}
         titleColor={RED}
-        tagline="Your village is being notified — inner circle first, widening if no one answers."
+        tagline={`${getCopy().circle.title} is being notified — ${getCopy().circle.innerLabel.toLowerCase()} first, widening if no one answers.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
@@ -462,7 +462,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
 
         {members === null ? (
           <div style={{ textAlign: 'center', padding: '20px 0', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
-            Loading your village…
+            {getCopy().circle.loadingState}
           </div>
         ) : members.length === 0 ? (
           <div style={{
@@ -470,16 +470,16 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
             background: '#FFF0E8', marginTop: 8,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, lineHeight: 1.5,
           }}>
-            No one in your village yet. Add caregivers from the Village tab so they can receive bell alerts.
+            No one in {getCopy().circle.title.toLowerCase()} yet. Add caregivers from the {getCopy().circle.title} tab so they can receive {getCopy().urgentSignal.noun.toLowerCase()} alerts.
           </div>
         ) : (
           <>
             <GLabel color={G.ink}>Who&apos;s Being Called</GLabel>
             <div style={{ marginTop: 10, position: 'relative' }}>
               <div style={{ position: 'absolute', left: 14, top: 12, bottom: 12, width: 1, background: G.hairline2 }} />
-              <Rung ring={1} label="Inner Circle" status={inner.length > 0 ? 'rung' : 'pending'} time="Now"
+              <Rung ring={1} label={getCopy().circle.innerLabel} status={inner.length > 0 ? 'rung' : 'pending'} time="Now"
                 people={inner.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
-              <Rung ring={2} label="Trusted sitters" status={sitter.length > 0 ? 'queued' : 'pending'} time="If inner circle can't"
+              <Rung ring={2} label={getCopy().circle.outerLabel} status={sitter.length > 0 ? 'queued' : 'pending'} time={`If ${getCopy().circle.innerLabel.toLowerCase()} can't`}
                 people={sitter.map(m => ({ name: shortName(m.name), state: memberState(m.id), sub: memberSub(m.id), highlight: memberState(m.id) === 'coming' }))} />
             </div>
           </>
@@ -508,7 +508,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
                 background: RED, color: G.bg, border: 'none', borderRadius: 8,
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase', cursor: 'pointer',
-              }}>Yes, cancel bell</button>
+              }}>Yes, cancel {getCopy().urgentSignal.noun.toLowerCase()}</button>
               <button onClick={() => setConfirmingCancel(false)} style={{
                 flex: 1, padding: '12px 12px',
                 background: 'transparent', color: G.ink, border: `1px solid ${G.hairline2}`, borderRadius: 8,
@@ -523,7 +523,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
               border: `1px solid ${G.hairline2}`, borderRadius: 8,
               fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
               textTransform: 'uppercase', cursor: 'pointer',
-            }}>Cancel bell · notify everyone</button>
+            }}>Cancel {getCopy().urgentSignal.noun.toLowerCase()} · notify everyone</button>
           )}
         </div>
       </div>
@@ -540,14 +540,14 @@ function BellIncoming() {
     try {
       const res = await fetch('/api/bell/active');
       if (!res.ok) {
-        setPollError(`Can't reach ${getCopy().brand.name}. Bells will appear once you're back online.`);
+        setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
         return;
       }
       const data = await res.json();
       setBells(data.bells || []);
       setPollError(null);
     } catch {
-      setPollError(`Can't reach ${getCopy().brand.name}. Bells will appear once you're back online.`);
+      setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
     }
   }, []);
 
@@ -577,7 +577,7 @@ function BellIncoming() {
   if (bells === null) {
     return (
       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BELL_BG }}>
-        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking for bells…</div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking for {getCopy().urgentSignal.noun.toLowerCase()}s…</div>
       </div>
     );
   }
@@ -586,7 +586,7 @@ function BellIncoming() {
     return (
       <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: BELL_BG, color: G.ink }}>
         <GMasthead
-          left="Bell" right="Incoming"
+          left={getCopy().urgentSignal.noun} right="Incoming"
           title="All clear"
           titleColor={G.ink}
           tagline="You'll be notified instantly when a family needs help. Stand by."
@@ -601,10 +601,10 @@ function BellIncoming() {
             }}>{pollError}</div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
-            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The bell is how families in your village ask for urgent help.</div>
+            <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
             <BellGlyph size={48} />
             <div style={{ marginTop: 16, fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, lineHeight: 1.6, textAlign: 'center' }}>
-              When someone rings the bell,<br />it will appear here.
+              When someone uses the {getCopy().urgentSignal.noun.toLowerCase()},<br />it will appear here.
             </div>
           </div>
         </div>
@@ -616,9 +616,9 @@ function BellIncoming() {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: BELL_BG, color: G.ink }}>
       <GMasthead
         left="Incoming · now" right="Urgent"
-        title={activeBells.length === 1 ? activeBells[0].reason : `${activeBells.length} bells ringing`}
+        title={activeBells.length === 1 ? activeBells[0].reason : `${activeBells.length} ${getCopy().urgentSignal.noun.toLowerCase()}s ringing`}
         titleColor={RED}
-        tagline="Someone in your village needs help. Inner circle — you're first."
+        tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
         {pollError && (
@@ -708,7 +708,7 @@ function BellIncoming() {
               ) : (
                 <div style={{ marginTop: 14, padding: 14, background: 'transparent', border: `1px dashed ${G.hairline2}`, borderRadius: 10, textAlign: 'center' }}>
                   <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, lineHeight: 1.4 }}>
-                    Passed to the next circle. No guilt — that&apos;s how the bell works.
+                    Passed to the next circle. No guilt — that&apos;s how the {getCopy().urgentSignal.noun.toLowerCase()} works.
                   </div>
                 </div>
               )}
@@ -722,7 +722,7 @@ function BellIncoming() {
           textAlign: 'center',
         }}>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 15, color: G.ink, lineHeight: 1.4 }}>
-            &ldquo;The bell rings because someone trusts you.&rdquo;
+            &ldquo;The {getCopy().urgentSignal.noun.toLowerCase()} rings because someone trusts you.&rdquo;
           </div>
         </div>
       </div>
@@ -766,7 +766,7 @@ export function ScreenBell({ initialCompose = false, role = 'parent', onBack, on
   if (mode === 'loading') {
     return (
       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BELL_BG }}>
-        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking bell status…</div>
+        <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking {getCopy().urgentSignal.noun.toLowerCase()} status…</div>
       </div>
     );
   }

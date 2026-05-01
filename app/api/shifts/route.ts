@@ -10,6 +10,7 @@ import { requireHousehold, requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyNewShift } from '@/lib/notify';
+import { getCopy } from '@/lib/copy';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
   try {
     const { household, user } = await requireHousehold();
     if (user.role !== 'parent') {
-      return NextResponse.json({ error: 'Only parents can post shifts' }, { status: 403 });
+      return NextResponse.json({ error: `Only ${getCopy().roles.keeper.plural.toLowerCase()} can post ${getCopy().request.tabLabel.toLowerCase()}` }, { status: 403 });
     }
 
     // Rate limit: 20 shifts per hour per user (generous — covers recurring batches)
@@ -247,7 +248,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (valuesList.length === 0) {
-        return NextResponse.json({ error: 'recurrence produced no shifts' }, { status: 400 });
+        return NextResponse.json({ error: `recurrence produced no ${getCopy().request.tabLabel.toLowerCase()}` }, { status: 400 });
       }
     } else {
       valuesList.push({
@@ -273,7 +274,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ shift: created[0], count: created.length });
   } catch (err) {
-    return authError(err, 'shifts:POST', 'Could not post shift. Try again.');
+    return authError(err, 'shifts:POST', `Could not post ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}. Try again.`);
   }
 }
 

@@ -850,7 +850,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
             )}
           </div>
         }
-        title="The Village"
+        title={getCopy().circle.title}
         tagline="Grouped by how close they are when the call goes out."
       />
 
@@ -868,12 +868,12 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
         )}
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted }}>
-            Loading your village…
+            {getCopy().circle.loadingState}
           </div>
         ) : total === 0 ? (
           <div style={{ padding: '40px 0', textAlign: 'center' }}>
             <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 22, color: G.ink, marginBottom: 8 }}>
-              Your village is empty.
+              {getCopy().circle.emptyState}
             </div>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
               Invite family and caregivers who help with the kids.

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull, lte } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells } from '@/lib/db/schema';
-import { escalateBell } from '@/app/api/bell/[id]/escalate/route';
+import { escalateBell } from '@/lib/bell-escalation';
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;

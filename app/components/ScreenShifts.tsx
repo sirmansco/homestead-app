@@ -4,6 +4,7 @@ import { G } from './tokens';
 import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
 import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
+import { getCopy } from '@/lib/copy';
 
 type ShiftRow = {
   shift: {
@@ -280,9 +281,9 @@ export function ScreenShifts() {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        right={myRows.length > 0 ? `${myRows.length} shift${myRows.length === 1 ? '' : 's'}` : ''}
+        right={myRows.length > 0 ? `${myRows.length} ${getCopy().request.tabLabel.toLowerCase().replace(/s$/, '')}${myRows.length === 1 ? '' : 's'}` : ''}
         title="My Schedule"
-        tagline={myRows.length > 0 ? 'Shifts you\'ve claimed. Release if something comes up.' : 'Shifts you claim will appear here.'}
+        tagline={myRows.length > 0 ? `${getCopy().request.tabLabel} you've claimed. Release if something comes up.` : `${getCopy().request.tabLabel} you claim will appear here.`}
       />
 
       {error && (
@@ -325,7 +326,7 @@ export function ScreenShifts() {
           }}>
             Nothing claimed yet.
             <div style={{ marginTop: 8, fontSize: 12 }}>
-              Head to <strong style={{ fontStyle: 'normal' }}>Open Shifts</strong> to find something to claim.
+              Head to <strong style={{ fontStyle: 'normal' }}>Open {getCopy().request.tabLabel}</strong> to find something to claim.
             </div>
           </div>
         )}

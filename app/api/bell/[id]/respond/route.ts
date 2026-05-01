@@ -6,7 +6,8 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyBellResponse } from '@/lib/notify';
-import { escalateBell } from '@/app/api/bell/[id]/escalate/route';
+import { getCopy } from '@/lib/copy';
+import { escalateBell } from '@/lib/bell-escalation';
 
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
@@ -23,11 +24,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
-    if (!bell) return NextResponse.json({ error: 'Bell not found' }, { status: 404 });
+    if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
 
     // Don't allow responses to bells that are no longer ringing
     if (bell.status !== 'ringing') {
-      return NextResponse.json({ error: 'Bell is no longer active' }, { status: 409 });
+      return NextResponse.json({ error: `${getCopy().urgentSignal.noun} is no longer active` }, { status: 409 });
     }
 
     // Find this user's DB record for the bell's household.
@@ -116,6 +117,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return authError(err, 'bell:respond', 'Could not respond to bell');
+    return authError(err, 'bell:respond', `Could not respond to ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }
 }

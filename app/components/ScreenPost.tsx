@@ -108,7 +108,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
     if (e <= s) return setError('End must be after start.');
     // Guard: recurring "end by date" with no date filled in
     if (isRecurring && recurEnds === 'date' && !recurEndDate.trim()) {
-      return setError('Pick an end date for your recurring shift.');
+      return setError(`Pick an end date for your recurring ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}.`);
     }
     setSubmitting(true);
     try {
@@ -144,7 +144,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
       const data = await res.json();
       resetForm();
       const count = data.count ?? 1;
-      onPost?.(count > 1 ? `${count} shifts posted` : `Posted to ${getCopy().circle.title}`);
+      onPost?.(count > 1 ? `${count} ${getCopy().request.tabLabel.toLowerCase()} posted` : `Posted to ${getCopy().circle.title}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post');
     } finally {
@@ -375,7 +375,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               style={{ width: 16, height: 16, accentColor: G.ink }}
             />
             <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.ink }}>
-              This is a paid shift
+              This is a paid {getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}
             </span>
           </label>
           {isPaid && (

@@ -6,6 +6,7 @@ import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
 import { notifyBellRing } from '@/lib/notify';
+import { getCopy } from '@/lib/copy';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ bell });
   } catch (err) {
-    return authError(err, 'bell', 'Bell action failed');
+    return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
   }
 }
 
@@ -61,6 +62,6 @@ export async function GET() {
       .orderBy(desc(bells.createdAt));
     return NextResponse.json({ bells: activeBells });
   } catch (err) {
-    return authError(err, 'bell', 'Bell action failed');
+    return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
   }
 }

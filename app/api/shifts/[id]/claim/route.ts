@@ -7,6 +7,7 @@ import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyShiftClaimed } from '@/lib/notify';
+import { getCopy } from '@/lib/copy';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
@@ -69,6 +70,6 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     return NextResponse.json({ shift: claimed });
   } catch (err) {
-    return authError(err, 'shifts:claim', 'Could not claim shift');
+    return authError(err, 'shifts:claim', `Could not claim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }

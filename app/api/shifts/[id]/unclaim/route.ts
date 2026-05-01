@@ -5,6 +5,7 @@ import { shifts, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftReleased } from '@/lib/notify';
+import { getCopy } from '@/lib/copy';
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -39,6 +40,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     return NextResponse.json({ shift: released });
   } catch (err) {
-    return authError(err, 'shifts:unclaim', 'Could not unclaim shift');
+    return authError(err, 'shifts:unclaim', `Could not unclaim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }

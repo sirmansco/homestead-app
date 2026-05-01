@@ -16,9 +16,9 @@ type NotifPrefs = {
 };
 
 const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | 'caregiver' | 'both' }[] = [
-  { key: 'notifyShiftPosted', label: 'New shifts available', forRole: 'caregiver' },
-  { key: 'notifyShiftClaimed', label: 'Shift claimed by caregiver', forRole: 'parent' },
-  { key: 'notifyShiftReleased', label: 'Shift released / unclaimed', forRole: 'parent' },
+  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'caregiver' },
+  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by caregiver`, forRole: 'parent' },
+  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'parent' },
   { key: 'notifyBellRinging', label: `Family rings the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
   { key: 'notifyBellResponse', label: `Caregiver responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'parent' },
 ];
@@ -454,7 +454,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         <div style={{ marginBottom: 28 }}>
           <GLabel>Your data</GLabel>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
-            Download everything you&rsquo;ve put into {getCopy().brand.name} — shifts, bells, circle, unavailability.
+            Download everything you&rsquo;ve put into {getCopy().brand.name} — {getCopy().request.tabLabel.toLowerCase()}, {getCopy().urgentSignal.noun.toLowerCase()}s, circle, unavailability.
           </div>
           {!exportUrl ? (
             <button onClick={handleExport} disabled={exportingState === 'loading'} style={{
@@ -484,7 +484,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         <div style={{ marginBottom: 28 }}>
           <GLabel>Calendar</GLabel>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
-            Subscribe to your shifts in Google or Apple Calendar. The URL is private — anyone with it can see your schedule.
+            Subscribe to your {getCopy().request.tabLabel.toLowerCase()} in Google or Apple Calendar. The URL is private — anyone with it can see your schedule.
           </div>
           {!calFeedUrl ? (
             <button
@@ -559,7 +559,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 6, lineHeight: 1.5 }}>
             Permanently removes your profile, push subscriptions, availability blocks, and pending invites.
-            Future shifts you created are cancelled. Your Clerk login is also deleted — you will be signed out immediately.
+            Future {getCopy().request.tabLabel.toLowerCase()} you created are cancelled. Your Clerk login is also deleted — you will be signed out immediately.
           </div>
 
           {deletingState === 'idle' && (

@@ -277,7 +277,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
                 textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
                 opacity: claiming ? 0.7 : 1,
               }}
-            >{claiming ? 'Claiming…' : 'Claim this shift'}</button>
+            >{claiming ? 'Claiming…' : `Claim this ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`}</button>
           )}
         </div>
       </div>
@@ -331,7 +331,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
           All clear.
         </div>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-          No shifts posted yet. Check the Shifts tab for open needs from your circle.
+          No {getCopy().request.tabLabel.toLowerCase()} posted yet. Check the {getCopy().request.tabLabel} tab for open needs from your circle.
         </div>
       </div>
     );
@@ -416,8 +416,8 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         done={step2Done}
         title={`Invite your ${getCopy().circle.title.toLowerCase()}`}
         sub={step2Done
-          ? `Circle members added. They can claim shifts and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`
-          : `Add a grandparent, sitter, or trusted friend. They can claim shifts and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`}
+          ? `Circle members added. They can claim ${getCopy().request.tabLabel.toLowerCase()} and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`
+          : `Add a grandparent, sitter, or trusted friend. They can claim ${getCopy().request.tabLabel.toLowerCase()} and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`}
         action={!step2Done ? (
           <button onClick={onVillage} style={{
             padding: '8px 16px',
@@ -518,7 +518,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         setRows([]);
         return;
       }
-      if (!shiftsRes.ok) throw new Error('Couldn\u2019t load shifts');
+      if (!shiftsRes.ok) throw new Error(`Couldn\u2019t load ${getCopy().request.tabLabel.toLowerCase()}`);
       const data = await shiftsRes.json() as { shifts: ShiftRow[] };
       setRows(data.shifts);
       if (villageRes?.ok) {
@@ -671,7 +671,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const week     = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'week'), [ownShifts]);
   const later    = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later'), [ownShifts]);
 
-  const title = role === 'caregiver' ? 'Open Shifts' : 'The Almanac';
+  const title = role === 'caregiver' ? `Open ${getCopy().request.tabLabel}` : 'The Almanac';
   // Pretty name of the active household, shown as a subtitle so multi-household
   // users (Karson) can see which family they're looking at without opening the switcher.
   const activeHouseholdLabel = active?.name
@@ -724,7 +724,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
             <div style={{ fontSize: 20, flexShrink: 0 }}>{activeBell.status === 'handled' ? '✅' : '🔔'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: '#B5342B', marginBottom: 2 }}>
-                {activeBell.status === 'handled' ? 'Help is on the way' : 'Bell ringing'}
+                {activeBell.status === 'handled' ? 'Help is on the way' : `${getCopy().urgentSignal.noun} ringing`}
               </div>
               <div style={{ fontFamily: G.display, fontSize: 14, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeBell.reason}</div>
               {activeBell.status === 'handled' && activeBell.handledByName && (

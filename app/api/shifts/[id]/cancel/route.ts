@@ -5,6 +5,7 @@ import { shifts } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftCancelled } from '@/lib/notify';
+import { getCopy } from '@/lib/copy';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -42,6 +43,6 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     return NextResponse.json({ shift: cancelled });
   } catch (err) {
-    return authError(err, 'shifts:cancel', 'Could not cancel shift');
+    return authError(err, 'shifts:cancel', `Could not cancel ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }
