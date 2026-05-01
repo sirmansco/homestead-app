@@ -149,6 +149,16 @@ export const Icons = {
       <path d="M14 38 L34 38" stroke={c} strokeWidth="2"/>
     </svg>
   ),
+  lantern: (c: string) => (
+    <svg width="20" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2v2" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M8 4h8" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <rect x="7" y="6" width="10" height="13" rx="2" stroke={c} strokeWidth="1.5"/>
+      <path d="M7 10h10" stroke={c} strokeWidth="1" strokeOpacity="0.4"/>
+      <ellipse cx="12" cy="14" rx="2.5" ry="3" fill={c} fillOpacity="0.85"/>
+      <path d="M9 19h6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  ),
   village: (c: string) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="8" r="3" stroke={c} strokeWidth="1.5" />
@@ -210,8 +220,8 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   const caregiverTabs: Tab[] = [
     { id: 'almanac', label: getCopy().schedule.caregiverTitle, icon: Icons.almanac },
     { id: 'shifts',  label: getCopy().request.tabLabel, icon: Icons.shifts },
-    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
-    { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
+    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
+    { id: 'circle',  label: getCopy().circle.caregiverTitle, icon: Icons.village },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 

@@ -178,7 +178,7 @@ const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel
                 textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
                 opacity: claiming ? 0.7 : 1,
               }}
-            >{claiming ? 'Claiming…' : 'Claim'}</button>
+            >{claiming ? 'Covering…' : getCopy().request.acceptVerb}</button>
           )}
         </div>
       )}
@@ -277,7 +277,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
                 textTransform: 'uppercase', cursor: claiming ? 'wait' : 'pointer',
                 opacity: claiming ? 0.7 : 1,
               }}
-            >{claiming ? 'Claiming…' : `Claim this ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`}</button>
+            >{claiming ? 'Covering…' : `${getCopy().request.acceptVerb} this ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`}</button>
           )}
         </div>
       </div>

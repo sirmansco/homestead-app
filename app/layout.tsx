@@ -38,7 +38,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#E8DFCE',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#E8DFCE' },
+    { media: '(prefers-color-scheme: dark)',  color: '#1B1713' },
+  ],
   viewportFit: 'cover',
 };
 
@@ -48,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="en">
         <head>
           <meta name="app-sha" content={APP_SHA} />
-          <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" href="/icons/apple-touch-icon-covey.png" />
           {/* Blocking script — applies saved theme before first paint to prevent flash */}
           <script dangerouslySetInnerHTML={{ __html: `
 (function(){

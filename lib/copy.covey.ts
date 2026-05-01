@@ -63,7 +63,7 @@ export const coveyCopy: AppCopy = {
     dbValue: 'field' as const,
   },
   schedule: {
-    title: 'The Roost',
+    title: 'The Perch',
     caregiverTitle: 'Open Whistles',
   },
   circle: {

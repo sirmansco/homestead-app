@@ -159,7 +159,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
             )}
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10, color: G.muted, marginTop: 1 }}>
-            {role === 'parent' ? 'parent' : role === 'caregiver' ? 'caregiver' : role}
+            {role === 'parent' ? getCopy().roles.keeper.singular.toLowerCase() : role === 'caregiver' ? getCopy().roles.watcher.singular.toLowerCase() : role}
           </div>
         </div>
         {((villageGroup && onChangeGroup) || (onToggleRole && appRole) || onDelete) && (
@@ -182,14 +182,14 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
               </button>
             )}
             {onToggleRole && appRole && (
-              <button onClick={onToggleRole} title={`Switch to ${appRole === 'parent' ? 'caregiver' : 'parent'}`} style={{
+              <button onClick={onToggleRole} title={`Switch to ${appRole === 'parent' ? getCopy().roles.watcher.singular : getCopy().roles.keeper.singular}`} style={{
                 background: appRole === 'parent' ? G.green : 'transparent',
                 color: appRole === 'parent' ? G.bg : G.ink,
                 border: `1px solid ${G.green}`, borderRadius: 100,
                 padding: '3px 7px', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
                 textTransform: 'uppercase',
-              }}>{appRole === 'parent' ? 'Parent' : 'Caregiver'}</button>
+              }}>{appRole === 'parent' ? getCopy().roles.keeper.singular : getCopy().roles.watcher.singular}</button>
             )}
             {onDelete && (
               confirmingDelete ? (
@@ -375,7 +375,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             background: G.paper, border: `1px solid ${G.hairline2}`,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.5,
           }}>
-            Invite a parent of a family you help. They&rsquo;ll get a link to accept — you&rsquo;ll be linked as their caregiver automatically.
+            Invite a {getCopy().roles.keeper.singular.toLowerCase()} of a family you help. They&rsquo;ll get a link to accept — you&rsquo;ll be linked as their {getCopy().roles.watcher.singular.toLowerCase()} automatically.
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 4, marginBottom: 18, padding: 3,
@@ -417,8 +417,8 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 <label>
                   <div style={labelStyle}>Role</div>
                   <select value={role} onChange={e => setRole(e.target.value as AppRole)} style={inputStyle}>
-                    <option value="parent">Parent</option>
-                    <option value="caregiver">Caregiver</option>
+                    <option value="parent">{getCopy().roles.keeper.singular}</option>
+                    <option value="caregiver">{getCopy().roles.watcher.singular}</option>
                   </select>
                 </label>
                 <label>
@@ -562,7 +562,7 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
         <div style={{ display: 'flex', gap: 16, marginBottom: caregivers.length > 1 ? 8 : 0 }}>
           {parents.length > 0 && (
             <div style={{ flex: 1 }}>
-              <GLabel style={{ marginBottom: 5 }}>Parents</GLabel>
+              <GLabel style={{ marginBottom: 5 }}>{getCopy().roles.keeper.plural}</GLabel>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {parents.map(p => (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -882,7 +882,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
               {getCopy().circle.emptyState}
             </div>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
-              Invite family and caregivers who help with the kids.
+              Invite family and {getCopy().roles.watcher.plural.toLowerCase()} who help with the {getCopy().circle.kidLabel.toLowerCase()}s.
             </div>
             {myRole === 'parent' && (
               <button onClick={() => setShowInvite(true)} style={btnStyle}>Invite or add</button>
@@ -943,8 +943,8 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
               );
             })}
 
-            <GroupHeader count={kids.length} label="The Kids" note="who we&rsquo;re coordinating for" />
-            {kids.length === 0 ? <EmptyGroup label="the kids" /> : (
+            <GroupHeader count={kids.length} label={`The ${getCopy().circle.kidLabel}s`} note="who we&rsquo;re coordinating for" />
+            {kids.length === 0 ? <EmptyGroup label={`the ${getCopy().circle.kidLabel.toLowerCase()}s`} /> : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 18 }}>
                 {kids.map(k => (
                   <MemberCard
