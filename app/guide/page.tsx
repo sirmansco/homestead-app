@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getCopy } from '@/lib/copy';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'How It Works',
   description: 'A guide for Keepers and Watchers.',

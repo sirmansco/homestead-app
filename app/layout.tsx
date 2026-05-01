@@ -8,6 +8,8 @@ import { getCopy } from '@/lib/copy';
 import { StaffToolbar } from './components/StaffToolbar';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 const APP_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
 
 // Covey staging domains are attached to Vercel before TM clearance. Noindex

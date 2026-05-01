@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getCopy } from '@/lib/copy';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Privacy Policy',
   description: 'How we handle your data.',

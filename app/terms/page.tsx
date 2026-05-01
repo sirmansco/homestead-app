@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getCopy } from '@/lib/copy';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Terms of Service',
   description: 'The rules for using this app.',
