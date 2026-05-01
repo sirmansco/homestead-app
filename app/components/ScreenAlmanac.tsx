@@ -650,7 +650,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const unavailStart = unavailDate ? `${unavailDate}T${unavailStartTime}` : '';
   const unavailEnd = unavailEndDate ? `${unavailEndDate}T${unavailEndTime}` : '';
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setError(null);
     try {
       // Caregivers always use 'all' so shifts from every household they serve
@@ -658,9 +658,9 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
       // households where the user was added directly to the DB without a Clerk invite.
       const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
       const [shiftsRes, villageRes, bellRes] = await Promise.all([
-        fetch(`/api/shifts?scope=${scope}`),
-        role === 'parent' ? fetch('/api/village') : Promise.resolve(null),
-        role === 'parent' ? fetch('/api/bell/active') : Promise.resolve(null),
+        fetch(`/api/shifts?scope=${scope}`, { signal }),
+        role === 'parent' ? fetch('/api/village', { signal }) : Promise.resolve(null),
+        role === 'parent' ? fetch('/api/bell/active', { signal }) : Promise.resolve(null),
       ]);
       if (shiftsRes.status === 409 || shiftsRes.status === 401) {
         // No active household yet (Clerk still hydrating, or user has no household).
@@ -682,13 +682,19 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         setActiveBell(bell ?? null);
       }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Failed to load');
       setRows([]);
     }
   }, [role, isDualRole, multiHousehold]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, [load, active?.id]);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load, active?.id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Re-load on focus so the bell banner reappears when parent switches back from
   // another screen or app — without this, the banner only shows on mount.

@@ -759,11 +759,11 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [villageRes, meRes] = await Promise.all([
-        fetch('/api/village'),
-        fetch('/api/household'),
+        fetch('/api/village', { signal }),
+        fetch('/api/household', { signal }),
       ]);
       if (!villageRes.ok) {
         setLoadError(`Couldn't load ${getCopy().circle.title.toLowerCase()}. Pull to refresh.`);
@@ -779,7 +779,8 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setLoadError(`Couldn't load ${getCopy().circle.title.toLowerCase()}. Pull to refresh.`);
     } finally {
       setLoading(false);
@@ -787,8 +788,13 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, [load]);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState('');
