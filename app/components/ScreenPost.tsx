@@ -162,7 +162,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           }}>×</button>
         }
         title="Post a Need"
-        tagline={`For a last-minute need, ring the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
+        tagline={`For a last-minute need, light the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
@@ -404,7 +404,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           disabled={submitting}
           style={{
             marginTop: 24, width: '100%', padding: '16px 14px',
-            background: G.ink, color: G.bg, border: 'none', borderRadius: 8,
+            background: G.green, color: G.bg, border: 'none', borderRadius: 8,
             fontFamily: G.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.8,
             textTransform: 'uppercase', cursor: submitting ? 'wait' : 'pointer',
             opacity: submitting ? 0.7 : 1,
@@ -418,9 +418,9 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
           Last-minute?{' '}
           <button onClick={onRing} style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-            color: G.clay, borderBottom: `1px solid ${G.clay}`, paddingBottom: 1,
+            color: G.mustard, borderBottom: `1px solid ${G.mustard}`, paddingBottom: 1,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
-          }}>Ring the {getCopy().urgentSignal.noun.toLowerCase()} instead →</button>
+          }}>{getCopy().urgentSignal.actionLabel} instead →</button>
         </div>
       </div>
     </div>
