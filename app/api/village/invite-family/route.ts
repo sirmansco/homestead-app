@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json() as {
       parentName?: string;
       parentEmail?: string;
-      villageGroup?: 'inner_circle' | 'sitter';
+      villageGroup?: 'covey' | 'field';
       mode?: 'email' | 'link';
     };
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       fromUserId: me.id,
       parentEmail: body.parentEmail.trim(),
       parentName: body.parentName?.trim() || null,
-      villageGroup: body.villageGroup || 'inner_circle',
+      villageGroup: body.villageGroup || 'covey',
       status: 'pending',
     });
 

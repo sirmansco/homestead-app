@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         email,
         name,
         role: 'caregiver',
-        villageGroup: 'sitter',
+        villageGroup: 'field',
       }).returning();
     }
 
@@ -91,14 +91,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       console.error('[bell:respond:notify]', err);
     }
 
-    // Immediate escalation if all inner_circle members have responded cannot
+    // Immediate escalation if all covey members have responded cannot
     if (response === 'cannot' && bell.escalatedAt === null) {
       const [{ total }] = await db.select({ total: sql<number>`count(*)::int` })
         .from(users)
         .where(and(
           eq(users.householdId, bell.householdId),
           eq(users.role, 'caregiver'),
-          eq(users.villageGroup, 'inner_circle'),
+          eq(users.villageGroup, 'covey'),
         ));
       if (total > 0) {
         const [{ cannotCount }] = await db.select({ cannotCount: sql<number>`count(*)::int` })
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           .where(and(
             eq(bellResponses.bellId, bellId),
             eq(bellResponses.response, 'cannot'),
-            eq(users.villageGroup, 'inner_circle'),
+            eq(users.villageGroup, 'covey'),
           ));
         if (cannotCount >= total) {
           await escalateBell(bellId);

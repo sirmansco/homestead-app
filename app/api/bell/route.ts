@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       status: 'ringing',
     }).returning();
 
-    // Notify inner_circle caregivers (spec: Bell pings inner_circle first).
+    // Notify covey caregivers (spec: Bell pings covey first).
     // Recipient resolution + preference filter live in notify.ts.
     try {
       await notifyBellRing(bell.id);

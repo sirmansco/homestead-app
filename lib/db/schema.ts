@@ -23,7 +23,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   name: text('name').notNull(),
   role: appRoleEnum('role').notNull().default('parent'),
-  villageGroup: villageGroupEnum('village_group').notNull().default('inner_circle'),
+  villageGroup: villageGroupEnum('village_group').notNull().default('covey'),
   photoUrl: text('photo_url'),
   // Notification preferences — defaults to true (opt-out model).
   // Each column guards one notification type; notify.ts checks before sending.
@@ -101,7 +101,7 @@ export const familyInvites = pgTable('family_invites', {
   fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   parentEmail: text('parent_email').notNull(),
   parentName: text('parent_name'),
-  villageGroup: villageGroupEnum('village_group').notNull().default('inner_circle'),
+  villageGroup: villageGroupEnum('village_group').notNull().default('covey'),
   status: text('status').notNull().default('pending'),
   acceptedHouseholdId: uuid('accepted_household_id').references(() => households.id, { onDelete: 'set null' }),
   acceptedAt: timestamp('accepted_at'),

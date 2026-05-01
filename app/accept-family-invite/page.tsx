@@ -8,12 +8,12 @@ type InviteInfo = {
   fromName: string;
   parentName: string | null;
   parentEmail: string;
-  villageGroup: 'inner_circle' | 'sitter';
+  villageGroup: 'covey' | 'field';
 };
 
 const GROUP_LABEL: Record<string, string> = {
-  inner_circle: 'Inner Circle',
-  sitter: 'Trusted Sitter',
+  covey: getCopy().circle.innerLabel,
+  field: getCopy().circle.outerLabel,
 };
 
 const btnStyle: React.CSSProperties = {

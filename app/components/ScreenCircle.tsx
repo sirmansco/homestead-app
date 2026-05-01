@@ -17,7 +17,7 @@ async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: str
   return data.url ?? null;
 }
 
-type VillageGroup = 'inner_circle' | 'sitter';
+type VillageGroup = 'covey' | 'field';
 type AppRole = 'parent' | 'caregiver';
 
 type Adult = {
@@ -39,8 +39,8 @@ type Kid = {
 
 function getGroupMeta(): Record<VillageGroup, { label: string; note: string }> {
   return {
-    inner_circle: { label: getCopy().circle.innerLabel, note: getCopy().circle.innerNote },
-    sitter: { label: getCopy().circle.outerLabel, note: getCopy().circle.outerNote },
+    covey: { label: getCopy().circle.innerLabel, note: getCopy().circle.innerNote },
+    field: { label: getCopy().circle.outerLabel, note: getCopy().circle.outerNote },
   };
 }
 
@@ -56,17 +56,17 @@ const GroupHeader = React.memo(function GroupHeader({ count, label, note }: { co
   );
 });
 
-const GROUP_CYCLE: VillageGroup[] = ['inner_circle', 'sitter'];
+const GROUP_CYCLE: VillageGroup[] = ['covey', 'field'];
 function getGroupLabel(): Record<VillageGroup, string> {
   return {
-    inner_circle: getCopy().circle.innerLabel.split(/\s+/).map(word => word[0]).join('').toUpperCase(),
-    sitter: getCopy().circle.outerLabel.split(/\s+/).map(word => word[0]).join('').toUpperCase(),
+    covey: getCopy().circle.innerLabel.split(/\s+/).map(word => word[0]).join('').toUpperCase(),
+    field: getCopy().circle.outerLabel.split(/\s+/).map(word => word[0]).join('').toUpperCase(),
   };
 }
 function getGroupTitle(): Record<VillageGroup, string> {
   return {
-    inner_circle: getCopy().circle.innerLabel,
-    sitter: getCopy().circle.outerLabel.replace(/s$/, ''),
+    covey: getCopy().circle.innerLabel,
+    field: getCopy().circle.outerLabel.replace(/s$/, ''),
   };
 }
 
@@ -302,7 +302,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AppRole>('caregiver');
-  const [villageGroup, setVillageGroup] = useState<VillageGroup>('inner_circle');
+  const [villageGroup, setVillageGroup] = useState<VillageGroup>('covey');
   const [birthday, setBirthday] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -414,8 +414,8 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
               <label style={{ display: 'block', marginBottom: 14 }}>
                 <div style={labelStyle}>Your circle with this family</div>
                 <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
-                  <option value="inner_circle">{getGroupTitle().inner_circle}</option>
-                  <option value="sitter">{getGroupTitle().sitter}</option>
+                  <option value="covey">{getGroupTitle().covey}</option>
+                  <option value="field">{getGroupTitle().field}</option>
                 </select>
               </label>
             ) : (
@@ -430,8 +430,8 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 <label>
                   <div style={labelStyle}>Group</div>
                   <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
-                    <option value="inner_circle">{getGroupTitle().inner_circle}</option>
-                    <option value="sitter">{getGroupTitle().sitter}</option>
+                    <option value="covey">{getGroupTitle().covey}</option>
+                    <option value="field">{getGroupTitle().field}</option>
                   </select>
                 </label>
               </div>
@@ -896,7 +896,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
           </div>
         ) : (
           <>
-            {(['inner_circle', 'sitter'] as const).map(g => {
+            {(['covey', 'field'] as const).map(g => {
               const members = byGroup(g);
               const meta = getGroupMeta()[g];
               return (
@@ -914,10 +914,10 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
                     </div>
                   ) : (
                     <div style={{
-                      background: g === 'inner_circle' ? G.paper : 'transparent',
-                      border: g === 'inner_circle' ? `1px solid ${G.hairline2}` : 'none',
-                      borderRadius: g === 'inner_circle' ? 10 : 0,
-                      padding: g === 'inner_circle' ? 14 : 0,
+                      background: g === 'covey' ? G.paper : 'transparent',
+                      border: g === 'covey' ? `1px solid ${G.hairline2}` : 'none',
+                      borderRadius: g === 'covey' ? 10 : 0,
+                      padding: g === 'covey' ? 14 : 0,
                       marginBottom: 18,
                     }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>

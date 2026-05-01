@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       name?: string;
       email?: string;
       role?: 'parent' | 'caregiver';
-      villageGroup?: 'inner_circle' | 'sitter';
+      villageGroup?: 'covey' | 'field';
       mode?: 'email' | 'link';
     };
 

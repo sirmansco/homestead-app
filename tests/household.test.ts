@@ -39,7 +39,7 @@ const USER_ROW = {
   email: 'alice@example.com',
   name: 'Alice Smith',
   role: 'parent',
-  villageGroup: 'inner_circle',
+  villageGroup: 'covey',
 };
 
 // ── Drizzle chain builders ───────────────────────────────────────────────────

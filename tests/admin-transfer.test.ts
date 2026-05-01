@@ -50,7 +50,7 @@ function callerRow(overrides: Partial<{ id: string; clerkUserId: string; name: s
     email: 'admin@example.com',
     name: 'Alice Admin',
     role: 'parent' as const,
-    villageGroup: 'inner_circle' as const,
+    villageGroup: 'covey' as const,
     isAdmin: true,
     ...overrides,
   };
@@ -64,7 +64,7 @@ function targetRow(overrides: Partial<{ id: string; clerkUserId: string; name: s
     email: 'target@example.com',
     name: 'Bob Target',
     role: 'parent' as const,
-    villageGroup: 'inner_circle' as const,
+    villageGroup: 'covey' as const,
     isAdmin: false,
     ...overrides,
   };
