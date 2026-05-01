@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { G, SCRIM } from './tokens';
 import { GTabBar } from './shared';
@@ -11,6 +11,7 @@ import { ScreenCircle } from './ScreenCircle';
 import { ScreenSettings } from './ScreenSettings';
 import { ScreenDiagnostics } from './ScreenDiagnostics';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
+import { AppDataProvider, useAppData } from '@/app/context/AppDataContext';
 import { InstallHint } from './InstallHint';
 import { getCopy } from '@/lib/copy';
 
@@ -169,11 +170,28 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
   );
 }
 
+// ── Provider shell — HouseholdProvider must be outermost (AppDataProvider reads no household state)
 export function HomesteadApp() {
+  return (
+    <HouseholdProvider>
+      <AppDataProvider>
+        <HomesteadInner />
+      </AppDataProvider>
+    </HouseholdProvider>
+  );
+}
+
+// Tab screens that stay mounted permanently for zero-cost switching
+const TAB_SCREENS: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
+
+function HomesteadInner() {
   const { user } = useUser();
   const { isDualRole, active, rolesByHousehold } = useHousehold();
+  const { activeBell, refreshBell } = useAppData();
   const primaryEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? '';
   const canSwitchRole = !!primaryEmail && DEV_EMAILS.includes(primaryEmail);
+
+  const bellCount = activeBell ? 1 : 0;
 
   // Seed role from localStorage for allowlisted users so their manual toggle persists.
   const [role, setRole] = useState<Role>(() => {
@@ -194,29 +212,11 @@ export function HomesteadApp() {
     const r = rolesByHousehold[active.id];
     if (r) setTimeout(() => setRole(r), 0);
   }, [active?.id, rolesByHousehold, canSwitchRole]);
+
   const [screen, setScreen] = useState<TabId>('almanac');
   const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
-  const [bellCount, setBellCount] = useState(0);
   const isMobile = useIsMobile();
-
-  // Poll for active bells so the badge stays current
-  useEffect(() => {
-    if (!user?.id) return;
-    const check = () => {
-      fetch('/api/bell/active')
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (!data) return;
-          const active = Array.isArray(data.bells) ? data.bells.filter((b: { status: string }) => b.status === 'ringing').length : 0;
-          setBellCount(active);
-        })
-        .catch(() => {});
-    };
-    check();
-    const interval = setInterval(check, 10_000);
-    return () => clearInterval(interval);
-  }, [user?.id]);
 
   // Role is now kept in sync via the rolesByHousehold effect above, which
   // fires whenever the HouseholdProvider resolves or the active household changes.
@@ -264,18 +264,10 @@ export function HomesteadApp() {
     // Navigating to lantern via tab bar should check for active bells first (not go straight to compose)
     if (id === 'lantern') setBellCompose(false);
     setScreen(id);
-    // Re-poll bell count immediately on navigation so the badge reflects current state
-    if (id === 'lantern' || id === 'almanac') {
-      fetch('/api/bell/active')
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (!data) return;
-          const count = Array.isArray(data.bells) ? data.bells.filter((b: { status: string }) => b.status === 'ringing').length : 0;
-          setBellCount(count);
-        })
-        .catch(() => {});
-    }
-  }, []);
+    // Force-refresh bell state immediately so badge and lantern screen are in sync
+    if (id === 'lantern' || id === 'almanac') refreshBell();
+  }, [refreshBell]);
+
   const clockTime = useLiveClock();
 
   // Which tab pill to highlight.
@@ -311,47 +303,81 @@ export function HomesteadApp() {
     setScreen('almanac');
   }, []);
 
-  const renderedScreen = useMemo(() => {
-    switch (screen) {
-      case 'almanac': return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} onViewBell={() => navigate('lantern')} onPost={() => setScreen('post')} onVillage={() => setScreen('circle')} />;
-      case 'post':    return <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />;
-      case 'shifts':  return <ScreenShifts onViewLantern={() => navigate('lantern')} />;
-      case 'lantern': return <ScreenLantern key={`lantern-${bellCompose}`} initialCompose={bellCompose} role={role} onBack={() => setScreen('almanac')} onPost={() => setScreen('post')} />;
-      case 'circle':  return <ScreenCircle role={role} onOpenSettings={() => setScreen('settings')} />;
-      case 'settings': return <ScreenSettings onBack={() => setScreen('circle')} role={role} onOpenDiagnostics={canSwitchRole ? () => setScreen('diagnostics') : undefined} />;
-      case 'diagnostics': return <ScreenDiagnostics onBack={() => setScreen('settings')} />;
-      default:        return <ScreenAlmanac role={role} isDualRole={isDualRole} onRing={handleRing} />;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen, role, isDualRole, bellCompose, canSwitchRole, handleRing, handlePost, navigate]);
+  // Keep-alive screen layout: all tab-bar screens mounted simultaneously,
+  // visibility toggled via CSS. Modal/nav screens remain rendered on-demand.
+  const tabScreens = (
+    <>
+      {TAB_SCREENS.map(id => (
+        <div key={id} style={{
+          position: 'absolute', inset: 0,
+          display: screen === id ? 'block' : 'none',
+        }}>
+          {id === 'almanac' && (
+            <ScreenAlmanac
+              role={role} isDualRole={isDualRole}
+              onRing={handleRing}
+              onViewBell={() => navigate('lantern')}
+              onPost={() => setScreen('post')}
+              onVillage={() => setScreen('circle')}
+            />
+          )}
+          {id === 'shifts' && <ScreenShifts onViewLantern={() => navigate('lantern')} />}
+          {id === 'lantern' && (
+            <ScreenLantern
+              initialCompose={bellCompose}
+              role={role}
+              onBack={() => setScreen('almanac')}
+              onPost={() => setScreen('post')}
+            />
+          )}
+          {id === 'circle' && <ScreenCircle role={role} onOpenSettings={() => setScreen('settings')} />}
+        </div>
+      ))}
+      {/* Modal/nav screens — rendered on demand */}
+      {screen === 'post' && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />
+        </div>
+      )}
+      {screen === 'settings' && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <ScreenSettings
+            onBack={() => setScreen('circle')}
+            role={role}
+            onOpenDiagnostics={canSwitchRole ? () => setScreen('diagnostics') : undefined}
+          />
+        </div>
+      )}
+      {screen === 'diagnostics' && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <ScreenDiagnostics onBack={() => setScreen('settings')} />
+        </div>
+      )}
+    </>
+  );
 
   // ── MOBILE LAYOUT ────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <HouseholdProvider>
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: G.bg, color: G.ink,
-          fontFamily: G.sans,
-          display: 'flex', flexDirection: 'column',
-        }}>
-          {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
-          <div style={{
-            flex: 1, overflow: 'hidden', position: 'relative',
-          }}>
-            {renderedScreen}
-          </div>
-          <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
-          {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
-          <InstallHint />
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: G.bg, color: G.ink,
+        fontFamily: G.sans,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          {tabScreens}
         </div>
-      </HouseholdProvider>
+        <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
+        {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
+        <InstallHint />
+      </div>
     );
   }
 
   // ── DESKTOP LAYOUT (phone frame) ─────────────────────────────────────────
   return (
-    <HouseholdProvider>
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: '#1a120b', gap: 32, padding: '24px 16px', flexWrap: 'wrap',
@@ -411,7 +437,7 @@ export function HomesteadApp() {
           </div>
         </div>
         <div style={{ position: 'absolute', top: 44, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-          {renderedScreen}
+          {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
         <div style={{
@@ -434,6 +460,5 @@ export function HomesteadApp() {
         </div>
       </div>
     </div>
-    </HouseholdProvider>
   );
 }

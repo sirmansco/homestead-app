@@ -3,35 +3,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
+import { useAppData, type ShiftRow } from '@/app/context/AppDataContext';
 import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
 import { getCopy } from '@/lib/copy';
 
-type ShiftRow = {
-  shift: {
-    id: string;
-    title: string;
-    forWhom: string | null;
-    notes: string | null;
-    startsAt: string;
-    endsAt: string;
-    rateCents: number | null;
-    status: 'open' | 'claimed' | 'cancelled' | 'done';
-    householdId: string;
-    claimedByUserId: string | null;
-  };
-  household: { id: string; name: string; glyph: string } | null;
-  creator: { id: string; name: string } | null;
-  claimedByMe?: boolean;
-  createdByMe?: boolean;
-};
-
-type ApiResponse = { shifts: ShiftRow[]; meClerkUserId?: string };
-
-type ActiveBellData = {
-  id: string;
-  reason: string;
-  status: string;
-};
 
 function fmtWhen(startIso: string) {
   const s = new Date(startIso);
@@ -192,74 +167,27 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
 }
 
 export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) {
-  // rows: null = loading, [] = loaded (even if empty)
-  const [rows, setRows] = useState<ShiftRow[] | null>(null);
-  const [myRows, setMyRows] = useState<ShiftRow[]>([]);
+  const { activeBell, shifts: contextShifts, shiftsLoading, refreshShifts, refreshBell } = useAppData();
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
-  const [activeBell, setActiveBell] = useState<ActiveBellData | null>(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const mineRes = await fetch('/api/shifts?scope=mine');
-      // 401 = not signed in, 409 = no household yet — valid empty states, not errors
-      if (mineRes.status === 401 || mineRes.status === 409) {
-        setRows([]);
-        setMyRows([]);
-        return;
-      }
-      if (!mineRes.ok) throw new Error(`Failed (${mineRes.status})`);
-      const mine = await mineRes.json() as ApiResponse;
-      // My Schedule = only future shifts I've claimed
-      const claimed = mine.shifts.filter(r =>
-        r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
-      );
-      setMyRows(claimed);
-      setRows([]); // open shifts are on ScreenAlmanac, not here
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
-      setRows([]);
-    }
-  }, []);
-
+  // Trigger initial load of "mine" scope via context
   useEffect(() => {
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    load();
-    // Re-poll when the tab regains focus — caregiver may have claimed/cancelled
-    // a shift while the user was elsewhere. Mirrors BellIncoming behavior.
-    const onFocus = () => load();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [load]);
+    refreshShifts('mine');
+  }, [refreshShifts]);
 
-  const loadActiveBell = useCallback(async () => {
-    try {
-      const res = await fetch('/api/bell/active');
-      if (!res.ok) {
-        console.warn('[ScreenShifts] bell/active non-ok', res.status, res.statusText);
-        return;
-      }
-      const data = await res.json();
-      const bell = (data.bells || []).find((b: ActiveBellData) => b.status === 'ringing') as ActiveBellData | undefined;
-      setActiveBell(bell ?? null);
-    } catch (err) {
-      console.warn('[ScreenShifts] bell/active fetch error', err);
-    }
-  }, []);
+  const mineRows: ShiftRow[] = contextShifts['mine'] ?? [];
+  // My Schedule = only future shifts I've claimed
+  const myRows = mineRows.filter(r =>
+    r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
+  );
 
-  useEffect(() => {
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    loadActiveBell();
-    const onFocus = () => loadActiveBell();
-    window.addEventListener('focus', onFocus);
-    const id = setInterval(() => loadActiveBell(), 15_000);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      clearInterval(id);
-    };
-  }, [loadActiveBell]);
+  // post-mutation: re-sync shifts and bell state from context
+  const load = useCallback(() => {
+    refreshShifts('mine');
+    refreshBell();
+  }, [refreshShifts, refreshBell]);
 
   // Auto-dismiss the error toast after 5s so it doesn't linger past the user's read.
   useEffect(() => {
@@ -276,7 +204,7 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'claim failed');
       }
-      await load();
+      load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'claim failed');
     } finally {
@@ -371,12 +299,12 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
         </div>
       )}
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {rows === null && (
+        {shiftsLoading['mine'] && mineRows.length === 0 && (
           <div style={{ padding: '30px 0', textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
             Loading your schedule…
           </div>
         )}
-        {rows !== null && myRows.length === 0 && (
+        {!shiftsLoading['mine'] && myRows.length === 0 && (
           <div style={{
             marginTop: 32, padding: '36px 20px', textAlign: 'center',
             border: `1px dashed ${G.hairline2}`, borderRadius: 12,
