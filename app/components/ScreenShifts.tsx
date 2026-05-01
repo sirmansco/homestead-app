@@ -27,6 +27,12 @@ type ShiftRow = {
 
 type ApiResponse = { shifts: ShiftRow[]; meClerkUserId?: string };
 
+type ActiveBellData = {
+  id: string;
+  reason: string;
+  status: string;
+};
+
 function fmtWhen(startIso: string) {
   const s = new Date(startIso);
   const now = new Date();
@@ -185,13 +191,14 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   );
 }
 
-export function ScreenShifts() {
+export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) {
   // rows: null = loading, [] = loaded (even if empty)
   const [rows, setRows] = useState<ShiftRow[] | null>(null);
   const [myRows, setMyRows] = useState<ShiftRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
+  const [activeBell, setActiveBell] = useState<ActiveBellData | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -226,6 +233,30 @@ export function ScreenShifts() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
+
+  const loadActiveBell = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bell/active');
+      if (!res.ok) return;
+      const data = await res.json();
+      const bell = (data.bells || []).find((b: ActiveBellData) => b.status === 'ringing') as ActiveBellData | undefined;
+      setActiveBell(bell ?? null);
+    } catch {
+      // Silent: the schedule should still be usable if lantern polling fails.
+    }
+  }, []);
+
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    loadActiveBell();
+    const onFocus = () => loadActiveBell();
+    window.addEventListener('focus', onFocus);
+    const id = setInterval(() => loadActiveBell(), 15_000);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(id);
+    };
+  }, [loadActiveBell]);
 
   // Auto-dismiss the error toast after 5s so it doesn't linger past the user's read.
   useEffect(() => {
@@ -285,6 +316,30 @@ export function ScreenShifts() {
         title="My Schedule"
         tagline={myRows.length > 0 ? `${getCopy().request.tabLabel} you've claimed. Release if something comes up.` : `${getCopy().request.tabLabel} you claim will appear here.`}
       />
+
+      {activeBell && (
+        <button
+          type="button"
+          onClick={onViewLantern}
+          style={{
+            margin: '12px 20px 4px',
+            padding: '10px 12px',
+            border: `1px solid ${G.mustard}`,
+            borderRadius: 10,
+            background: 'rgba(217, 164, 65, 0.18)',
+            color: G.ink,
+            fontFamily: G.serif,
+            fontStyle: 'italic',
+            fontSize: 14,
+            lineHeight: 1.35,
+            textAlign: 'left',
+            cursor: onViewLantern ? 'pointer' : 'default',
+            flexShrink: 0,
+          }}
+        >
+          🪔 Lantern lit — {activeBell.reason}
+        </button>
+      )}
 
       {error && (
         <div
