@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { getCopy } from '@/lib/copy';
 
+export const dynamic = 'force-dynamic';
+
 export default function manifest(): MetadataRoute.Manifest {
   const t = getCopy();
   const coveyActive = process.env.COVEY_BRAND_ACTIVE === 'true';

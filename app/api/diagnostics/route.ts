@@ -53,6 +53,7 @@ export async function GET() {
       VAPID_PUBLIC_KEY: !!process.env.VAPID_PUBLIC_KEY,
       VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      COVEY_BRAND_ACTIVE: process.env.COVEY_BRAND_ACTIVE ?? '(unset)',
     };
 
     return NextResponse.json({
