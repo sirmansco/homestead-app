@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { G } from './tokens';
+import { getCopy } from '@/lib/copy';
 
 function isIosSafari() {
   if (typeof window === 'undefined') return false;
@@ -44,10 +45,10 @@ export function InstallHint() {
       fontFamily: G.sans,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ fontSize: 26, lineHeight: 1 }}>🏡</div>
+        <div style={{ fontSize: 26, lineHeight: 1 }}>{getCopy().urgentSignal.tabIcon}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 16, lineHeight: 1.2, marginBottom: 4 }}>
-            Add Homestead to your home screen
+            Add {getCopy().brand.name} to your home screen
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12.5, opacity: 0.85, lineHeight: 1.4 }}>
             Tap the <strong>Share</strong> button at the bottom of Safari, then <strong>Add to Home Screen</strong>.

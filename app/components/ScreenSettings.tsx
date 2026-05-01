@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { G } from './tokens';
 import { GMasthead, GLabel } from './shared';
 import { requestPushPermission } from './PushRegistrar';
+import { getCopy } from '@/lib/copy';
 
 type NotifPrefs = {
   notifyShiftPosted: boolean;
@@ -227,7 +228,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         <div style={{ marginBottom: 28 }}>
           <GLabel>Notifications</GLabel>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
-            Choose what Homestead can alert you about.
+            Choose what {getCopy().brand.name} can alert you about.
           </div>
 
           {/* OS-level push permission row */}
@@ -248,7 +249,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
                     Notifications blocked
                   </div>
                   <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.5 }}>
-                    Re-enable in your device Settings → Homestead (or your browser site settings), then return here.
+                    Re-enable in your device Settings → {getCopy().brand.name} (or your browser site settings), then return here.
                   </div>
                 </>
               )}
@@ -258,7 +259,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
                     Push notifications off
                   </div>
                   <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.5 }}>
-                    On iPhone, add Homestead to your home screen first, then enable here.
+                    On iPhone, add {getCopy().brand.name} to your home screen first, then enable here.
                   </div>
                   <button
                     onClick={handleEnableNotifications}
@@ -431,7 +432,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         <div style={{ marginBottom: 28 }}>
           <GLabel>Help</GLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 8 }}>
-            <Link href="/guide" style={settingLink}>How Homestead Works →</Link>
+            <Link href="/guide" style={settingLink}>How {getCopy().brand.name} Works →</Link>
             {onOpenDiagnostics && (
               <button onClick={onOpenDiagnostics} style={{ ...settingLink, background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: '14px 0' }}>
                 Diagnostics →
@@ -453,7 +454,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         <div style={{ marginBottom: 28 }}>
           <GLabel>Your data</GLabel>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 4, lineHeight: 1.5 }}>
-            Download everything you&rsquo;ve put into Homestead — shifts, bells, village, unavailability.
+            Download everything you&rsquo;ve put into {getCopy().brand.name} — shifts, bells, circle, unavailability.
           </div>
           {!exportUrl ? (
             <button onClick={handleExport} disabled={exportingState === 'loading'} style={{
@@ -615,7 +616,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
         </div>
 
         <div style={{ marginTop: 32, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted, lineHeight: 1.6 }}>
-          Homestead · family childcare coordination
+          {getCopy().brand.name} · family childcare coordination
           <br />
           <span style={{ fontSize: 10, opacity: 0.6 }}>
             build {process.env.NEXT_PUBLIC_APP_SHA || 'dev'}

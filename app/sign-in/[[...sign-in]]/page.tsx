@@ -1,5 +1,6 @@
 'use client';
 import { SignIn } from '@clerk/nextjs';
+import { getCopy } from '@/lib/copy';
 
 export default function Page() {
   return (
@@ -22,7 +23,7 @@ export default function Page() {
           color: '#1c1a17',
           letterSpacing: '-0.01em',
         }}>
-          Homestead
+          {getCopy().brand.name}
         </div>
         <div style={{
           fontFamily: '"Spectral", Georgia, serif',
@@ -31,7 +32,7 @@ export default function Page() {
           color: '#6b6560',
           marginTop: 4,
         }}>
-          Welcome home.
+          {getCopy().brand.tagline}
         </div>
       </div>
       <SignIn
