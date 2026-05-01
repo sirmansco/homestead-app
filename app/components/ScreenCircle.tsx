@@ -467,7 +467,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             </label>
             <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>Birthday (optional)</div>
-              <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box', maxWidth: '100%' }} />
+              <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box', maxWidth: '100%', minWidth: 0, WebkitAppearance: 'none' }} />
             </label>
             {error && (
               <div style={{
