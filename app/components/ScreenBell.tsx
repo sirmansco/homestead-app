@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { G, RED, RED_DARK, BELL_BG } from './tokens';
+const MUSTARD = G.mustard;
 import { GMasthead, GLabel, GAvatar } from './shared';
 import { requestPushPermission } from './PushRegistrar';
 import { shortName } from '@/lib/format';
@@ -152,7 +153,7 @@ function PushPermissionBanner() {
             disabled={requesting}
             style={{
               flexShrink: 0, padding: '7px 12px', borderRadius: 6,
-              background: G.ink, color: G.bg, border: 'none',
+              background: G.green, color: G.bg, border: 'none',
               fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1,
               textTransform: 'uppercase', cursor: 'pointer',
               opacity: requesting ? 0.6 : 1,
@@ -243,13 +244,13 @@ function BellCompose({ onRing, onBack, onPost }: {
               <button key={r.id} onClick={() => setWhy(r.id)} style={{
                 textAlign: 'left', padding: '12px 14px', cursor: 'pointer',
                 background: why === r.id ? G.paper : 'transparent',
-                border: `1px solid ${why === r.id ? RED : G.hairline2}`,
+                border: `1px solid ${why === r.id ? MUSTARD : G.hairline2}`,
                 borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12,
               }}>
                 <div style={{
                   width: 14, height: 14, borderRadius: 14,
-                  border: `1.5px solid ${why === r.id ? RED : G.hairline2}`,
-                  background: why === r.id ? RED : 'transparent',
+                  border: `1.5px solid ${why === r.id ? MUSTARD : G.hairline2}`,
+                  background: why === r.id ? MUSTARD : 'transparent',
                   boxShadow: why === r.id ? `inset 0 0 0 3px ${G.paper}` : 'none',
                   flexShrink: 0,
                 }} />
@@ -270,7 +271,7 @@ function BellCompose({ onRing, onBack, onPost }: {
               endValue={endsAt}
               onChange={(s, e) => { setStartsAt(s); setEndsAt(e); }}
               presets={bellWindowPresets}
-              accent={RED}
+              accent={MUSTARD}
               minNow={minNow}
             />
           </div>
@@ -294,11 +295,11 @@ function BellCompose({ onRing, onBack, onPost }: {
 
         <div style={{
           marginTop: 22, padding: 14, borderRadius: 8,
-          border: `1px dashed ${RED}`, background: '#FFF0E8',
+          border: `1px dashed ${MUSTARD}`, background: '#FFF8EC',
         }}>
-          <GLabel color={RED}>How it&apos;ll ring</GLabel>
+          <GLabel color={MUSTARD}>How it&apos;ll light</GLabel>
           <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: MUSTARD, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
           </div>
         </div>
@@ -313,12 +314,12 @@ function BellCompose({ onRing, onBack, onPost }: {
 
         <button onClick={handleRing} disabled={why === null || submitting} style={{
           marginTop: 22, width: '100%', padding: '18px 14px',
-          background: why === null || submitting ? G.hairline2 : RED,
+          background: why === null || submitting ? G.hairline2 : MUSTARD,
           color: why === null || submitting ? G.muted : G.bg,
           border: 'none', borderRadius: 8,
           fontFamily: G.sans, fontSize: 13, fontWeight: 700, letterSpacing: 1.8,
           textTransform: 'uppercase', cursor: why === null || submitting ? 'default' : 'pointer',
-          boxShadow: why === null || submitting ? 'none' : `0 4px 0 ${RED_DARK}`,
+          boxShadow: 'none',
           transition: 'background 0.15s, color 0.15s',
         }}>{submitting ? 'Ringing…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
 
@@ -326,7 +327,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           Not urgent?{' '}
           <button onClick={onPost} style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-            color: G.ink, borderBottom: `1px solid ${G.ink}`, paddingBottom: 1,
+            color: MUSTARD, borderBottom: `1px solid ${MUSTARD}`, paddingBottom: 1,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
           }}>Post a need instead →</button>
         </div>
@@ -452,7 +453,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
         ) : undefined}
         right="Urgent"
         title={reason || `${getCopy().urgentSignal.noun} ringing`}
-        titleColor={RED}
+        titleColor={MUSTARD}
         tagline={`${getCopy().circle.title} is being notified — ${getCopy().circle.innerLabel.toLowerCase()} first, widening if no one answers.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
@@ -466,8 +467,8 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
           </div>
         ) : members.length === 0 ? (
           <div style={{
-            padding: '18px 16px', borderRadius: 8, border: `1px dashed ${RED}`,
-            background: '#FFF0E8', marginTop: 8,
+            padding: '18px 16px', borderRadius: 8, border: `1px dashed ${MUSTARD}`,
+            background: '#FFF8EC', marginTop: 8,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, lineHeight: 1.5,
           }}>
             No one in {getCopy().circle.title.toLowerCase()} yet. Add caregivers from the {getCopy().circle.title} tab so they can receive {getCopy().urgentSignal.noun.toLowerCase()} alerts.
@@ -495,7 +496,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleMarkDone} disabled={marking} style={{
             width: '100%', padding: '14px 12px',
-            background: G.ink, color: G.bg,
+            background: G.green, color: G.bg,
             border: 'none', borderRadius: 8,
             fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: marking ? 'wait' : 'pointer',
@@ -617,7 +618,7 @@ function BellIncoming() {
       <GMasthead
         left="Incoming · now" right="Urgent"
         title={activeBells.length === 1 ? activeBells[0].reason : `${activeBells.length} ${getCopy().urgentSignal.noun.toLowerCase()}s ringing`}
-        titleColor={RED}
+        titleColor={MUSTARD}
         tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
@@ -637,13 +638,13 @@ function BellIncoming() {
 
           return (
             <div key={bell.id} style={{
-              background: G.paper, border: `1px solid ${RED}`, borderRadius: 10,
+              background: G.paper, border: `1px solid ${MUSTARD}`, borderRadius: 10,
               padding: 18, marginTop: 8, position: 'relative',
-              boxShadow: '0 8px 24px rgba(181,52,43,0.12)',
+              boxShadow: '0 4px 16px rgba(217,164,65,0.12)',
               marginBottom: 16,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <GLabel color={RED}>What&apos;s happening</GLabel>
+                <GLabel color={MUSTARD}>What&apos;s happening</GLabel>
                 <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted }}>{timeAgo}</span>
               </div>
               <div style={{ fontFamily: G.display, fontSize: 20, fontWeight: 500, color: G.ink, lineHeight: 1.2 }}>
@@ -665,11 +666,10 @@ function BellIncoming() {
                     onClick={() => respond(bell.id, 'on_my_way')}
                     disabled={responding !== null}
                     style={{
-                      padding: '14px 18px', background: RED, color: '#FFF',
+                      padding: '14px 18px', background: G.green, color: G.bg,
                       border: 'none', borderRadius: 8,
                       fontFamily: G.sans, fontSize: 12, fontWeight: 700, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
-                      boxShadow: `0 4px 0 ${RED_DARK}`,
                       opacity: responding ? 0.7 : 1,
                     }}>I&apos;m on my way</button>
                   <button
@@ -718,7 +718,7 @@ function BellIncoming() {
 
         <div style={{
           margin: '28px 4px 8px', padding: '18px 16px',
-          borderTop: `1px solid ${G.ink}`, borderBottom: `1px solid ${G.ink}`,
+          borderTop: `1px solid ${G.hairline}`, borderBottom: `1px solid ${G.hairline}`,
           textAlign: 'center',
         }}>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 15, color: G.ink, lineHeight: 1.4 }}>
