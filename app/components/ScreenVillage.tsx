@@ -37,10 +37,12 @@ type Kid = {
   photoUrl: string | null;
 };
 
-const GROUP_META: Record<VillageGroup, { label: string; note: string }> = {
-  inner_circle: { label: 'Inner Circle',    note: 'rung first · no asking' },
-  sitter:       { label: 'Trusted Sitters', note: 'paid · available on demand' },
-};
+function getGroupMeta(): Record<VillageGroup, { label: string; note: string }> {
+  return {
+    inner_circle: { label: getCopy().circle.innerLabel, note: getCopy().circle.innerNote },
+    sitter:       { label: getCopy().circle.outerLabel, note: getCopy().circle.outerNote },
+  };
+}
 
 const GroupHeader = React.memo(function GroupHeader({ count, label, note }: { count: number; label: string; note: string }) {
   return (
@@ -55,8 +57,12 @@ const GroupHeader = React.memo(function GroupHeader({ count, label, note }: { co
 });
 
 const GROUP_CYCLE: VillageGroup[] = ['inner_circle', 'sitter'];
-const GROUP_LABEL: Record<VillageGroup, string> = { inner_circle: 'IC', sitter: 'TS' };
-const GROUP_TITLE: Record<VillageGroup, string> = { inner_circle: 'Inner Circle', sitter: 'Trusted Sitter' };
+function getGroupLabel(): Record<VillageGroup, string> {
+  return { inner_circle: getCopy().circle.innerLabel, sitter: getCopy().circle.outerLabel };
+}
+function getGroupTitle(): Record<VillageGroup, string> {
+  return { inner_circle: getCopy().circle.innerLabel, sitter: getCopy().circle.outerLabel };
+}
 
 const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
   name: string;
@@ -169,7 +175,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                   textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 3,
                 }}
               >
-                <span>{GROUP_LABEL[villageGroup]}</span>
+                <span>{getGroupLabel()[villageGroup]}</span>
                 <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 3.5l3 3 3-3" />
                 </svg>
@@ -240,7 +246,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
               Move {name} to…
             </div>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 14 }}>
-              Currently in {GROUP_TITLE[villageGroup]}.
+              Currently in {getGroupTitle()[villageGroup]}.
             </div>
             {(GROUP_CYCLE).map(g => (
               <button
@@ -256,7 +262,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                   fontFamily: G.display, fontSize: 15, fontWeight: 500,
                 }}
               >
-                {GROUP_TITLE[g]}
+                {getGroupTitle()[g]}
                 {g === villageGroup && (
                   <span style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', marginLeft: 8, opacity: 0.7 }}>
                     · current
@@ -382,7 +388,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 border: 'none', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase',
-              }}>{k === 'adult' ? 'Invite adult' : 'Add child'}</button>
+              }}>{k === 'adult' ? 'Invite adult' : `Add ${getCopy().circle.kidLabel.toLowerCase()}`}</button>
             ))}
           </div>
         )}
@@ -459,7 +465,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             </label>
             {error && <div style={{ color: '#B5342B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
             <button onClick={addKid} disabled={busy || !name.trim()} style={{ ...btnStyle, width: '100%', opacity: (busy || !name.trim()) ? 0.4 : 1 }}>
-              Add child
+              Add {getCopy().circle.kidLabel.toLowerCase()}
             </button>
           </>
         )}
@@ -886,7 +892,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
           <>
             {(['inner_circle', 'sitter'] as const).map(g => {
               const members = byGroup(g);
-              const meta = GROUP_META[g];
+              const meta = getGroupMeta()[g];
               return (
                 <div key={g}>
                   <GroupHeader count={members.length} label={meta.label} note={meta.note} />
@@ -960,7 +966,7 @@ export function ScreenVillage({ role: roleProp, onOpenSettings }: { role?: 'pare
               borderTop: `1px solid ${G.ink}`, borderBottom: `1px solid ${G.ink}`,
             }}>
               <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 17, color: G.ink, lineHeight: 1.3 }}>
-                &ldquo;Many hands make light work.&rdquo;
+                &ldquo;{getCopy().circle.quote}&rdquo;
               </div>
               {myRole === 'parent' && (
                 <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>

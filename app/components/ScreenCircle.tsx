@@ -39,8 +39,8 @@ type Kid = {
 
 function getGroupMeta(): Record<VillageGroup, { label: string; note: string }> {
   return {
-    inner_circle: { label: getCopy().circle.innerLabel, note: 'rung first · no asking' },
-    sitter: { label: getCopy().circle.outerLabel, note: 'paid · available on demand' },
+    inner_circle: { label: getCopy().circle.innerLabel, note: getCopy().circle.innerNote },
+    sitter: { label: getCopy().circle.outerLabel, note: getCopy().circle.outerNote },
   };
 }
 
@@ -394,7 +394,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 border: 'none', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase',
-              }}>{k === 'adult' ? 'Invite adult' : 'Add child'}</button>
+              }}>{k === 'adult' ? 'Invite adult' : `Add ${getCopy().circle.kidLabel.toLowerCase()}`}</button>
             ))}
           </div>
         )}
@@ -471,7 +471,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             </label>
             {error && <div style={{ color: '#B5342B', fontSize: 12, marginBottom: 10 }}>{error}</div>}
             <button onClick={addKid} disabled={busy || !name.trim()} style={{ ...btnStyle, width: '100%', opacity: (busy || !name.trim()) ? 0.4 : 1 }}>
-              Add child
+              Add {getCopy().circle.kidLabel.toLowerCase()}
             </button>
           </>
         )}
@@ -972,7 +972,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
               borderTop: `1px solid ${G.ink}`, borderBottom: `1px solid ${G.ink}`,
             }}>
               <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 17, color: G.ink, lineHeight: 1.3 }}>
-                &ldquo;Many hands make light work.&rdquo;
+                &ldquo;{getCopy().circle.quote}&rdquo;
               </div>
               {myRole === 'parent' && (
                 <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>

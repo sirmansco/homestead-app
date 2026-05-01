@@ -68,10 +68,15 @@ export type AppCopy = {
   };
   circle: {
     title: string;
+    caregiverTitle: string;
     innerLabel: string;
     outerLabel: string;
+    innerNote: string;
+    outerNote: string;
+    kidLabel: string;
     loadingState: string;
     emptyState: string;
+    quote: string;
   };
   roles: {
     keeper: { singular: string; plural: string };
