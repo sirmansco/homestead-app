@@ -9,7 +9,7 @@ import { getCopy } from '@/lib/copy';
 // Mapped from /sw.js via next.config.ts rewrites so the SW scope stays at /.
 
 const DEPLOY_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'dev';
-const CACHE_VERSION = process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE === 'true' ? 'covey-v1' : 'hs-v1';
+const CACHE_VERSION = process.env.COVEY_BRAND_ACTIVE === 'true' ? 'covey-v1' : 'hs-v1';
 
 export async function GET() {
   const t = getCopy();
