@@ -515,7 +515,7 @@ function BellRinging({ onBack, onDone, bellId, reason }: { onBack?: () => void; 
                 background: 'transparent', color: G.ink, border: `1px solid ${G.hairline2}`, borderRadius: 8,
                 fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 textTransform: 'uppercase', cursor: 'pointer',
-              }}>Keep ringing</button>
+              }}>Keep lit</button>
             </div>
           ) : (
             <button onClick={handleCancel} style={{

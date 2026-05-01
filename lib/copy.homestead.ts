@@ -68,10 +68,15 @@ export const homesteadCopy: AppCopy = {
   },
   circle: {
     title: 'The Village',
+    caregiverTitle: 'Families',
     innerLabel: 'Inner Circle',
     outerLabel: 'Trusted Sitters',
+    innerNote: 'Rung first · no asking',
+    outerNote: 'Paid · available on demand',
+    kidLabel: 'Child',
     loadingState: 'Loading your village…',
     emptyState: 'Your village is empty.',
+    quote: 'Many hands make light work.',
   },
   roles: {
     keeper: { singular: 'Parent', plural: 'Parents' },
