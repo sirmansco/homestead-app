@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg)',
+      background: '#FBF7F0',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
