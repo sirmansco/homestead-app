@@ -20,6 +20,7 @@
     "@clerk/nextjs": "^7.2.3",
     "@types/web-push": "^3.6.4",
     "@vercel/blob": "^2.3.3",
+    "@vercel/toolbar": "^0.2.2",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.4",
     "postgres": "^3.4.9",
