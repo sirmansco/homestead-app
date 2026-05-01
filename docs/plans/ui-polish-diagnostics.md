@@ -1,6 +1,6 @@
 ---
 created: 2026-04-29
-status: in-progress
+status: complete
 ---
 
 ## Spec

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { ERROR_BG, ERROR_TEXT, G, SCRIM } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
+import { useAppData, type ActiveBellData, type ShiftRow } from '@/app/context/AppDataContext';
 import { shortName } from '@/lib/format';
 import { fmtTimeRange, durationH, fmtDateShort, fmtDateLong, fmtDateMonthDay, fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerDateRange, unavailRangePresets } from './WhenPicker';
@@ -15,27 +16,6 @@ type UnavailRow = {
   note: string | null;
 };
 
-type ShiftRow = {
-  shift: {
-    id: string;
-    title: string;
-    forWhom: string | null;
-    notes: string | null;
-    startsAt: string;
-    endsAt: string;
-    rateCents: number | null;
-    status: 'open' | 'claimed' | 'cancelled' | 'done';
-    householdId: string;
-    claimedByUserId: string | null;
-    preferredCaregiverId: string | null;
-  };
-  household: { id: string; name: string; glyph: string } | null;
-  creator: { id: string; name: string } | null;
-  claimer: { id: string; name: string } | null;
-  claimedByMe?: boolean;
-  createdByMe?: boolean;
-  requestedForMe?: boolean;
-};
 
 function fmtDate(iso: string) {
   return fmtDateShort(iso);
@@ -66,16 +46,6 @@ const HouseholdChip = React.memo(function HouseholdChip({ name, glyph }: { name:
 });
 
 // ── LanternCard ─────────────────────────────────────────────────────────────
-type ActiveBellData = {
-  id: string;
-  reason: string;
-  status: string;
-  handledByName: string | null;
-  createdAt: string;
-  endsAt: string;
-  escalatedAt: string | null;
-  responses: { userId: string; response: string; name: string | null }[];
-};
 
 const RESPONSE_LABEL: Record<string, string> = {
   on_my_way: 'On the way',
@@ -627,15 +597,17 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   onPost?: () => void;
   onVillage?: () => void;
 }) {
-  const { active, all, rolesByHousehold } = useHousehold();
+  const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
-  const [rows, setRows] = useState<ShiftRow[] | null>(null);
+  const { activeBell, village, shifts: contextShifts, refreshShifts, refreshBell } = useAppData();
+  const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
+  const rows: ShiftRow[] | null = contextShifts[scope] ?? null;
+  const villageSize = village.length;
+
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
-  const [villageSize, setVillageSize] = useState(0);
-  const [activeBell, setActiveBell] = useState<ActiveBellData | null>(null);
   const [cancellingBell, setCancellingBell] = useState(false);
   const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
   const [showUnavailForm, setShowUnavailForm] = useState(false);
@@ -650,66 +622,17 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const unavailStart = unavailDate ? `${unavailDate}T${unavailStartTime}` : '';
   const unavailEnd = unavailEndDate ? `${unavailEndDate}T${unavailEndTime}` : '';
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setError(null);
-    try {
-      // Caregivers always use 'all' so shifts from every household they serve
-      // are included — 'village' only fans out via Clerk orgs and can miss
-      // households where the user was added directly to the DB without a Clerk invite.
-      const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
-      const [shiftsRes, villageRes, bellRes] = await Promise.all([
-        fetch(`/api/shifts?scope=${scope}`, { signal }),
-        role === 'parent' ? fetch('/api/village', { signal }) : Promise.resolve(null),
-        role === 'parent' ? fetch('/api/bell/active', { signal }) : Promise.resolve(null),
-      ]);
-      if (shiftsRes.status === 409 || shiftsRes.status === 401) {
-        // No active household yet (Clerk still hydrating, or user has no household).
-        // Render empty state, not an error.
-        setRows([]);
-        return;
-      }
-      if (!shiftsRes.ok) throw new Error(`Couldn\u2019t load ${getCopy().request.tabLabel.toLowerCase()}`);
-      const data = await shiftsRes.json() as { shifts: ShiftRow[] };
-      setRows(data.shifts);
-      if (villageRes?.ok) {
-        const v = await villageRes.json();
-        setVillageSize((v.adults?.length ?? 0) + (v.kids?.length ?? 0));
-      }
-      if (bellRes?.ok) {
-        const bd = await bellRes.json();
-        // API returns ringing-first, so first entry is most urgent. No client-side status filter needed.
-        const bell = (bd.bells || [])[0] as ActiveBellData | undefined;
-        setActiveBell(bell ?? null);
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : 'Failed to load');
-      setRows([]);
-    }
-  }, [role, isDualRole, multiHousehold]);
-
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // Trigger initial shift load via context (idempotent — context won't double-fetch)
   useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal);
-    return () => controller.abort();
-  }, [load, active?.id]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    refreshShifts(scope);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, active?.id]);
 
-  // Re-load on focus so the bell banner reappears when parent switches back from
-  // another screen or app — without this, the banner only shows on mount.
-  useEffect(() => {
-    const onFocus = () => load();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [load]);
-
-  // Poll every 15s while visible so bell status (ringing → handled) stays live.
-  useEffect(() => {
-    if (role !== 'parent') return;
-    const id = setInterval(() => load(), 15_000);
-    return () => clearInterval(id);
-  }, [role, load]);
+  // load() is now only called post-mutation to re-sync context state
+  const load = useCallback(() => {
+    refreshShifts(scope);
+    refreshBell();
+  }, [scope, refreshShifts, refreshBell]);
 
   const loadUnavail = useCallback(async () => {
     if (role !== 'caregiver' && !isDualRole) return;
@@ -884,7 +807,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ status: 'cancelled' }),
                 });
-                if (res.ok) setActiveBell(null);
+                if (res.ok) refreshBell();
               } finally {
                 setCancellingBell(false);
               }

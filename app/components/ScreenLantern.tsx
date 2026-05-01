@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { G, RED, RED_DARK, BELL_BG } from './tokens';
 import { GMasthead, GLabel, GAvatar } from './shared';
 import { requestPushPermission } from './PushRegistrar';
+import { useAppData } from '@/app/context/AppDataContext';
 import { shortName } from '@/lib/format';
 import { fmtTimeOnly } from '@/lib/format/time';
 import { WhenPickerWindow, bellWindowPresets } from './WhenPicker';
@@ -345,51 +346,19 @@ function BellCompose({ onRing, onBack, onPost }: {
   );
 }
 
-type ActiveBell = {
-  id: string;
-  reason: string;
-  note: string | null;
-  startsAt: string;
-  endsAt: string;
-  status: 'ringing' | 'handled' | 'cancelled';
-  createdAt: string;
-  responses: { userId: string; response: string }[];
-  myResponse: string | null;
-};
-
 type BellResponse = { userId: string; response: string };
 
 function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () => void; onDone?: () => void; bellId?: string; reason?: string; warning?: string }) {
-  const [members, setMembers] = useState<VillageMember[] | null>(null);
-  const [responses, setResponses] = useState<BellResponse[]>([]);
+  const { activeBell, village, refreshBell } = useAppData();
+  // Responses come from the shared activeBell state polled by AppDataContext
+  const responses: BellResponse[] = (bellId && activeBell?.id === bellId)
+    ? (activeBell.responses as BellResponse[]) ?? []
+    : [];
+  const members = village.length > 0 ? village : null;
+
   const [marking, setMarking] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [bellError, setBellError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/village')
-      .then(r => r.ok ? r.json() : { adults: [] })
-      .then(d => setMembers((d.adults as VillageMember[]) || []))
-      .catch(() => setMembers([]));
-  }, []);
-
-  // Poll for real caregiver responses so parent sees who said "on my way"
-  useEffect(() => {
-    if (!bellId) return;
-    const poll = () => {
-      fetch('/api/bell/active')
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (!data?.bells) return;
-          const bell = data.bells.find((b: { id: string; responses: BellResponse[] }) => b.id === bellId);
-          if (bell) setResponses(bell.responses || []);
-        })
-        .catch(() => {});
-    };
-    poll();
-    const interval = setInterval(poll, 10_000);
-    return () => clearInterval(interval);
-  }, [bellId]);
 
   // Map a village member ID to their response state
   function memberState(memberId: string): string {
@@ -426,6 +395,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
         body: JSON.stringify({ status: 'handled' }),
       });
       if (!res.ok) throw new Error('Could not mark as handled');
+      refreshBell();
       onDone?.();   // go to compose, stay on Bell tab
     } catch {
       setBellError('Something went wrong. Try again.');
@@ -445,6 +415,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
           body: JSON.stringify({ status: 'cancelled' }),
         });
         if (!res.ok) throw new Error(`Could not cancel ${getCopy().urgentSignal.noun.toLowerCase()}`);
+        refreshBell();
         onDone?.();   // go to compose, stay on Bell tab
       } catch {
         setBellError(`Could not cancel the ${getCopy().urgentSignal.noun.toLowerCase()}. Try again.`);
@@ -550,37 +521,9 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
 }
 
 function BellIncoming() {
-  const [bells, setBells] = useState<ActiveBell[] | null>(null);
+  const { allBells, bellLoading, refreshBell } = useAppData();
   const [responding, setResponding] = useState<string | null>(null);
-  const [pollError, setPollError] = useState<string | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch('/api/bell/active');
-      if (!res.ok) {
-        setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
-        setBells(prev => prev ?? []);  // unblock spinner on first-load failure
-        return;
-      }
-      const data = await res.json();
-      setBells(data.bells || []);
-      setPollError(null);
-    } catch {
-      setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
-      setBells(prev => prev ?? []);  // unblock spinner on first-load failure
-    }
-  }, []);
-
-  useEffect(() => {
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    load();
-    const interval = setInterval(load, 8_000);
-    // Re-poll immediately when the tab regains focus (user comes back from another app)
-    const onFocus = () => load();
-    window.addEventListener('focus', onFocus);
-    return () => { clearInterval(interval); window.removeEventListener('focus', onFocus); };
-  }, [load]);
 
   async function respond(bellId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
     setResponding(bellId + response);
@@ -596,7 +539,7 @@ function BellIncoming() {
         setRespondError(data.error || `Couldn't save your response. Tap to try again.`);
         return;
       }
-      await load();
+      refreshBell();
     } catch {
       setRespondError(`Couldn't reach ${getCopy().brand.name}. Tap to try again.`);
     } finally {
@@ -604,9 +547,9 @@ function BellIncoming() {
     }
   }
 
-  const activeBells = (bells || []).filter(b => b.status === 'ringing');
+  const activeBells = allBells.filter(b => b.status === 'ringing');
 
-  if (bells === null) {
+  if (bellLoading && allBells.length === 0) {
     return (
       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BELL_BG }}>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>Checking for {getCopy().urgentSignal.noun.toLowerCase()}s…</div>
@@ -625,13 +568,6 @@ function BellIncoming() {
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
           <PushPermissionBanner />
-          {pollError && (
-            <div style={{
-              marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: G.claySoft, border: `1px solid ${RED}`,
-              fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
-            }}>{pollError}</div>
-          )}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
             <BellGlyph size={48} />
@@ -653,13 +589,6 @@ function BellIncoming() {
         tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {pollError && (
-          <div style={{
-            marginTop: 8, padding: '10px 14px', borderRadius: 8,
-            background: G.claySoft, border: `1px solid ${RED}`,
-            fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
-          }}>{pollError}</div>
-        )}
         {activeBells.map(bell => {
           const myResp = bell.myResponse;
           const rungAt = new Date(bell.createdAt);
@@ -688,7 +617,7 @@ function BellIncoming() {
               )}
               <div style={{ height: 1, background: G.hairline, margin: '14px 0' }} />
               <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
-                Needed from {fmtTimeOnly(bell.startsAt)} until {fmtTimeOnly(bell.endsAt)}
+                Needed from {fmtTimeOnly(bell.startsAt ?? bell.createdAt)} until {fmtTimeOnly(bell.endsAt)}
               </div>
 
               {!myResp ? (
@@ -776,6 +705,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
   onBack?: () => void;
   onPost?: () => void;
 }) {
+  const { activeBell, refreshBell } = useAppData();
   // 'loading' while we check for an existing ringing bell
   const [mode, setMode] = useState<'loading' | 'compose' | 'ringing'>(
     initialCompose ? 'compose' : 'loading'
@@ -784,23 +714,37 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
   const [ringBellId, setRingBellId] = useState<string | undefined>();
   const [ringWarning, setRingWarning] = useState<string | undefined>();
 
-  // On mount (parent only): check if there's already a ringing bell to resume
+  // When initialCompose flips true (user tapped "Ring" from another screen),
+  // jump straight to compose without waiting for the active-bell check.
+  // This replaces the old key={`lantern-${bellCompose}`} remount hack.
+  useEffect(() => {
+    if (initialCompose) setMode('compose');
+  }, [initialCompose]);
+
+  // On first render as a keep-alive screen (parent only): use shared activeBell
+  // from context rather than a dedicated fetch — context is already polling.
   useEffect(() => {
     if (role !== 'parent' || initialCompose) return;
-    fetch('/api/bell/active')
-      .then(r => r.ok ? r.json() : { bells: [] })
-      .then(data => {
-        const active = (data.bells || []).find((b: { status: string; id: string; reason: string }) => b.status === 'ringing');
-        if (active) {
-          setRingBellId(active.id);
-          setRingReason(active.reason);
-          setMode('ringing');
-        } else {
-          setMode('compose');
-        }
-      })
-      .catch(() => setMode('compose'));
-  }, [role, initialCompose]);
+    if (activeBell && activeBell.status === 'ringing') {
+      setRingBellId(activeBell.id);
+      setRingReason(activeBell.reason);
+      setMode('ringing');
+    } else {
+      setMode('compose');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount — subsequent changes come through activeBell prop
+
+  // Keep ringing state in sync if bell is cancelled/handled externally
+  useEffect(() => {
+    if (mode !== 'ringing') return;
+    if (!activeBell || activeBell.status !== 'ringing') {
+      setRingBellId(undefined);
+      setRingReason('');
+      setRingWarning(undefined);
+      setMode('compose');
+    }
+  }, [activeBell, mode]);
 
   if (role === 'caregiver') return <BellIncoming />;
 
