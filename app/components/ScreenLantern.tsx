@@ -13,7 +13,7 @@ function BellPill({ label, value, emphasized }: { label: string; value: string; 
     <div style={{
       padding: '10px 12px', borderRadius: 8,
       border: `1px solid ${emphasized ? RED : G.hairline2}`,
-      background: emphasized ? '#FFE6DA' : G.paper,
+      background: emphasized ? G.claySoft : G.paper,
     }}>
       <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: emphasized ? RED : G.muted, fontWeight: 700 }}>{label}</div>
       <div style={{ fontFamily: G.display, fontSize: 14, marginTop: 3, fontWeight: 500, color: emphasized ? RED : G.ink }}>{value}</div>
@@ -137,8 +137,8 @@ function PushPermissionBanner() {
   return (
     <div style={{
       margin: '12px 0', padding: '12px 14px', borderRadius: 8,
-      background: permission === 'denied' ? G.paper : '#FFF8EC',
-      border: `1px solid ${permission === 'denied' ? G.hairline2 : '#D4A017'}`,
+      background: permission === 'denied' ? G.paper : G.claySoft,
+      border: `1px solid ${permission === 'denied' ? G.hairline2 : G.mustard}`,
     }}>
       {permission === 'denied' ? (
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, lineHeight: 1.5 }}>
@@ -302,10 +302,21 @@ function BellCompose({ onRing, onBack, onPost }: {
           />
         </div>
 
+        <div style={{
+          marginTop: 22, padding: 14, borderRadius: 8,
+          border: `1px dashed ${RED}`, background: G.claySoft,
+        }}>
+          <GLabel color={RED}>How it&apos;ll ring</GLabel>
+          <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
+            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
+          </div>
+        </div>
+
         <PushPermissionBanner />
 
         {error && (
-          <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: '#FFE6DA', border: `1px solid ${RED}`, fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED }}>
+          <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: G.claySoft, border: `1px solid ${RED}`, fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED }}>
             {error}
           </div>
         )}
@@ -466,7 +477,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
         ) : members.length === 0 ? (
           <div style={{
             padding: '18px 16px', borderRadius: 8, border: `1px dashed ${RED}`,
-            background: '#FFF0E8', marginTop: 8,
+            background: G.claySoft, marginTop: 8,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, lineHeight: 1.5,
           }}>
             No one in {getCopy().circle.title.toLowerCase()} yet. Add caregivers from the {getCopy().circle.title} tab so they can receive {getCopy().urgentSignal.noun.toLowerCase()} alerts.
@@ -495,7 +506,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
         {bellError && (
           <div style={{
             marginTop: 16, padding: '10px 14px', borderRadius: 8,
-            background: '#FFE6DA', border: `1px solid ${RED}`,
+            background: G.claySoft, border: `1px solid ${RED}`,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
           }}>{bellError}</div>
         )}
@@ -617,7 +628,7 @@ function BellIncoming() {
           {pollError && (
             <div style={{
               marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: '#FFE6DA', border: `1px solid ${RED}`,
+              background: G.claySoft, border: `1px solid ${RED}`,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
             }}>{pollError}</div>
           )}
@@ -645,7 +656,7 @@ function BellIncoming() {
         {pollError && (
           <div style={{
             marginTop: 8, padding: '10px 14px', borderRadius: 8,
-            background: '#FFE6DA', border: `1px solid ${RED}`,
+            background: G.claySoft, border: `1px solid ${RED}`,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
           }}>{pollError}</div>
         )}
