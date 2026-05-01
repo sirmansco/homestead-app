@@ -176,7 +176,7 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
                   fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
                   textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
                   opacity: busy ? 0.7 : 1,
-                }}>{busy ? 'Claiming…' : 'Claim'}</button>
+                }}>{busy ? 'Covering…' : getCopy().request.acceptVerb}</button>
             )}
           </div>
         </div>

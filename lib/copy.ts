@@ -7,6 +7,7 @@ export type AppCopy = {
     pressLine: string;
     tagline: string;
     quote: string;
+    thesis?: string;
   };
   urgentSignal: {
     noun: string;

@@ -22,19 +22,26 @@ function BellPill({ label, value, emphasized }: { label: string; value: string; 
 }
 
 function BellGlyph({ size = 72 }: { size?: number }) {
+  const s = size;
   return (
-    <svg width={size} height={size * (100 / 84)} viewBox="0 0 84 100">
-      <g stroke={RED} strokeWidth="1" fill="none" opacity="0.35">
-        <path d="M 8 50 Q 2 58 8 66" />
-        <path d="M 76 50 Q 82 58 76 66" />
-        <path d="M 2 46 Q -6 58 2 70" />
-        <path d="M 82 46 Q 90 58 82 70" />
-      </g>
-      <path d="M 42 14 L 42 20 M 26 72 Q 26 38 42 22 Q 58 38 58 72 Z"
-        fill={RED} stroke={RED_DARK} strokeWidth="1.5" strokeLinejoin="round" />
-      <line x1="22" y1="72" x2="62" y2="72" stroke={RED_DARK} strokeWidth="2" />
-      <circle cx="42" cy="78" r="4" fill={RED_DARK} />
-      <circle cx="42" cy="14" r="3" fill={RED_DARK} />
+    <svg width={s} height={s} viewBox="0 0 48 54" fill="none">
+      {/* handle */}
+      <path d="M24 2v5" stroke={RED} strokeWidth="2" strokeLinecap="round"/>
+      {/* top bar */}
+      <path d="M16 7h16" stroke={RED} strokeWidth="2" strokeLinecap="round"/>
+      {/* body */}
+      <rect x="13" y="9" width="22" height="30" rx="4" fill={RED} opacity="0.15" stroke={RED} strokeWidth="1.5"/>
+      {/* glass pane */}
+      <rect x="17" y="13" width="14" height="20" rx="2" fill={RED} opacity="0.25"/>
+      {/* flame */}
+      <ellipse cx="24" cy="24" rx="4" ry="5.5" fill={RED}/>
+      <path d="M24 18 Q27 21 24 26 Q21 21 24 18Z" fill={RED_DARK}/>
+      {/* base */}
+      <path d="M13 39h22" stroke={RED} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M17 39v4M31 39v4" stroke={RED} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* glow arcs */}
+      <path d="M8 24 Q3 32 8 40" stroke={RED} strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
+      <path d="M40 24 Q45 32 40 40" stroke={RED} strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
     </svg>
   );
 }

@@ -293,6 +293,11 @@ export default function GuidePage() {
 
         {/* Footer */}
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: `2px solid ${C.ink}`, textAlign: 'center' }}>
+          {t.brand.thesis && (
+            <div style={{ fontFamily: C.display, fontStyle: 'italic', fontSize: 16, color: C.ink, lineHeight: 1.6, marginBottom: 20, maxWidth: 480, margin: '0 auto 24px' }}>
+              {t.brand.thesis}
+            </div>
+          )}
           <div style={{ fontFamily: C.display, fontStyle: 'italic', fontSize: 18, color: C.ink, marginBottom: 6 }}>
             {t.guide.footerQuote}
           </div>

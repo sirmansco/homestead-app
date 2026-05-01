@@ -88,16 +88,15 @@ export function GMasthead({
         {getCopy().brand.name}
       </div>
       {rightAction ? rightAction : (
-        <div style={{
-          width: 28, height: 28, borderRadius: 14,
-          background: 'rgba(74,83,64,0.10)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: G.green,
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="9" />
-          </svg>
-        </div>
+        <svg width="22" height="22" viewBox="-12 -20 24 36" fill="none" aria-hidden="true">
+          <ellipse cx="0" cy="0" rx="7" ry="11" fill={G.green} opacity="0.7"/>
+          <circle cx="0" cy="-11" r="4.5" fill={G.green} opacity="0.7"/>
+          <path d="M 0,-15 L -1.5,-18 L 1.5,-18 Z" fill={G.mustard}/>
+          <path d="M 0,-15 Q -2,-19 -0.5,-21" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+          <circle cx="-1.5" cy="-11.5" r="0.9" fill={G.ink}/>
+          <path d="M -3,9 L 0,15 L 3,9 Z" fill={G.green} opacity="0.4"/>
+          <path d="M -5,-1 Q 0,-4 5,-1" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.5"/>
+        </svg>
       )}
     </div>
   );
@@ -147,6 +146,16 @@ export const Icons = {
       <path d="M18 8 L18 14 L14 14 L14 38 L34 38 L34 14 L30 14 L30 8 Z" fill={c}/>
       <rect x="17" y="17" width="14" height="18" fill="rgba(255,233,168,0.85)"/>
       <path d="M14 38 L34 38" stroke={c} strokeWidth="2"/>
+    </svg>
+  ),
+  lantern: (c: string) => (
+    <svg width="20" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2v2" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M8 4h8" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <rect x="7" y="6" width="10" height="13" rx="2" stroke={c} strokeWidth="1.5"/>
+      <path d="M7 10h10" stroke={c} strokeWidth="1" strokeOpacity="0.4"/>
+      <ellipse cx="12" cy="14" rx="2.5" ry="3" fill={c} fillOpacity="0.85"/>
+      <path d="M9 19h6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
   village: (c: string) => (
@@ -210,8 +219,8 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   const caregiverTabs: Tab[] = [
     { id: 'almanac', label: getCopy().schedule.caregiverTitle, icon: Icons.almanac },
     { id: 'shifts',  label: getCopy().request.tabLabel, icon: Icons.shifts },
-    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.bell, badge: bellCount > 0 ? bellCount : undefined },
-    { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
+    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
+    { id: 'circle',  label: getCopy().circle.caregiverTitle, icon: Icons.village },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 
