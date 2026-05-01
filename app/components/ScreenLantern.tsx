@@ -465,7 +465,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
         titleColor={RED}
         tagline={`${getCopy().circle.title} is being notified — ${getCopy().circle.innerLabel.toLowerCase()} first, widening if no one answers.`}
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
           <BellGlyph size={72} />
         </div>
@@ -623,7 +623,7 @@ function BellIncoming() {
           titleColor={G.ink}
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
           <PushPermissionBanner />
           {pollError && (
             <div style={{
@@ -652,7 +652,7 @@ function BellIncoming() {
         titleColor={RED}
         tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {pollError && (
           <div style={{
             marginTop: 8, padding: '10px 14px', borderRadius: 8,

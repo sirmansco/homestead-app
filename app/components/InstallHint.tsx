@@ -45,7 +45,16 @@ export function InstallHint() {
       fontFamily: G.sans,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ fontSize: 26, lineHeight: 1 }}>{getCopy().urgentSignal.tabIcon}</div>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#4A5340', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="28" height="24" viewBox="-13 -14 30 26" fill="none">
+            <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill="#EDE5D6"/>
+            <circle cx="-7" cy="-4" r="4.6" fill="#EDE5D6"/>
+            <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke="#EDE5D6" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <circle cx="-8.2" cy="-4.8" r="0.8" fill="#3A3F3D"/>
+            <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill="#D9A441"/>
+            <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill="#EDE5D6" opacity="0.85"/>
+          </svg>
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 16, lineHeight: 1.2, marginBottom: 4 }}>
             Add {getCopy().brand.name} to your home screen

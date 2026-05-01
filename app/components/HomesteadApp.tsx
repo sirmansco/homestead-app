@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { G, BELL_BG } from './tokens';
+import { G, SCRIM } from './tokens';
 import { GTabBar } from './shared';
 import { ScreenPost } from './ScreenPost';
 import { ScreenShifts } from './ScreenShifts';
@@ -128,7 +128,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
         <div
           onClick={() => setOpen(false)}
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300,
+            position: 'fixed', inset: 0, background: SCRIM, zIndex: 300,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
           }}
         >
@@ -331,14 +331,13 @@ export function HomesteadApp() {
       <HouseholdProvider>
         <div style={{
           position: 'fixed', inset: 0,
-          background: (activeTab === 'lantern') ? BELL_BG : G.bg, color: G.ink,
+          background: G.bg, color: G.ink,
           fontFamily: G.sans,
           display: 'flex', flexDirection: 'column',
         }}>
           {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
           <div style={{
             flex: 1, overflow: 'hidden', position: 'relative',
-            paddingTop: 'env(safe-area-inset-top, 0px)',
           }}>
             {renderedScreen}
           </div>

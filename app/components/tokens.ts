@@ -20,6 +20,9 @@ export const G = {
 export const RED      = 'var(--red)';
 export const RED_DARK = 'var(--red-dark)';
 export const BELL_BG  = 'var(--bell-bg)';
+export const ERROR_BG   = 'var(--error-bg)';
+export const ERROR_TEXT = 'var(--error-text)';
+export const SCRIM      = 'var(--scrim)';
 
 const TONES = ['#A03B2A','#4A5340','#D9A441','#7A6A4F','#5A7040','#C48A5B','#8A9A7B'];
 export function avatarColor(name: string): string {

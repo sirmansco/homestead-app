@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import { G } from './tokens';
+import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead, GLabel, Icons } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
@@ -192,7 +192,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         tagline={`For a last-minute need, light the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 20px 88px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {multi && active && (
           <div style={{
             marginTop: 4, padding: '10px 12px',
@@ -421,7 +421,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         {error && (
           <div style={{
             marginTop: 14, padding: '10px 12px', borderRadius: 8,
-            background: '#FFE6DA', color: '#7A2F12',
+            background: ERROR_BG, color: ERROR_TEXT,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
           }}>{error}</div>
         )}

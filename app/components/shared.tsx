@@ -68,7 +68,7 @@ export function GMasthead({
 }) {
   return (
     <div style={{
-      padding: '12px 20px',
+      padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 20px 12px',
       flexShrink: 0,
       display: 'flex',
       alignItems: 'center',
@@ -80,10 +80,10 @@ export function GMasthead({
         fontFamily: G.display,
         fontStyle: 'italic',
         fontWeight: 400,
-        fontSize: 20,
+        fontSize: 28,
         color: G.green,
         lineHeight: 1,
-        letterSpacing: '-0.01em',
+        letterSpacing: '-0.02em',
       }}>
         {getCopy().brand.name}
       </div>
@@ -150,7 +150,7 @@ export const Icons = {
     </svg>
   ),
   lantern: (c: string) => (
-    <svg width="20" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="24" height="26" viewBox="0 0 24 24" fill="none">
       <path d="M12 2v2" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
       <path d="M8 4h8" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
       <rect x="7" y="6" width="10" height="13" rx="2" stroke={c} strokeWidth="1.5"/>
@@ -230,7 +230,7 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
-      paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
     }}>
       <div style={{
         display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,

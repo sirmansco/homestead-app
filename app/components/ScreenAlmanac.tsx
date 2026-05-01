@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { G } from './tokens';
+import { ERROR_BG, ERROR_TEXT, G, SCRIM } from './tokens';
 import { GMasthead, GLabel, SectionHead, Icons } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
@@ -317,7 +317,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+        position: 'fixed', inset: 0, background: SCRIM, zIndex: 100,
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       }}
     >
@@ -895,7 +895,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
         {error && (
           <div style={{
             marginTop: 10, padding: '10px 12px', borderRadius: 8,
-            background: '#FFE6DA', color: '#7A2F12',
+            background: ERROR_BG, color: ERROR_TEXT,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13,
           }}>{error}</div>
         )}
@@ -1111,7 +1111,7 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
                   opacity: (savingUnavail || !unavailStart || !unavailEnd) ? 0.5 : 1,
                 }}>{savingUnavail ? 'Saving…' : 'Block this time'}</button>
                 {unavailError && (
-                  <div style={{ padding: '8px 10px', borderRadius: 6, background: '#FFE6DA', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: '#7A2F12' }}>
+                  <div style={{ padding: '8px 10px', borderRadius: 6, background: ERROR_BG, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: ERROR_TEXT }}>
                     {unavailError}
                   </div>
                 )}

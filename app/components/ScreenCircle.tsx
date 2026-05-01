@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { G } from './tokens';
+import { G, SCRIM } from './tokens';
 import { GMasthead, GLabel, GAvatar, GHead } from './shared';
 import { HouseholdSwitcher, useHousehold } from './HouseholdSwitcher';
 import { shortName } from '@/lib/format';
@@ -239,7 +239,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
       )}
       {pickerOpen && villageGroup && onChangeGroup && (
         <div onClick={() => setPickerOpen(false)} style={{
-          position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)', zIndex: 1100,
+          position: 'fixed', inset: 0, background: SCRIM, zIndex: 1100,
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         }}>
           <div onClick={e => e.stopPropagation()} style={{
@@ -365,7 +365,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)',
+      position: 'fixed', inset: 0, background: SCRIM,
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1200,
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -1038,7 +1038,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
 
       {renaming && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(27,23,19,0.5)',
+          position: 'fixed', inset: 0, background: SCRIM,
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1200,
         }} onClick={() => setRenaming(false)}>
           <div onClick={e => e.stopPropagation()} style={{
