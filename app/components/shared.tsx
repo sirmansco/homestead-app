@@ -88,16 +88,15 @@ export function GMasthead({
         {getCopy().brand.name}
       </div>
       {rightAction ? rightAction : (
-        <div style={{
-          width: 28, height: 28, borderRadius: 14,
-          background: 'rgba(74,83,64,0.10)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: G.green,
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="9" />
-          </svg>
-        </div>
+        <svg width="22" height="22" viewBox="-12 -20 24 36" fill="none" aria-hidden="true">
+          <ellipse cx="0" cy="0" rx="7" ry="11" fill={G.green} opacity="0.7"/>
+          <circle cx="0" cy="-11" r="4.5" fill={G.green} opacity="0.7"/>
+          <path d="M 0,-15 L -1.5,-18 L 1.5,-18 Z" fill={G.mustard}/>
+          <path d="M 0,-15 Q -2,-19 -0.5,-21" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+          <circle cx="-1.5" cy="-11.5" r="0.9" fill={G.ink}/>
+          <path d="M -3,9 L 0,15 L 3,9 Z" fill={G.green} opacity="0.4"/>
+          <path d="M -5,-1 Q 0,-4 5,-1" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.5"/>
+        </svg>
       )}
     </div>
   );
