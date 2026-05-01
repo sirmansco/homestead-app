@@ -1,6 +1,6 @@
 ## Active
 
-- [ ] Lantern banner not appearing on caregiver Perch (ScreenShifts) when a bell is ringing — `/api/bell/active` may return empty for caregivers; needs repro with real caregiver session + network log to confirm root cause. Attempted 2× (sessions 2–3); banner code is wired correctly, suspect household auth resolution path for caregivers. **Requires browser devtools network tab on a real caregiver device.**
+- [ ] Lantern banner not appearing on caregiver Perch (ScreenShifts) — root cause partially identified: `loadActiveBell` was swallowing all errors silently (catch block with no log); non-ok responses also returned silently. Fixed in #27: errors now logged to console. Regression test added for multi-household caregiver bell visibility. **Still needs real-device repro to confirm the banner now appears — watch browser console for `[ScreenShifts] bell/active` warnings.**
 
 ## Fixed
 
