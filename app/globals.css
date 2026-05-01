@@ -1,66 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400;1,500&family=Spectral:ital,wght@0,400;0,500;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ── Design tokens — light (default) ──────────────────────────────────── */
 :root {
-  --bg:         #FBF7F0;
-  --paper:      #FFFFFF;
-  --ink:        #1B1713;
-  --ink2:       #4A423A;
-  --muted:      #8A8078;
-  --hairline:   rgba(27,23,19,0.12);
-  --hairline2:  rgba(27,23,19,0.22);
-  --green:      #2F4A2A;
-  --green-soft: #E8EDE2;
-  --clay:       #B05A3A;
-  --clay-soft:  #F1DCC9;
-  --mustard:    #B8893B;
-  --cream:      #F5EFE3;
-  --red:        #B5342B;
-  --red-dark:   #7D1F14;
-  --bell-bg:    #FFF6F1;
+  --bg:         #E8DFCE;
+  --paper:      #F4EFE3;
+  --ink:        #3A3F3D;
+  --ink2:       #5A5F5C;
+  --muted:      #8A8478;
+  --hairline:   rgba(58,63,61,0.12);
+  --hairline2:  rgba(58,63,61,0.22);
+  --green:      #4A5340;
+  --green-soft: #D8DDD2;
+  --clay:       #A03B2A;
+  --clay-soft:  #F0DDD8;
+  --mustard:    #D9A441;
+  --cream:      #EDE5D6;
+  --red:        #A03B2A;
+  --red-dark:   #6E2218;
+  --bell-bg:    #FBF6EC;
 }
 
 /* ── Dark overrides — system preference ───────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg:         #16110C;
-    --paper:      #1F1812;
-    --ink:        #F0EBE3;
-    --ink2:       #B8AFA5;
-    --muted:      #6E6560;
-    --hairline:   rgba(240,235,227,0.12);
-    --hairline2:  rgba(240,235,227,0.22);
-    --green:      #4A7242;
-    --green-soft: #1E2E1A;
-    --clay:       #D4724E;
-    --clay-soft:  #2A1710;
-    --mustard:    #CFA55A;
-    --cream:      #1E180F;
-    --red:        #E05A50;
-    --red-dark:   #B03028;
-    --bell-bg:    #221410;
+    --bg:         #1A1C18;
+    --paper:      #222620;
+    --ink:        #E8DFCE;
+    --ink2:       #B8AF9F;
+    --muted:      #7A7468;
+    --hairline:   rgba(232,223,206,0.12);
+    --hairline2:  rgba(232,223,206,0.22);
+    --green:      #6B7A5E;
+    --green-soft: #2A2E26;
+    --clay:       #C4614A;
+    --clay-soft:  #2E1A16;
+    --mustard:    #D9A441;
+    --cream:      #252820;
+    --red:        #C4614A;
+    --red-dark:   #8E3A2A;
+    --bell-bg:    #1E2018;
   }
 }
 
 /* ── Dark overrides — explicit user preference ────────────────────────── */
 [data-theme="dark"] {
-  --bg:         #16110C;
-  --paper:      #1F1812;
-  --ink:        #F0EBE3;
-  --ink2:       #B8AFA5;
-  --muted:      #6E6560;
-  --hairline:   rgba(240,235,227,0.12);
-  --hairline2:  rgba(240,235,227,0.22);
-  --green:      #4A7242;
-  --green-soft: #1E2E1A;
-  --clay:       #D4724E;
-  --clay-soft:  #2A1710;
-  --mustard:    #CFA55A;
-  --cream:      #1E180F;
-  --red:        #E05A50;
-  --red-dark:   #B03028;
-  --bell-bg:    #221410;
+  --bg:         #1A1C18;
+  --paper:      #222620;
+  --ink:        #E8DFCE;
+  --ink2:       #B8AF9F;
+  --muted:      #7A7468;
+  --hairline:   rgba(232,223,206,0.12);
+  --hairline2:  rgba(232,223,206,0.22);
+  --green:      #6B7A5E;
+  --green-soft: #2A2E26;
+  --clay:       #C4614A;
+  --clay-soft:  #2E1A16;
+  --mustard:    #D9A441;
+  --cream:      #252820;
+  --red:        #C4614A;
+  --red-dark:   #8E3A2A;
+  --bell-bg:    #1E2018;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -71,6 +71,6 @@ input, textarea, select { font-size: max(16px, 1rem); }
 body {
   margin: 0;
   background: var(--bg);
-  font-family: 'Inter Tight', -apple-system, system-ui, sans-serif;
+  font-family: Inter, -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

@@ -12,16 +12,16 @@ export const G = {
   claySoft:  'var(--clay-soft)',
   mustard:   'var(--mustard)',
   cream:     'var(--cream)',
-  display: '"Fraunces", "Spectral", Georgia, serif',
+  display: '"IM Fell English", "Spectral", Georgia, serif',
   serif:   '"Spectral", Georgia, serif',
-  sans:    '"Inter Tight", -apple-system, system-ui, sans-serif',
+  sans:    '"Inter", -apple-system, system-ui, sans-serif',
 } as const;
 
 export const RED      = 'var(--red)';
 export const RED_DARK = 'var(--red-dark)';
 export const BELL_BG  = 'var(--bell-bg)';
 
-const TONES = ['#B05A3A','#2F4A2A','#B8893B','#7A4A38','#5D6E54','#C48A5B','#8A9A7B'];
+const TONES = ['#A03B2A','#4A5340','#D9A441','#7A6A4F','#5A7040','#C48A5B','#8A9A7B'];
 export function avatarColor(name: string): string {
   const seed = (name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0);
   return TONES[seed % TONES.length];
