@@ -739,11 +739,11 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [villageRes, meRes] = await Promise.all([
-        fetch('/api/village'),
-        fetch('/api/household'),
+        fetch('/api/village', { signal }),
+        fetch('/api/household', { signal }),
       ]);
       const data = await villageRes.json();
       if (villageRes.ok) {
@@ -756,12 +756,20 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState('');

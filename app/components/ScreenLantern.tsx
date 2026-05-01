@@ -549,6 +549,7 @@ function BellIncoming() {
       const res = await fetch('/api/bell/active');
       if (!res.ok) {
         setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
+        setBells(prev => prev ?? []);  // unblock spinner on first-load failure
         return;
       }
       const data = await res.json();
@@ -556,6 +557,7 @@ function BellIncoming() {
       setPollError(null);
     } catch {
       setPollError(`Can't reach ${getCopy().brand.name}. ${getCopy().urgentSignal.noun}s will appear once you're back online.`);
+      setBells(prev => prev ?? []);  // unblock spinner on first-load failure
     }
   }, []);
 
