@@ -194,9 +194,7 @@ function BellCompose({ onRing, onBack, onPost }: {
   const reasons = [
     { id: 0, label: 'Sick kid',             desc: 'need someone home, now' },
     { id: 1, label: 'Last-minute conflict', desc: 'appointment, meeting, something came up' },
-    { id: 2, label: 'Pickup mixup',         desc: "I can't get to school/daycare" },
-    { id: 3, label: 'Emergency',            desc: "something's wrong — help" },
-    { id: 4, label: 'Other',               desc: 'something else came up' },
+    { id: 2, label: 'Other',               desc: 'something else came up' },
   ];
 
   async function handleRing() {
@@ -302,17 +300,6 @@ function BellCompose({ onRing, onBack, onPost }: {
               outline: 'none', resize: 'none',
             }}
           />
-        </div>
-
-        <div style={{
-          marginTop: 22, padding: 14, borderRadius: 8,
-          border: `1px dashed ${RED}`, background: '#FFF0E8',
-        }}>
-          <GLabel color={RED}>How it&apos;ll ring</GLabel>
-          <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
-            <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
-          </div>
         </div>
 
         <PushPermissionBanner />
