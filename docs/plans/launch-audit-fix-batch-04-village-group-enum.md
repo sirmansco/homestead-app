@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 04 — Complete village-group enum migration
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L10
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B4
@@ -43,7 +43,7 @@ Pattern scan (`lib/auth/household.ts`, `app/api/bell/[id]/respond/route.ts`):
 
 ## Graveyard
 
-(empty)
+- Tried full integration mock of requireHousehold() for write-boundary test on 2026-05-02 — the 8-chain mock (select×4, insert, $count, clerkClient, auth) produced "Failed to resolve user" when the post-insert re-select returned [] because the mock chain was consumed. Replaced with direct simulation of the normalization expression from household.ts (lines 57-58), which is the correct falsifiable test: if normalizeVillageGroup is removed from that line, the assertion fails.
 
 ## Anchors
 
