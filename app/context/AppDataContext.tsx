@@ -61,6 +61,9 @@ type AppDataCtx = {
   shiftsLoading: Record<string, boolean>;
   refreshShifts: (scope: string) => void;
 
+  // SSE stream for live village/all-scope shifts
+  enableShiftStream: (on: boolean) => void;
+
   // Village
   village: VillageMember[];
   villageLoading: boolean;
@@ -154,6 +157,58 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('focus', onFocus);
   }, [fetchShifts]);
 
+  // SSE stream — enabled by screens that need live village-scope shift updates
+  const [streamEnabled, setStreamEnabled] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+
+  const enableShiftStream = useCallback((on: boolean) => {
+    setStreamEnabled(on);
+  }, []);
+
+  useEffect(() => {
+    if (!streamEnabled) {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      return;
+    }
+
+    let active = true;
+
+    function connect() {
+      if (esRef.current) esRef.current.close();
+      const es = new EventSource('/api/shifts/stream');
+      esRef.current = es;
+
+      es.onmessage = (evt) => {
+        try {
+          const rows = JSON.parse(evt.data) as ShiftRow[];
+          // Update both 'village' and 'all' scopes — stream returns village-scoped data
+          setShifts(prev => ({ ...prev, village: rows, all: rows }));
+        } catch (err) {
+          Sentry.captureException(err, { tags: { source: 'appdata:stream:parse' } });
+          console.warn('[appdata:stream] parse error', err instanceof Error ? err.message : String(err));
+        }
+      };
+
+      es.addEventListener('error', () => {
+        // SSE error (network drop, server restart) — reconnect after 5s if still enabled
+        es.close();
+        esRef.current = null;
+        setTimeout(() => { if (active) connect(); }, 5_000);
+      });
+    }
+
+    connect();
+
+    return () => {
+      active = false;
+      esRef.current?.close();
+      esRef.current = null;
+    };
+  }, [streamEnabled]);
+
   // Village state
   const [village, setVillage] = useState<VillageMember[]>([]);
   const [villageLoading, setVillageLoading] = useState(false);
@@ -181,6 +236,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     <AppDataContext.Provider value={{
       activeBell, allBells, bellLoading, refreshBell,
       shifts, shiftsLoading, refreshShifts,
+      enableShiftStream,
       village, villageLoading, refreshVillage,
     }}>
       {children}

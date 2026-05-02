@@ -603,9 +603,16 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
 }) {
   const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
-  const { activeBell, village, shifts: contextShifts, refreshShifts, refreshBell } = useAppData();
+  const { activeBell, village, shifts: contextShifts, refreshShifts, refreshBell, enableShiftStream } = useAppData();
   const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
-  const rows: ShiftRow[] | null = contextShifts[scope] ?? null;
+  // When the SSE stream is active it writes to shifts['all']. For single-household
+  // parents (scope='household'), we read from 'all' and filter client-side so they
+  // also get live updates without seeing other families' shifts.
+  const streamAll = contextShifts['all'] ?? null;
+  const rawRows: ShiftRow[] | null = scope === 'household' && streamAll !== null
+    ? streamAll.filter(r => r.shift.householdId === active?.id)
+    : contextShifts[scope] ?? null;
+  const rows: ShiftRow[] | null = rawRows;
   const villageSize = village.length;
 
   const [error, setError] = useState<string | null>(null);
@@ -626,11 +633,19 @@ export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onV
   const unavailStart = unavailDate ? `${unavailDate}T${unavailStartTime}` : '';
   const unavailEnd = unavailEndDate ? `${unavailEndDate}T${unavailEndTime}` : '';
 
-  // Trigger initial shift load via context (idempotent — context won't double-fetch)
+  // Trigger initial shift load. Always load 'all' so the SSE stream has an initial
+  // dataset regardless of role; also load the role-specific scope for non-stream paths.
   useEffect(() => {
-    refreshShifts(scope);
+    refreshShifts('all');
+    if (scope !== 'all') refreshShifts(scope);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, active?.id]);
+
+  // Enable the SSE stream while this screen is mounted so shifts update live
+  useEffect(() => {
+    enableShiftStream(true);
+    return () => enableShiftStream(false);
+  }, [enableShiftStream]);
 
   // load() is now only called post-mutation to re-sync context state
   const load = useCallback(() => {
