@@ -1,0 +1,1 @@
+CREATE INDEX "idx_bells_status_escalated_created" ON "bells" USING btree ("status","escalated_at","created_at");
