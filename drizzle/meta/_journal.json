@@ -71,6 +71,13 @@
       "when": 1777743970505,
       "tag": "0009_push_subscriptions_unique_user_endpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777745413274,
+      "tag": "0010_nappy_leader",
+      "breakpoints": true
     }
   ]
 }

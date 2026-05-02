@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
 export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'cancelled']);
@@ -37,6 +38,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   userHouseholdUnique: unique('users_clerk_user_household_unique').on(t.clerkUserId, t.householdId),
+  calTokenIdx: index('idx_users_cal_token').on(t.calToken).where(sql`cal_token IS NOT NULL`),
 }));
 
 export const kids = pgTable('kids', {
@@ -68,7 +70,13 @@ export const shifts = pgTable('shifts', {
   recurEndsAt: date('recur_ends_at'),
   recurOccurrences: integer('recur_occurrences'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (t) => ({
+  householdEndsAtStartsAtIdx: index('idx_shifts_household_ends_at_starts_at').on(t.householdId, t.endsAt, t.startsAt),
+  householdStatusEndsAtStartsAtIdx: index('idx_shifts_household_status_ends_at_starts_at').on(t.householdId, t.status, t.endsAt, t.startsAt),
+  claimedByEndsAtIdx: index('idx_shifts_claimed_by_ends_at').on(t.claimedByUserId, t.endsAt),
+  createdByEndsAtIdx: index('idx_shifts_created_by_ends_at').on(t.createdByUserId, t.endsAt),
+  preferredCaregiverStatusEndsAtIdx: index('idx_shifts_preferred_caregiver_status_ends_at').on(t.preferredCaregiverId, t.status, t.endsAt),
+}));
 
 export const bells = pgTable('bells', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -85,6 +93,7 @@ export const bells = pgTable('bells', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   statusEscalatedCreatedIdx: index('idx_bells_status_escalated_created').on(t.status, t.escalatedAt, t.createdAt),
+  householdStatusEndsAtIdx: index('idx_bells_household_status_ends_at').on(t.householdId, t.status, t.endsAt),
 }));
 
 export const pushSubscriptions = pgTable('push_subscriptions', {
@@ -127,7 +136,9 @@ export const bellResponses = pgTable('bell_responses', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   response: bellResponseEnum('response').notNull(),
   respondedAt: timestamp('responded_at').notNull().defaultNow(),
-});
+}, (t) => ({
+  bellIdIdx: index('idx_bell_responses_bell_id').on(t.bellId),
+}));
 
 export const feedback = pgTable('feedback', {
   id: uuid('id').primaryKey().defaultRandom(),
