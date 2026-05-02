@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users, kids, households } from '@/lib/db/schema';
-import { requireHousehold, requireUser } from '@/lib/auth/household';
+import { requireHousehold, requireHouseholdAdmin, requireUser } from '@/lib/auth/household';
 import { normaliseStoredName } from '@/lib/format';
 import { authError } from '@/lib/api-error';
 
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { household } = await requireHousehold();
+    const { household } = await requireHouseholdAdmin();
     const body = await req.json();
 
     if (body.type === 'kid') {
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { household } = await requireHousehold();
+    const { household } = await requireHouseholdAdmin();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const type = searchParams.get('type');

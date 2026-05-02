@@ -721,7 +721,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 family={f}
                 myUserId={myRow?.id}
                 onLeave={myRow ? async () => {
-                  await fetch(`/api/village?id=${myRow.id}&type=adult`, { method: 'DELETE' });
+                  await fetch('/api/village/leave', { method: 'POST' });
                   await load();
                 } : undefined}
               />
