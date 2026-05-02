@@ -13,6 +13,7 @@ import { ScreenDiagnostics } from './ScreenDiagnostics';
 import { HouseholdProvider, useHousehold } from './HouseholdSwitcher';
 import { AppDataProvider, useAppData } from '@/app/context/AppDataContext';
 import { InstallHint } from './InstallHint';
+import { LayoutDiagnostic } from './LayoutDiagnostic';
 import { getCopy } from '@/lib/copy';
 
 // Role switcher — enabled for emails in NEXT_PUBLIC_DEV_EMAILS (comma-separated).
@@ -373,6 +374,7 @@ function HomesteadInner() {
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
         {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
+        <LayoutDiagnostic />
       </div>
     );
   }
