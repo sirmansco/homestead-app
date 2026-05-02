@@ -54,6 +54,15 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
   ],
   kids: ['id', 'household_id', 'name', 'birthday', 'notes', 'photo_url', 'created_at'],
   feedback: ['id', 'user_id', 'household_id', 'message', 'kind', 'user_agent', 'app_version', 'created_at'],
+  push_subscriptions: ['id', 'user_id', 'household_id', 'endpoint', 'p256dh', 'auth', 'created_at'],
+};
+
+// Unique constraints that must exist. Format: table → [column, ...]
+// Doctor fails if the constraint is absent — duplicate rows would otherwise
+// breach the uniqueness invariant silently.
+const EXPECTED_UNIQUE_CONSTRAINTS: Record<string, string[][]> = {
+  users: [['clerk_user_id', 'household_id']],
+  push_subscriptions: [['user_id', 'endpoint']],
 };
 
 const EXPECTED_ENUMS: Record<string, string[]> = {
@@ -145,6 +154,30 @@ async function main() {
       }
       for (const c of cols) {
         if (!liveCols.has(c)) fail('schema-drift', `${table}.${c} expected by EXPECTED_COLUMNS but missing in live DB`);
+      }
+    }
+
+    // Unique constraint drift — each expected set must exist as a real unique index/constraint
+    for (const [table, colGroups] of Object.entries(EXPECTED_UNIQUE_CONSTRAINTS)) {
+      for (const cols of colGroups) {
+        const colsLiteral = cols.map(c => `'${c}'`).join(', ');
+        const found = await sql.unsafe(`
+          SELECT 1 FROM pg_constraint c
+          JOIN pg_class t ON c.conrelid = t.oid
+          JOIN pg_namespace n ON t.relnamespace = n.oid
+          WHERE n.nspname = 'public'
+            AND t.relname = '${table}'
+            AND c.contype = 'u'
+            AND ARRAY(
+              SELECT a.attname FROM pg_attribute a
+              WHERE a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+              ORDER BY a.attname
+            ) = ARRAY(SELECT unnest(ARRAY[${colsLiteral}]::text[]) ORDER BY 1)
+          LIMIT 1
+        `) as unknown[];
+        if (!found.length) {
+          fail('constraint-missing', `${table}: unique constraint on (${cols.join(', ')}) is missing — duplicate rows can accumulate silently`);
+        }
       }
     }
 

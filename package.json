@@ -2,6 +2,10 @@
   "name": "homestead-app",
   "version": "0.6.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0 <23.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "mkdir -p $HOME/.homestead-next && ln -sf \"$(pwd)/node_modules\" $HOME/.homestead-next/node_modules; next dev",
     "build": "next build",

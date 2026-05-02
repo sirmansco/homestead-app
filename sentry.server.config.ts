@@ -1,5 +1,9 @@
 import * as Sentry from '@sentry/nextjs';
 
+if (!process.env.SENTRY_DSN && process.env.NODE_ENV === 'production') {
+  console.warn('[sentry] SENTRY_DSN not set — error monitoring is disabled. Set SENTRY_DSN to enable.');
+}
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.VERCEL_ENV ?? 'development',

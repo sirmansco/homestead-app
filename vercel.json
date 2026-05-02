@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run db:migrate && next build",
+  "buildCommand": "next build",
   "crons": [
     { "path": "/api/bell/cron", "schedule": "*/1 * * * *" }
   ],
