@@ -1,7 +1,8 @@
 ---
 title: Launch fix batch 03 — Member tombstone service / FK-restrict safety + admin Clerk-membership drop
 date: 2026-05-02
-status: pending
+status: shipped
+shipped-as: PR #48, sha e2588ea
 governs: L9 (primary); L2 delete-safety half (closes today's deferred 5xx); SHIPLOG B2 follow-up (admin village-DELETE Clerk-membership drop)
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B3
