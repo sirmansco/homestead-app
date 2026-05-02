@@ -534,6 +534,11 @@ function BellIncoming() {
   const { allBells, bellLoading, refreshBell } = useAppData();
   const [responding, setResponding] = useState<string | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function respond(bellId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
     setResponding(bellId + response);
@@ -602,8 +607,7 @@ function BellIncoming() {
         {activeBells.map(bell => {
           const myResp = bell.myResponse;
           const rungAt = new Date(bell.createdAt);
-          // eslint-disable-next-line react-hooks/purity
-          const secondsAgo = Math.floor((Date.now() - rungAt.getTime()) / 1000);
+          const secondsAgo = Math.floor((now - rungAt.getTime()) / 1000);
           const timeAgo = secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`;
 
           return (
