@@ -7,7 +7,7 @@ import path from 'path';
 // Fix landed in commit after 2026-04-23 audit.
 
 const src = readFileSync(
-  path.resolve(__dirname, '../app/components/ScreenVillage.tsx'),
+  path.resolve(__dirname, '../app/components/ScreenCircle.tsx'),
   'utf8',
 );
 

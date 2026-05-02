@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 
 const src = readFileSync(
-  path.resolve(__dirname, '../app/components/ScreenVillage.tsx'),
+  path.resolve(__dirname, '../app/components/ScreenCircle.tsx'),
   'utf8',
 );
 
