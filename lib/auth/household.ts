@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
 import { looksLikeSlug } from '@/lib/format';
 import { NotAdminError } from '@/lib/api-error';
+import { normalizeVillageGroup } from '@/lib/village-group/normalize';
 
 export { NotAdminError };
 
@@ -55,7 +56,7 @@ export async function requireHousehold() {
       email,
       name: meta.name || name,
       role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
-      villageGroup: meta.villageGroup || (isFirstUser ? 'covey' : 'field'),
+      villageGroup: normalizeVillageGroup(meta.villageGroup || (isFirstUser ? 'covey' : 'field')),
       isAdmin: isFirstUser,
     }).onConflictDoNothing();
     [user] = await db.select().from(users).where(and(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { bells, bellResponses, users, households } from '@/lib/db/schema';
 import { clerkClient } from '@clerk/nextjs/server';
@@ -9,6 +9,7 @@ import { notifyBellResponse } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { escalateBell } from '@/lib/bell-escalation';
 import { requireUUID } from '@/lib/validate/uuid';
+import { normalizeVillageGroup } from '@/lib/village-group/normalize';
 
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         email,
         name,
         role: 'caregiver',
-        villageGroup: meta.villageGroup || 'field',
+        villageGroup: normalizeVillageGroup(meta.villageGroup || 'field'),
       }).returning();
     }
 
@@ -97,12 +98,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Immediate escalation if all covey members have responded cannot
     if (response === 'cannot' && bell.escalatedAt === null) {
+      // Transitional read-compat: include legacy inner_circle rows alongside
+      // covey. Remove after B4 backfill confirms zero inner_circle rows.
       const [{ total }] = await db.select({ total: sql<number>`count(*)::int` })
         .from(users)
         .where(and(
           eq(users.householdId, bell.householdId),
           eq(users.role, 'caregiver'),
-          eq(users.villageGroup, 'covey'),
+          inArray(users.villageGroup, ['covey', 'inner_circle']),
         ));
       if (total > 0) {
         const [{ cannotCount }] = await db.select({ cannotCount: sql<number>`count(*)::int` })
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           .where(and(
             eq(bellResponses.bellId, bellId),
             eq(bellResponses.response, 'cannot'),
-            eq(users.villageGroup, 'covey'),
+            inArray(users.villageGroup, ['covey', 'inner_circle']),
           ));
         if (cannotCount >= total) {
           await escalateBell(bellId);
