@@ -16,6 +16,13 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-02 · #50 · B-snapshots — Reconstruct missing drizzle snapshots + ship pending `village_group` default ALTER
+**Branch:** `fix/migrations-snapshot-repair` → main (`b3fee55`)
+**Plan:** [docs/plans/migrations-snapshot-repair.md](docs/plans/migrations-snapshot-repair.md)
+**What shipped:** Closes the snapshot-drift half of synthesis L11 + ships a genuinely-missing default migration. Snapshot files for `0001`, `0004`, `0005` were never committed; every `db:generate` since `0004` had been silently bundling those migrations' enum/default ALTERs into the next .sql output, which would have failed the next deploy at `ALTER TYPE ADD VALUE 'covey'` (no `IF NOT EXISTS`, value already in prod). Reconstructed three snapshots from each migration's SQL, repointed `0002.prevId` from `0000.id` to `0001.id` (kit rejects DAGs — empirically discovered during build, original plan hypothesis was wrong), and shipped `0006_village_group_default.sql` with the two `SET DEFAULT 'covey'` ALTERs that have been pending since the rebrand (`0005` only UPDATE'd rows; the column-default rename was committed to schema.ts but never migrated). Doctor extended with check #8 (warn-mode): every `<tag>.sql` has a matching `meta/<idx>_snapshot.json`. Discovered mid-B4 build phase; B4 now unblocked — next `db:generate` produces a clean single-line `0007_<random>.sql` for the bells index.
+**Verification:** [tests/migrations-snapshot.test.ts](tests/migrations-snapshot.test.ts) — 6 cases (snapshot existence, prevId chain resolution, no-DAG, post-state spot-checks for 0001/0004/0006). Stage 1 spec-reviewer (fresh context) PASS. Stage 2 code-reviewer (fresh context) PASS-WITH-NOTES (two plan-doc defects: stale DAG-tolerance hypothesis, wrong doctor draft code); both addressed in fixup commit `780d40d` before merge. Falsifiable proof: `npm run db:generate` reports "No schema changes, nothing to migrate". Full suite: 20 files / 175/175 tests pass (was 169 — +6 new). `npm run db:doctor` clean. CI: Vercel deploy passed twice (initial + fixup).
+**Follow-ups:** Promote doctor check #8 from warn → error in a follow-up batch (~3-line edit; intentional gradual-rollout per plan §"Pressure-test §3"). Resume B4 (cron escalation) on rebased branch — index migration regenerates clean atop main. Synthesis L11's raw-script audit (`scripts/migrate-*.ts`) remains a separate batch.
+
 ### 2026-05-02 · #43 · B1 — `requireHouseholdAdmin()` + admin authority migration
 **Branch:** `fix/launch-b1-admin-authority` → main (`062a245`)
 **Plan:** [docs/plans/launch-audit-fix-batch-01-admin-authority.md](docs/plans/launch-audit-fix-batch-01-admin-authority.md)
