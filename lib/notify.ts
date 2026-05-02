@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
 import { pushToUser, pushToUsers, type PushResult } from '@/lib/push';
@@ -337,12 +337,14 @@ export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
     return { kind: 'no_recipients', reason: 'no_caregivers' };
   }
 
+  // Transitional read-compat: include legacy inner_circle rows alongside covey.
+  // Remove after B4 backfill confirms zero inner_circle rows in production.
   const innerCircle = await db.select({ id: users.id })
     .from(users)
     .where(and(
       eq(users.householdId, bell.householdId),
       eq(users.role, 'caregiver'),
-      eq(users.villageGroup, 'covey'),
+      inArray(users.villageGroup, ['covey', 'inner_circle']),
       eq(users.notifyBellRinging, true),
     ));
   if (innerCircle.length === 0) {
@@ -372,12 +374,14 @@ export async function notifyBellEscalated(bellId: string) {
     return;
   }
 
+  // Transitional read-compat: include legacy sitter rows alongside field.
+  // Remove after B4 backfill confirms zero sitter rows in production.
   const sitters = await db.select({ id: users.id })
     .from(users)
     .where(and(
       eq(users.householdId, bell.householdId),
       eq(users.role, 'caregiver'),
-      eq(users.villageGroup, 'field'),
+      inArray(users.villageGroup, ['field', 'sitter']),
       eq(users.notifyBellRinging, true),
     ));
   if (sitters.length === 0) {

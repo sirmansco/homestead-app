@@ -102,10 +102,13 @@ export async function GET() {
             eq(users.householdId, household.id),
             eq(users.clerkUserId, userId),
           ));
+          // Transitional read-compat: include legacy inner_circle rows alongside
+          // covey. Must mirror notify.ts:notifyBellRing exactly.
+          // Remove after B4 backfill confirms zero inner_circle rows.
           const innerCircle = await db.select({ id: users.id }).from(users).where(and(
             eq(users.householdId, household.id),
             eq(users.role, 'caregiver'),
-            eq(users.villageGroup, 'covey'),
+            inArray(users.villageGroup, ['covey', 'inner_circle']),
             eq(users.notifyBellRinging, true),
           ));
           let subCount = 0;
