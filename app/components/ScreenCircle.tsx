@@ -94,6 +94,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   const [localPhoto, setLocalPhoto] = useState<string | null>(initialPhoto);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -205,12 +206,14 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
               confirmingDelete ? (
                 <>
                   <button
-                    onClick={() => { setConfirmingDelete(false); onDelete(); }}
+                    disabled={deleting}
+                    onClick={() => { setConfirmingDelete(false); setDeleting(true); onDelete(); }}
                     style={{
                       padding: '3px 8px', background: G.green, color: G.bg,
                       border: 'none', borderRadius: 100,
                       fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
-                      textTransform: 'uppercase', cursor: 'pointer',
+                      textTransform: 'uppercase', cursor: deleting ? 'wait' : 'pointer',
+                      opacity: deleting ? 0.6 : 1,
                     }}>Remove</button>
                   <button
                     onClick={() => setConfirmingDelete(false)}

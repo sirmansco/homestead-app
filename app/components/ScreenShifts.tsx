@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
@@ -20,9 +20,8 @@ function fmtWhen(startIso: string) {
   if (shiftKey < in7Key) return fmtDayOfWeekLong(s);
   return fmtDateShort(s);
 }
+
 function groupByDate(rows: ShiftRow[]): { key: string; label: string; rows: ShiftRow[] }[] {
-  // Use ISO date (YYYY-MM-DD) as the stable map key so group identity
-  // doesn't change if fmtWhen labels flip at midnight.
   const groups: Map<string, { label: string; rows: ShiftRow[] }> = new Map();
   for (const row of rows) {
     const key = row.shift.startsAt.slice(0, 10);
@@ -79,7 +78,7 @@ function ReleaseForm({ onConfirm, onCancel, busy }: {
   );
 }
 
-function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclaim, onCancelUnclaim }: {
+function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclaim, onCancelUnclaim, animating }: {
   row: ShiftRow;
   onClaim: (id: string) => void;
   onUnclaim?: (id: string, reason: string) => void;
@@ -88,6 +87,7 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   mine?: boolean;
   releasingUnclaim?: boolean;
   onCancelUnclaim?: () => void;
+  animating?: boolean;
 }) {
   const s = new Date(row.shift.startsAt);
   const month = fmtMonthAbbr(s);
@@ -95,7 +95,15 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   const dow = fmtDayOfWeek(s);
 
   return (
-    <article style={{ paddingTop: first ? 4 : 12, paddingBottom: 12, borderBottom: `1px solid ${G.hairline}` }}>
+    <article
+      style={{
+        paddingTop: first ? 4 : 12, paddingBottom: 12,
+        borderBottom: `1px solid ${G.hairline}`,
+        transition: 'opacity 0.25s ease, transform 0.25s ease',
+        opacity: animating ? 0 : 1,
+        transform: animating ? 'translateY(12px)' : 'translateY(0)',
+      }}
+    >
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <div style={{
           width: 46, flexShrink: 0,
@@ -169,35 +177,111 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   );
 }
 
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0 6px' }}>
+      <div style={{ width: 18, height: 1, background: G.ink }} />
+      <div style={{
+        fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+        color: G.ink, fontWeight: 700, whiteSpace: 'nowrap',
+      }}>{label}</div>
+      <div style={{ flex: 1, height: 1, background: G.hairline }} />
+    </div>
+  );
+}
+
+function SegmentControl({ value, onChange }: { value: 'open' | 'all'; onChange: (v: 'open' | 'all') => void }) {
+  const options: { key: 'open' | 'all'; label: string }[] = [
+    { key: 'open', label: 'Open' },
+    { key: 'all', label: 'All' },
+  ];
+  return (
+    <div style={{
+      display: 'flex', gap: 0, margin: '10px 24px 2px',
+      border: `1px solid ${G.hairline2}`, borderRadius: 100, overflow: 'hidden',
+      background: G.paper,
+    }}>
+      {options.map(opt => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          style={{
+            flex: 1, padding: '7px 0',
+            background: value === opt.key ? G.ink : 'transparent',
+            color: value === opt.key ? G.bg : G.muted,
+            border: 'none', cursor: 'pointer',
+            fontFamily: G.sans, fontSize: 9, fontWeight: 700,
+            letterSpacing: 1.2, textTransform: 'uppercase',
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
+        >{opt.label}</button>
+      ))}
+    </div>
+  );
+}
+
 export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) {
   const { activeBell, shifts: contextShifts, shiftsLoading, refreshShifts, refreshBell } = useAppData();
+  const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
+  // IDs currently mid-animation (fading out of one section before re-fetch settles)
+  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
 
-  // Trigger initial load of "mine" scope via context
+  // Fetch both scopes on mount
   useEffect(() => {
+    refreshShifts('village');
     refreshShifts('mine');
   }, [refreshShifts]);
 
+  const now = new Date();
+
+  const villageRows: ShiftRow[] = contextShifts['village'] ?? [];
   const mineRows: ShiftRow[] = contextShifts['mine'] ?? [];
-  // My Schedule = only future shifts I've claimed
-  const myRows = mineRows.filter(r =>
-    r.claimedByMe && r.shift.status === 'claimed' && new Date(r.shift.endsAt) >= new Date()
+
+  // Open = village scope, status open, future, not already claimed by me
+  const openRows = villageRows.filter(r =>
+    r.shift.status === 'open' &&
+    new Date(r.shift.endsAt) >= now &&
+    !r.claimedByMe
   );
 
-  // post-mutation: re-sync shifts and bell state from context
+  // My Whistles = mine scope, claimed by me, future
+  const myRows = mineRows.filter(r =>
+    r.claimedByMe &&
+    r.shift.status === 'claimed' &&
+    new Date(r.shift.endsAt) >= now
+  );
+
   const load = useCallback(() => {
+    refreshShifts('village');
     refreshShifts('mine');
     refreshBell();
   }, [refreshShifts, refreshBell]);
 
-  // Auto-dismiss the error toast after 5s so it doesn't linger past the user's read.
+  // Auto-dismiss claim errors after 5s. Release errors stay until the user acts.
   useEffect(() => {
-    if (!error) return;
+    if (!error || releasingId) return;
     const id = setTimeout(() => setError(null), 5000);
     return () => clearTimeout(id);
-  }, [error]);
+  }, [error, releasingId]);
+
+  const animateOut = useCallback((id: string, onDone: () => void) => {
+    setAnimatingIds(prev => new Set(prev).add(id));
+    const timer = setTimeout(() => {
+      setAnimatingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+      onDone();
+    }, 280);
+    return timer;
+  }, []);
+
+  // Track pending timers so we can clean up on unmount
+  const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  useEffect(() => {
+    const t = timers.current;
+    return () => { t.forEach(clearTimeout); };
+  }, []);
 
   async function claim(id: string) {
     setBusyId(id);
@@ -207,7 +291,9 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'claim failed');
       }
-      load();
+      // Animate card out of Open section, then re-fetch (it will appear in My Whistles)
+      const timer = animateOut(id, () => load());
+      timers.current.add(timer);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'claim failed');
     } finally {
@@ -216,12 +302,10 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
   }
 
   async function unclaim(id: string, reason: string) {
-    // First tap (no reason) → show the release form for this shift
     if (releasingId !== id) {
       setReleasingId(id);
       return;
     }
-    // Second tap (from ReleaseForm confirm) → actually release
     setBusyId(id);
     try {
       const res = await fetch(`/api/shifts/${id}/unclaim`, {
@@ -234,21 +318,30 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
         throw new Error(data.error || 'unclaim failed');
       }
       setReleasingId(null);
-      await load();
+      // Animate card out of My Whistles, then re-fetch (it will appear in Open)
+      const timer = animateOut(id, () => load());
+      timers.current.add(timer);
     } catch (err) {
+      // Keep releasingId set so the release form stays open while the error is visible.
       setError(err instanceof Error ? err.message : 'unclaim failed');
+      return;
     } finally {
       setBusyId(null);
     }
   }
 
+  const firstLoad = (shiftsLoading['village'] && villageRows.length === 0) ||
+    (shiftsLoading['mine'] && mineRows.length === 0);
+
+  const showMySection = filter === 'all';
+
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        right={myRows.length > 0 ? `${myRows.length} ${getCopy().request.tabLabel.toLowerCase().replace(/s$/, '')}${myRows.length === 1 ? '' : 's'}` : ''}
-        title="My Schedule"
-        tagline={myRows.length > 0 ? `${getCopy().request.tabLabel} you've claimed. Release if something comes up.` : `${getCopy().request.tabLabel} you claim will appear here.`}
+        right={myRows.length > 0 ? `${myRows.length} mine` : ''}
+        title={getCopy().request.tabLabel}
+        tagline={filter === 'open' ? 'Open requests from your circle.' : 'Open and your claimed Whistles.'}
       />
 
       {activeBell && (
@@ -274,6 +367,8 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
           🪔 Lantern lit — {activeBell.reason}
         </button>
       )}
+
+      <SegmentControl value={filter} onChange={setFilter} />
 
       {error && (
         <div
@@ -301,58 +396,86 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
           >Dismiss</button>
         </div>
       )}
+
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {shiftsLoading['mine'] && mineRows.length === 0 && (
+        {firstLoad && (
           <div style={{ padding: '30px 0', textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
-            Loading your schedule…
+            Loading Whistles…
           </div>
         )}
-        {!shiftsLoading['mine'] && myRows.length === 0 && (
-          <div style={{
-            marginTop: 32, padding: '36px 20px', textAlign: 'center',
-            border: `1px dashed ${G.hairline2}`, borderRadius: 12,
-            fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
-          }}>
-            Nothing claimed yet.
-            <div style={{ marginTop: 8, fontSize: 12 }}>
-              Head to <strong style={{ fontStyle: 'normal' }}>Open {getCopy().request.tabLabel}</strong> to find something to claim.
-            </div>
-          </div>
-        )}
-        {myRows.length > 0 && (
+
+        {!firstLoad && (
           <>
-            {groupByDate(myRows).map(({ key, label, rows }) => (
-              <div key={key}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 6px',
-                }}>
-                  <div style={{ width: 18, height: 1, background: G.ink }} />
-                  <div style={{
-                    fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
-                    color: G.ink, fontWeight: 700, whiteSpace: 'nowrap',
-                  }}>{label}</div>
-                  <div style={{ flex: 1, height: 1, background: G.hairline }} />
-                </div>
-                {rows.map((r, i) => (
-                  <ShiftCard
-                    key={r.shift.id} row={r} first={i === 0}
-                    onClaim={claim}
-                    onUnclaim={unclaim}
-                    mine
-                    busy={busyId === r.shift.id}
-                    releasingUnclaim={releasingId === r.shift.id}
-                    onCancelUnclaim={() => setReleasingId(null)}
-                  />
-                ))}
+            {/* ── Open Whistles ── */}
+            {openRows.length === 0 && !animatingIds.size ? (
+              <div style={{
+                marginTop: 32, padding: '36px 20px', textAlign: 'center',
+                border: `1px dashed ${G.hairline2}`, borderRadius: 12,
+                fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
+              }}>
+                No open {getCopy().request.tabLabel.toLowerCase()} right now.
               </div>
-            ))}
-            <div style={{
-              marginTop: 18, padding: '14px 12px', textAlign: 'center',
-              borderTop: `1px solid ${G.hairline}`,
-              fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 12,
-            }}>
-              That&apos;s your schedule.
-            </div>
+            ) : (
+              groupByDate(openRows.filter(r => !animatingIds.has(r.shift.id))).map(({ key, label, rows }) => (
+                <div key={key}>
+                  <SectionDivider label={label} />
+                  {rows.map((r, i) => (
+                    <ShiftCard
+                      key={r.shift.id} row={r} first={i === 0}
+                      onClaim={claim}
+                      busy={busyId === r.shift.id}
+                      animating={animatingIds.has(r.shift.id)}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+
+            {/* ── My Whistles (All mode only) ── */}
+            {showMySection && (
+              <>
+                <SectionDivider label={`My ${getCopy().request.tabLabel}`} />
+                {myRows.length === 0 && !animatingIds.size ? (
+                  <div style={{
+                    padding: '24px 20px', textAlign: 'center',
+                    fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13,
+                  }}>
+                    Nothing claimed yet.
+                  </div>
+                ) : (
+                  groupByDate(myRows.filter(r => !animatingIds.has(r.shift.id))).map(({ key, label, rows }) => (
+                    <div key={key}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0 4px',
+                      }}>
+                        <div style={{ flex: 1, height: 1, background: G.hairline }} />
+                        <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10, color: G.muted }}>{label}</div>
+                        <div style={{ flex: 1, height: 1, background: G.hairline }} />
+                      </div>
+                      {rows.map((r, i) => (
+                        <ShiftCard
+                          key={r.shift.id} row={r} first={i === 0}
+                          onClaim={claim}
+                          onUnclaim={unclaim}
+                          mine
+                          busy={busyId === r.shift.id}
+                          releasingUnclaim={releasingId === r.shift.id}
+                          onCancelUnclaim={() => setReleasingId(null)}
+                          animating={animatingIds.has(r.shift.id)}
+                        />
+                      ))}
+                    </div>
+                  ))
+                )}
+                <div style={{
+                  marginTop: 18, padding: '14px 12px', textAlign: 'center',
+                  borderTop: `1px solid ${G.hairline}`,
+                  fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 12,
+                }}>
+                  That&apos;s your schedule.
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
