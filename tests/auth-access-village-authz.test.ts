@@ -227,13 +227,32 @@ describe('POST /api/village/leave — self-removal (no admin required)', () => {
 
   it('caregiver self-leave → 200 without admin gate', async () => {
     mockHouseholdOk(row({ id: CAREGIVER_ID, isAdmin: false, role: 'caregiver' }));
-    vi.mocked(db.delete).mockReturnValue(makeDeleteChain() as unknown as ReturnType<typeof db.delete>);
+    // Post-B3, leave routes through tombstoneUser (db.transaction). Stub the tx
+    // to invoke the callback with the same shared db mock.
+    vi.mocked(db.transaction).mockImplementation(async (cb) => {
+      // @ts-expect-error — tx is structurally compatible enough for the service
+      return cb({
+        select: db.select, update: db.update, delete: db.delete,
+        insert: db.insert, $count: db.$count,
+      });
+    });
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({ where: () => ({ limit: () => Promise.resolve([row({ id: CAREGIVER_ID })]) }) }),
+    } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.update).mockReturnValue({
+      set: () => ({ where: () => Promise.resolve(undefined) }),
+    } as unknown as ReturnType<typeof db.update>);
+    vi.mocked(db.delete).mockReturnValue({
+      where: () => Promise.resolve(undefined),
+    } as unknown as ReturnType<typeof db.delete>);
+    vi.mocked(db.$count).mockResolvedValue(0);
+
     const res = await villageLeavePOST();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     // Hard requirement: leave must not call requireHouseholdAdmin.
     expect(vi.mocked(requireHouseholdAdmin)).not.toHaveBeenCalled();
-    expect(vi.mocked(db.delete)).toHaveBeenCalledOnce();
+    expect(vi.mocked(db.transaction)).toHaveBeenCalledOnce();
   });
 
   it('unauthenticated → 401', async () => {

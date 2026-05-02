@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { requireHouseholdAdmin } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { tombstoneUser } from '@/lib/users/tombstone';
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
@@ -44,8 +45,17 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
     )).limit(1);
     if (!target) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
-    await db.delete(users).where(and(eq(users.id, id), eq(users.householdId, household.id)));
+    const outcome = await tombstoneUser({ userId: id, householdId: household.id });
+    console.log(JSON.stringify({
+      event: 'household_member_delete',
+      userId: id,
+      householdId: household.id,
+      outcome,
+      at: new Date().toISOString(),
+    }));
 
+    // DB first, Clerk last (BUILD-LESSONS Principle 6). Use cached clerkUserId
+    // because anonymize rewrites it.
     try {
       const client = await clerkClient();
       const memberships = await client.organizations.getOrganizationMembershipList({
@@ -58,8 +68,8 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
           userId: target.clerkUserId,
         });
       }
-    } catch {
-      // best-effort; the DB row is already gone
+    } catch (clerkErr) {
+      console.error('[household:member:DELETE:clerk]', clerkErr);
     }
 
     return NextResponse.json({ ok: true });
