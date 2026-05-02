@@ -124,7 +124,7 @@ function plusHours(h: number) {
 
 type VillageMember = { id: string; name: string; villageGroup: 'covey' | 'field' };
 
-function PushPermissionBanner() {
+function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregiver' }) {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [requesting, setRequesting] = useState(false);
 
@@ -135,6 +135,13 @@ function PushPermissionBanner() {
 
   if (permission === 'granted' || permission === null) return null;
 
+  const deniedCopy = role === 'caregiver'
+    ? 'Notifications blocked. Enable them in your browser settings so you\'re alerted when a family lights the lantern.'
+    : 'Notifications blocked. Enable them in your browser settings so caregivers get alerted when you ring.';
+  const allowCopy = role === 'caregiver'
+    ? 'Allow notifications so you\'re alerted the moment a family lights the lantern.'
+    : 'Allow notifications so caregivers are alerted instantly.';
+
   return (
     <div style={{
       margin: '12px 0', padding: '12px 14px', borderRadius: 8,
@@ -143,12 +150,12 @@ function PushPermissionBanner() {
     }}>
       {permission === 'denied' ? (
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, lineHeight: 1.5 }}>
-          Notifications blocked. Enable them in your browser settings so caregivers get alerted when you ring.
+          {deniedCopy}
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.4, flex: 1 }}>
-            Allow notifications so caregivers are alerted instantly.
+            {allowCopy}
           </div>
           <button
             onClick={async () => {
@@ -570,7 +577,7 @@ function BellIncoming() {
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-          <PushPermissionBanner />
+          <PushPermissionBanner role="caregiver" />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
             <BellGlyph size={48} />
