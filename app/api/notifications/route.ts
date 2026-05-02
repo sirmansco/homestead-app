@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { requireUser } from '@/lib/auth/household';
+import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 
 const PREF_KEYS = [
@@ -15,39 +15,20 @@ const PREF_KEYS = [
 
 type PrefKey = typeof PREF_KEYS[number];
 
-/**
- * GET /api/notifications
- * Returns the current user's notification preferences for every household they
- * belong to. Each household entry has the same prefs (they are per user-row).
- */
+// Notification preferences are per-household (spec docs/specs/homestead.md:50,
+// 95, 169, 218 — "notification prefs are per-household"). Synthesis L5: bind
+// reads and writes to (clerkUserId, householdId), not the bulk Clerk identity.
 export async function GET() {
   try {
-    const { userId } = await requireUser();
+    const { user } = await requireHousehold();
 
-    const rows = await db.select({
-      id: users.id,
-      householdId: users.householdId,
-      notifyShiftPosted: users.notifyShiftPosted,
-      notifyShiftClaimed: users.notifyShiftClaimed,
-      notifyShiftReleased: users.notifyShiftReleased,
-      notifyBellRinging: users.notifyBellRinging,
-      notifyBellResponse: users.notifyBellResponse,
-    }).from(users).where(eq(users.clerkUserId, userId));
-
-    if (rows.length === 0) {
-      return NextResponse.json({ prefs: null });
-    }
-
-    // All rows should share the same prefs — return the first row's values plus
-    // the list of household IDs this update will touch.
-    const first = rows[0];
     return NextResponse.json({
       prefs: {
-        notifyShiftPosted: first.notifyShiftPosted,
-        notifyShiftClaimed: first.notifyShiftClaimed,
-        notifyShiftReleased: first.notifyShiftReleased,
-        notifyBellRinging: first.notifyBellRinging,
-        notifyBellResponse: first.notifyBellResponse,
+        notifyShiftPosted: user.notifyShiftPosted,
+        notifyShiftClaimed: user.notifyShiftClaimed,
+        notifyShiftReleased: user.notifyShiftReleased,
+        notifyBellRinging: user.notifyBellRinging,
+        notifyBellResponse: user.notifyBellResponse,
       },
     });
   } catch (err) {
@@ -55,14 +36,9 @@ export async function GET() {
   }
 }
 
-/**
- * PATCH /api/notifications
- * Body: partial record of PrefKey → boolean.
- * Updates all user rows for this Clerk identity (covers multi-household users).
- */
 export async function PATCH(req: NextRequest) {
   try {
-    const { userId } = await requireUser();
+    const { household, userId } = await requireHousehold();
 
     const body = await req.json().catch(() => ({}));
     const patch: Partial<Record<PrefKey, boolean>> = {};
@@ -77,7 +53,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'No valid preference fields supplied' }, { status: 400 });
     }
 
-    await db.update(users).set(patch).where(eq(users.clerkUserId, userId));
+    await db.update(users).set(patch).where(and(
+      eq(users.clerkUserId, userId),
+      eq(users.householdId, household.id),
+    ));
 
     return NextResponse.json({ ok: true, updated: patch });
   } catch (err) {

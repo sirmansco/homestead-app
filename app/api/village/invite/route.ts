@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHouseholdAdmin } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+
+// Allowlists are enforced before any Clerk metadata write so caller-supplied
+// values cannot bleed back through requireHousehold()'s first-user provisioning
+// (lib/auth/household.ts:43-58). Synthesis L3.
+const ALLOWED_ROLES = ['parent', 'caregiver'] as const;
+const ALLOWED_VILLAGE_GROUPS = ['covey', 'field'] as const;
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId, orgId } = await requireHousehold();
+    const { userId, orgId } = await requireHouseholdAdmin();
 
     // Rate limit: 10 invites per hour per user (prevents email spam)
     const { rateLimit, rateLimitResponse } = await import('@/lib/ratelimit');
@@ -23,6 +30,12 @@ export async function POST(req: NextRequest) {
 
     if (!role || !villageGroup) {
       return NextResponse.json({ error: 'role and villageGroup required' }, { status: 400 });
+    }
+    if (!ALLOWED_ROLES.includes(role as typeof ALLOWED_ROLES[number])) {
+      return NextResponse.json({ error: 'invalid role' }, { status: 400 });
+    }
+    if (!ALLOWED_VILLAGE_GROUPS.includes(villageGroup as typeof ALLOWED_VILLAGE_GROUPS[number])) {
+      return NextResponse.json({ error: 'invalid villageGroup' }, { status: 400 });
     }
 
     const client = await clerkClient();

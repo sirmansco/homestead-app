@@ -69,6 +69,10 @@ const USER_ROW = {
   id: USER_ID, clerkUserId: CLERK_USER_ID, householdId: HH_ID,
   email: 'alice@example.com', name: 'Alice Smith',
   role: 'parent', villageGroup: 'covey',
+  // B2 (synthesis L2): village POST/DELETE are admin-only. Existing tests
+  // exercise an admin caller so the fixture row carries isAdmin=true; the
+  // 4xx-shape assertions below test the route's own validation, not the gate.
+  isAdmin: true,
 };
 const KID_ROW = {
   id: KID_ID, householdId: HH_ID, name: 'Emma', birthday: '2021-03-14', notes: null,
