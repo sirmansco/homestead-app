@@ -41,7 +41,7 @@ import {
   NotAdminError,
 } from '@/lib/auth/household';
 import { db } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { PATCH as householdPATCH } from '@/app/api/household/route';
 import { PATCH as memberPATCH, DELETE as memberDELETE } from '@/app/api/household/members/[id]/route';
 import { PATCH as adminTransferPATCH } from '@/app/api/household/admin/route';
@@ -308,12 +308,34 @@ describe('DELETE /api/household/members/[id] — admin authority matrix', () => 
       { id: TARGET_MEMBER_ID, householdId: HH_ID, clerkUserId: 'clerk_target' },
     ]) as unknown as ReturnType<typeof db.select>);
     vi.mocked(db.delete).mockReturnValue(makeDeleteChain() as unknown as ReturnType<typeof db.delete>);
+    // Post-B3 the route calls tombstoneUser (which uses db.transaction). Stub
+    // it to invoke the callback so the route reaches the Clerk-drop block.
+    vi.mocked(db.transaction).mockImplementation(async (cb) => {
+      // @ts-expect-error — tx is structurally compatible enough
+      return cb({
+        select: db.select, update: db.update, delete: db.delete,
+        insert: db.insert, $count: db.$count,
+      });
+    });
+    vi.mocked(db.update).mockReturnValue(
+      makeUpdateChain() as unknown as ReturnType<typeof db.update>,
+    );
+    vi.mocked(db.$count).mockResolvedValue(0);
+    // Authority matrix doesn't assert Clerk specifically; let it succeed so the
+    // happy-path response shape is { ok: true, clerkDropped: true }.
+    vi.mocked(clerkClient).mockResolvedValue({
+      organizations: {
+        getOrganizationMembershipList: vi.fn().mockResolvedValue({ data: [] }),
+        deleteOrganizationMembership: vi.fn().mockResolvedValue({}),
+      },
+    } as unknown as Awaited<ReturnType<typeof clerkClient>>);
+
     const res = await memberDELETE(
       {} as Parameters<typeof memberDELETE>[0],
       ctxWithId(TARGET_MEMBER_ID),
     );
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
   });
 
   it('parent without isAdmin → 403 no_access', async () => {

@@ -348,10 +348,41 @@ describe('DELETE /api/village (admin, type=adult) — tombstone + Clerk-membersh
 
     const res = await villageDELETE(urlReq('http://localhost/api/village?id=user-target&type=adult'));
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
     expect(deleteOrganizationMembership).toHaveBeenCalledWith({
       organizationId: 'org_a',
       userId: CLERK_USER_ID,
     });
+  });
+
+  it('Clerk-drop failure → 200 with clerkDropped: false (Principle 6 surfacing)', async () => {
+    vi.mocked(requireHouseholdAdmin).mockResolvedValue({
+      household: HOUSEHOLD_A,
+      user: adminRow(),
+      userId: 'clerk_admin',
+      orgId: 'org_a',
+    } as unknown as Awaited<ReturnType<typeof requireHouseholdAdmin>>);
+
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce(makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.transaction).mockImplementation(async (cb) => {
+      // @ts-expect-error — tx is structurally compatible enough
+      return cb(txShaped());
+    });
+    vi.mocked(db.update).mockReturnValue(
+      makeUpdateChain() as unknown as ReturnType<typeof db.update>,
+    );
+    vi.mocked(db.delete).mockReturnValue(
+      makeDeleteChain() as unknown as ReturnType<typeof db.delete>,
+    );
+    vi.mocked(db.$count).mockResolvedValue(0);
+
+    vi.mocked(clerkClient).mockRejectedValue(new Error('Clerk API down'));
+
+    const res = await villageDELETE(urlReq('http://localhost/api/village?id=user-target&type=adult'));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, clerkDropped: false });
   });
 
   it('returns 404 when target row not found pre-tombstone', async () => {
@@ -414,6 +445,54 @@ describe('DELETE /api/household/members/[id] — tombstone + Clerk drop + Hard R
     const req = { url: 'http://localhost/api/household/members/user-target' } as Parameters<typeof memberDELETE>[0];
     const res = await memberDELETE(req, ctx(USER_ID));
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
+    expect(deleteOrganizationMembership).toHaveBeenCalledWith({
+      organizationId: 'org_a',
+      userId: CLERK_USER_ID,
+    });
+  });
+
+  it('200 + anonymize-branch (history exists) — row tombstoned, Clerk dropped, no 5xx', async () => {
+    vi.mocked(requireHouseholdAdmin).mockResolvedValue({
+      household: HOUSEHOLD_A,
+      user: adminRow(),
+      userId: 'clerk_admin',
+      orgId: 'org_a',
+    } as unknown as Awaited<ReturnType<typeof requireHouseholdAdmin>>);
+
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce(makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.transaction).mockImplementation(async (cb) => {
+      // @ts-expect-error — tx is structurally compatible enough
+      return cb(txShaped());
+    });
+    const updateMock = vi.fn(() => makeUpdateChain());
+    vi.mocked(db.update).mockImplementation(
+      updateMock as unknown as typeof db.update,
+    );
+    vi.mocked(db.delete).mockReturnValue(
+      makeDeleteChain() as unknown as ReturnType<typeof db.delete>,
+    );
+    // History present → service goes anonymize branch
+    vi.mocked(db.$count).mockResolvedValueOnce(2).mockResolvedValueOnce(1);
+
+    const deleteOrganizationMembership = vi.fn().mockResolvedValue({});
+    const getOrganizationMembershipList = vi.fn().mockResolvedValue({
+      data: [{ publicUserData: { userId: CLERK_USER_ID } }],
+    });
+    vi.mocked(clerkClient).mockResolvedValue({
+      organizations: { getOrganizationMembershipList, deleteOrganizationMembership },
+    } as unknown as Awaited<ReturnType<typeof clerkClient>>);
+
+    const req = { url: 'http://localhost/api/household/members/user-target' } as Parameters<typeof memberDELETE>[0];
+    const res = await memberDELETE(req, ctx(USER_ID));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
+    // Service must have written the anonymize update (PII strip on users row).
+    // db.update called: pre-cleanup null-claimed (1) + cancel-future-shifts (1) + anonymize users (1) = 3.
+    expect(updateMock).toHaveBeenCalledTimes(3);
+    // Clerk drop runs against the original (cached) clerkUserId, not the anonymized rewrite.
     expect(deleteOrganizationMembership).toHaveBeenCalledWith({
       organizationId: 'org_a',
       userId: CLERK_USER_ID,

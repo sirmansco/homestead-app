@@ -1,7 +1,7 @@
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
-  users, shifts, bells, pushSubscriptions, caregiverUnavailability,
+  users, shifts, bells, pushSubscriptions, caregiverUnavailability, familyInvites,
 } from '@/lib/db/schema';
 
 export type TombstoneOutcome =
@@ -82,14 +82,19 @@ export async function tombstoneUser(args: {
 }
 
 // Strips PII and clears Clerk-identifying columns. Preserves users.id so
-// authored shifts/bells continue to resolve. Explicitly removes pushSubs and
-// availability windows because the row no longer represents a household member.
+// authored shifts/bells continue to resolve. Explicitly removes pushSubs,
+// availability windows, and pending family-invites because the row no longer
+// represents a household member.
 async function anonymize(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   userId: string,
 ): Promise<void> {
   await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
   await tx.delete(caregiverUnavailability).where(eq(caregiverUnavailability.userId, userId));
+  await tx.delete(familyInvites).where(and(
+    eq(familyInvites.fromUserId, userId),
+    eq(familyInvites.status, 'pending'),
+  ));
   await tx.update(users)
     .set({
       name: '[deleted]',
