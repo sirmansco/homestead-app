@@ -25,13 +25,15 @@ const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);
 
-type TabId = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern' | 'settings' | 'diagnostics';
-type LegacyTabId = TabId | 'village' | 'bell';
+type TabId = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern' | 'settings' | 'diagnostics';
+type LegacyTabId = TabId | 'village' | 'bell' | 'almanac' | 'shifts';
 type Role = 'parent' | 'caregiver';
 
 function normalizeTabId(id: LegacyTabId): TabId {
   if (id === 'village') return 'circle';
   if (id === 'bell') return 'lantern';
+  if (id === 'almanac') return 'perch';
+  if (id === 'shifts') return 'whistles';
   return id;
 }
 
@@ -186,7 +188,7 @@ export function HomesteadApp() {
 }
 
 // Tab screens that stay mounted permanently for zero-cost switching
-const TAB_SCREENS: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
+const TAB_SCREENS: TabId[] = ['perch', 'whistles', 'lantern', 'circle'];
 
 function HomesteadInner() {
   const { user } = useUser();
@@ -217,7 +219,7 @@ function HomesteadInner() {
     if (r) setTimeout(() => setRole(r), 0);
   }, [active?.id, rolesByHousehold, canSwitchRole]);
 
-  const [screen, setScreen] = useState<TabId>('almanac');
+  const [screen, setScreen] = useState<TabId>('perch');
   const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const isMobile = useIsMobile();
@@ -245,7 +247,7 @@ function HomesteadInner() {
     // This runs on app open so tapping a notification lands on the right screen.
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') as LegacyTabId | null;
-    const validTabs: LegacyTabId[] = ['almanac', 'post', 'circle', 'village', 'shifts', 'lantern', 'bell', 'settings', 'diagnostics'];
+    const validTabs: LegacyTabId[] = ['perch', 'post', 'circle', 'village', 'whistles', 'lantern', 'bell', 'almanac', 'shifts', 'settings', 'diagnostics'];
     if (tabParam && validTabs.includes(tabParam)) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setScreen(normalizeTabId(tabParam));
@@ -269,23 +271,23 @@ function HomesteadInner() {
     if (id === 'lantern') setBellCompose(false);
     setScreen(id);
     // Force-refresh bell state immediately so badge and lantern screen are in sync
-    if (id === 'lantern' || id === 'almanac') refreshBell();
+    if (id === 'lantern' || id === 'perch') refreshBell();
   }, [refreshBell]);
 
   const clockTime = useLiveClock();
 
   // Which tab pill to highlight.
-  // For caregivers: bell tab exists, so highlight it. For parents: bell maps to almanac.
-  // Settings maps to village for both roles.
-  type NavTab = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern';
+  // For caregivers: lantern tab exists, so highlight it. For parents: lantern maps to perch.
+  // Settings maps to circle for both roles.
+  type NavTab = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
   const activeTab: NavTab =
-    screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'almanac') :
+    screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'perch') :
     (screen === 'settings' || screen === 'diagnostics') ? 'circle' :
     screen as NavTab;
 
   useEffect(() => {
-    const parentMap:    TabId[] = ['almanac', 'post',   'circle'];
-    const caregiverMap: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
+    const parentMap:    TabId[] = ['perch',   'post',    'circle'];
+    const caregiverMap: TabId[] = ['perch', 'whistles', 'lantern', 'circle'];
     const map = role === 'caregiver' ? caregiverMap : parentMap;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
@@ -299,12 +301,12 @@ function HomesteadInner() {
 
   const handlePost = useCallback((msg?: string) => {
     setToast({ msg: msg || `Posted to ${getCopy().circle.title}`, key: Date.now() });
-    setScreen('almanac');
+    setScreen('perch');
   }, []);
 
   const handleRoleChange = useCallback((r: Role) => {
     setRole(r);
-    setScreen('almanac');
+    setScreen('perch');
   }, []);
 
   // Keep-alive screen layout: all tab-bar screens mounted simultaneously,
@@ -316,7 +318,7 @@ function HomesteadInner() {
           position: 'absolute', inset: 0,
           display: screen === id ? 'block' : 'none',
         }}>
-          {id === 'almanac' && (
+          {id === 'perch' && (
             <ScreenPerch
               role={role} isDualRole={isDualRole}
               onRing={handleRing}
@@ -325,12 +327,12 @@ function HomesteadInner() {
               onVillage={() => setScreen('circle')}
             />
           )}
-          {id === 'shifts' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
+          {id === 'whistles' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
           {id === 'lantern' && (
             <ScreenLantern
               initialCompose={bellCompose}
               role={role}
-              onBack={() => setScreen('almanac')}
+              onBack={() => setScreen('perch')}
               onPost={() => setScreen('post')}
             />
           )}
@@ -340,7 +342,7 @@ function HomesteadInner() {
       {/* Modal/nav screens — rendered on demand */}
       {screen === 'post' && (
         <div style={{ position: 'absolute', inset: 0 }}>
-          <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />
+          <ScreenPost onCancel={() => setScreen('perch')} onPost={handlePost} onRing={handleRing} />
         </div>
       )}
       {screen === 'settings' && (

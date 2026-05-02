@@ -29,7 +29,7 @@ vi.mock('@/lib/copy', () => ({
       pushTitle: (n: string) => n, pushTitleTargeted: (n: string) => n,
       coveredTitle: (n: string) => n, cancelledTitle: 'Cancelled',
       releasedTitle: (n: string) => n, releasedBody: (t: string) => t,
-      deepLinkTab: 'requests', shiftsDeepLinkTab: 'shifts',
+      deepLinkTab: 'perch', shiftsDeepLinkTab: 'whistles',
       tagPrefix: 'req', claimedTagPrefix: 'claim',
       cancelTagPrefix: 'cancel', releasedTagPrefix: 'released',
     },
