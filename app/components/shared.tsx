@@ -230,7 +230,7 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
-      paddingBottom: 'max(env(safe-area-inset-bottom, 34px), 34px)',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       <div style={{
         display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
