@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 11 — Schema authority + ops hygiene
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L11, L12, L28, L30
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B11
