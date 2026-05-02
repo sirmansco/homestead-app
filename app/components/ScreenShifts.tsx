@@ -375,7 +375,7 @@ export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) 
           role="alert"
           aria-live="polite"
           style={{
-            position: 'fixed', left: 16, right: 16, bottom: 92, zIndex: 50,
+            position: 'fixed', left: 16, right: 16, bottom: 'calc(92px + env(safe-area-inset-bottom, 0px))', zIndex: 50,
             padding: '12px 14px', borderRadius: 10,
             background: ERROR_BG, color: ERROR_TEXT,
             border: `1px solid ${G.hairline2}`,

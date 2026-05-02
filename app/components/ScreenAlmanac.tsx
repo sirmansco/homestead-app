@@ -308,7 +308,7 @@ function ShiftDetailSheet({ row, onClose, onClaim, claiming, canClaim }: {
         }}
         style={{
           width: '100%', maxWidth: 480, background: G.bg,
-          borderRadius: '16px 16px 0 0', padding: '20px 20px 32px',
+          borderRadius: '16px 16px 0 0', padding: '20px 20px calc(32px + env(safe-area-inset-bottom, 0px))',
           maxHeight: '85vh', overflowY: 'auto',
         }}
       >
