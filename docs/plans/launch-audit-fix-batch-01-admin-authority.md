@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 01 — Admin authority foundation
 date: 2026-05-02
-status: shipped-pr-open
+status: shipped
 governs: L4
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B1
