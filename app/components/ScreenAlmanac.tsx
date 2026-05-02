@@ -138,7 +138,7 @@ function LanternCard({ bell, onView, onCancel, cancelling }: {
           flex: onCancel ? 1 : undefined,
           width: onCancel ? undefined : '100%',
           padding: '7px 10px', borderRadius: 6,
-          background: AMBER, color: '#1B1713', border: 'none',
+          background: AMBER, color: G.ink, border: 'none',
           fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1,
           textTransform: 'uppercase', cursor: 'pointer',
         }}>See details</button>

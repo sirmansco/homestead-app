@@ -15,6 +15,9 @@ import { AppDataProvider, useAppData } from '@/app/context/AppDataContext';
 import { InstallHint } from './InstallHint';
 import { getCopy } from '@/lib/copy';
 
+// Espresso brown used for the desktop phone-frame chrome and Dynamic Island notch.
+const FRAME_BG = '#1a120b';
+
 // Role switcher — enabled for emails in NEXT_PUBLIC_DEV_EMAILS (comma-separated).
 // Changes only client-side UI; server APIs still enforce real role via DB.
 const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
@@ -381,7 +384,7 @@ function HomesteadInner() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#1a120b', gap: 32, padding: '24px 16px', flexWrap: 'wrap',
+      background: FRAME_BG, gap: 32, padding: '24px 16px', flexWrap: 'wrap',
     }}>
       <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{
@@ -415,7 +418,7 @@ function HomesteadInner() {
       }}>
         <div style={{
           position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
-          width: 112, height: 33, borderRadius: 22, background: '#1a120b', zIndex: 55,
+          width: 112, height: 33, borderRadius: 22, background: FRAME_BG, zIndex: 55,
         }} />
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
