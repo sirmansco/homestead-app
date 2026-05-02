@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 05 — Lantern silent-success (server outcomes + notify logging + AppDataContext error visibility)
 date: 2026-05-02
-status: pending
+status: shipped (PR #54, sha 3c4a3a9)
 governs: L13 (primary, blocks-launch), L16 (paired, should-fix), L29 (paired, should-fix)
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B5
