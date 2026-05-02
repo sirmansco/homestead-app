@@ -1,6 +1,6 @@
 ## Active
 
-(none)
+- [ ] **UI-AUDIT-1 — Bottom tab bar floats ~thumb-width above device bottom on iPhone 16 PWA install.** Root cause: `app/components/shared.tsx` `GTabBar` used `paddingBottom: 'max(env(safe-area-inset-bottom, 34px), 34px)'`, forcing a 34px minimum even when the device's real safe-area-inset-bottom is smaller (or 0 on devices without a home indicator). This was a stale fallback from before reliable safe-area support. Surfaced in 2026-05-02 mobile UI audit (`Apps/Homestead/docs/audits/ui-audit-2026-05-02.md` P0 #1). Confirmed on real iPhone 16 PWA: nav floats above viewport bottom edge. Fix in `fix/ui-layout-primitives` branch (PR pending).
 
 ## Fixed
 
