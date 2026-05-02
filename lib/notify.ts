@@ -30,6 +30,11 @@ function logSkip(event: string, payload: Record<string, unknown>) {
 
 function pushResultToNotify(r: PushResult, recipients: number): NotifyResult {
   if (r.reason === 'vapid_not_configured') return { kind: 'vapid_missing', recipients };
+  // Stage 2 review: targeted-caregiver path can return attempted:0 when the
+  // user is opted-in but has no push subscription rows. Without this guard
+  // the next branch (delivered === attempted && failed === 0) would report
+  // "delivered: 0 of 1" as kind:'delivered' — a silent-success regression.
+  if (r.attempted === 0) return { kind: 'push_error', recipients, error: 'no_subscriptions' };
   if (r.delivered === r.attempted && r.failed === 0) return { kind: 'delivered', recipients, delivered: r.delivered };
   if (r.delivered > 0) return { kind: 'partial', recipients, delivered: r.delivered, failed: r.failed, errors: r.errors.slice(0, 3) };
   return { kind: 'push_error', recipients, error: r.errors[0] || 'all_subscriptions_failed' };

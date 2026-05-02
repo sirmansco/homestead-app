@@ -76,9 +76,14 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
       setPermState('granted');
     } else if (result.reason.startsWith('subscribe_api_') || result.reason === 'vapid_key_missing') {
       setPermState('granted_unregistered');
-    } else {
-      // permission_denied / permission_default / push_not_supported — read browser state
+    } else if (result.reason.startsWith('permission_') || result.reason === 'push_not_supported') {
+      // permission_denied / permission_default / push_not_supported — defer to browser state
       setPermState(Notification.permission as PermState);
+    } else {
+      // requestPushPermission's line-104 catch returns the raw error message
+      // as `reason`. Browser permission may be granted but subscribe threw —
+      // surface a generic failure with retry rather than show "enabled."
+      setPermState('failed');
     }
   }
 

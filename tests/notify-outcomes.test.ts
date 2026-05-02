@@ -256,6 +256,30 @@ describe('notifyNewShift — broadcast with no caregivers opted in (L13 + L16)',
   });
 });
 
+describe('notifyNewShift — targeted caregiver opted in but no push subs (Stage 2 review)', () => {
+  // Regression: pushResultToNotify previously reported attempted:0 as
+  // kind:'delivered' (because delivered === attempted && failed === 0 holds
+  // when both are zero). For a targeted caregiver who is opted-in but has
+  // never registered for push, this surfaced as "delivered to 1 of 1" while
+  // nothing went out — the exact silent-success class L13 closes.
+  it('returns push_error/no_subscriptions when pushToUser reports attempted:0', async () => {
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([{
+        shift: { id: 's-targeted', householdId: 'hh-1', title: 'Pickup', startsAt: new Date(), endsAt: new Date(), forWhom: null, notes: null },
+        household: { id: 'hh-1', name: 'Smith' },
+        creator: { id: 'u-creator', name: 'Parent' },
+      }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'targeted', email: null, notifyShiftPosted: true }]));
+    vi.mocked(pushToUser).mockResolvedValueOnce({
+      attempted: 0, delivered: 0, stale: 0, failed: 0, errors: [],
+    });
+
+    const result = await notifyNewShift('s-targeted', 'targeted');
+
+    expect(result).toEqual({ kind: 'push_error', recipients: 1, error: 'no_subscriptions' });
+  });
+});
+
 describe('notifyNewShift — broadcast full delivery (L13)', () => {
   it('returns delivered for opted-in caregivers when push succeeds', async () => {
     vi.mocked(db.select)

@@ -15,6 +15,13 @@ import { join } from 'path';
 //
 // Mentally reverting any one of the three Sentry.captureException calls
 // (back to bare `catch {}`) must turn the corresponding test red.
+//
+// NOTE: the literal `source` tag strings ("appdata:bell", "appdata:village",
+// "appdata:shifts:${scope}") are part of the Sentry dashboard contract.
+// Renaming them is a breaking change for any saved Sentry filter/alert that
+// references the tag — not a cosmetic refactor. This test is deliberately
+// over-coupled to the literal so that a rename surfaces here before it
+// silently breaks ops dashboards.
 
 const APP_ROOT = join(__dirname, '..');
 const CONTEXT = join(APP_ROOT, 'app', 'context', 'AppDataContext.tsx');
