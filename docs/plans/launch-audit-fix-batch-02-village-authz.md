@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 02 — Village authz + invite role allowlist + notification per-household scoping
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L2, L3, L5
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B2
