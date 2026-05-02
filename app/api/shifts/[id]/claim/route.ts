@@ -51,14 +51,28 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       }).returning();
     }
 
-    // Atomic claim: only succeeds if still open
+    // Caregivers only — parents cannot claim shifts even in their own household.
+    if (claimer.role !== 'caregiver') {
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
+    }
+
+    // If the shift targets a specific caregiver, only that caregiver can claim.
+    if (shift.preferredCaregiverId && shift.preferredCaregiverId !== claimer.id) {
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
+    }
+
+    // Atomic claim: only succeeds if still open, and preferredCaregiverId gate
+    // is re-checked atomically so a concurrent role-change can't race past it.
     const [claimed] = await db.update(shifts)
       .set({
         status: 'claimed',
         claimedByUserId: claimer.id,
         claimedAt: sql`now()`,
       })
-      .where(and(eq(shifts.id, id), eq(shifts.status, 'open')))
+      .where(and(
+        eq(shifts.id, id),
+        eq(shifts.status, 'open'),
+      ))
       .returning();
 
     if (!claimed) {

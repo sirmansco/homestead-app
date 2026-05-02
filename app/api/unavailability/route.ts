@@ -1,27 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { caregiverUnavailability, users } from '@/lib/db/schema';
-import { requireUser } from '@/lib/auth/household';
+import { caregiverUnavailability, households, users } from '@/lib/db/schema';
+import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { parseTimeRange } from '@/lib/validate/time-range';
 
-// Resolve the caller's primary users row without requiring an active Clerk org.
-// Caregivers often have no active org yet but still need to manage their unavailability.
-// We use the first users row found for this Clerk user across all households.
-async function resolveUser(userId: string) {
+// Resolve the caller's users row scoped to the active household.
+// Unavailability is per-(user, household) — a caregiver in two households
+// manages their schedule independently in each context.
+async function resolveHouseholdUser(clerkUserId: string, clerkOrgId: string) {
+  const [household] = await db.select()
+    .from(households)
+    .where(eq(households.clerkOrgId, clerkOrgId))
+    .limit(1);
+  if (!household) return null;
+
   const [user] = await db.select()
     .from(users)
-    .where(eq(users.clerkUserId, userId))
+    .where(and(
+      eq(users.clerkUserId, clerkUserId),
+      eq(users.householdId, household.id),
+    ))
     .limit(1);
   return user ?? null;
 }
 
 export async function GET() {
   try {
-    const { userId } = await requireUser();
+    const { userId, orgId } = await requireHousehold();
 
-    const user = await resolveUser(userId);
+    const user = await resolveHouseholdUser(userId, orgId);
     if (!user) return NextResponse.json({ unavailability: [] });
 
     const rows = await db.select()
@@ -39,9 +48,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await requireUser();
+    const { userId, orgId } = await requireHousehold();
 
-    const user = await resolveUser(userId);
+    const user = await resolveHouseholdUser(userId, orgId);
     if (!user) return NextResponse.json({ error: 'No user profile found. Join a household first.' }, { status: 409 });
 
     const body = await req.json() as { startsAt?: string; endsAt?: string; note?: string };
@@ -66,9 +75,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId } = await requireUser();
+    const { userId, orgId } = await requireHousehold();
 
-    const user = await resolveUser(userId);
+    const user = await resolveHouseholdUser(userId, orgId);
     if (!user) return NextResponse.json({ error: 'No user profile found' }, { status: 409 });
 
     const id = new URL(req.url).searchParams.get('id');
