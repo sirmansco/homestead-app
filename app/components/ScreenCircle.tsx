@@ -251,7 +251,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: G.bg, width: '100%', maxWidth: 480,
-            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
             borderTop: `1px solid ${G.hairline}`,
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
@@ -377,7 +377,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: G.bg, width: '100%', maxWidth: 480,
-        borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+        borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
         borderTop: `1px solid ${G.hairline}`, maxHeight: '85vh', overflowY: 'auto',
       }}>
         <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
@@ -1050,7 +1050,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         }} onClick={() => setRenaming(false)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: G.bg, width: '100%', maxWidth: 480,
-            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
             borderTop: `1px solid ${G.ink}`,
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
