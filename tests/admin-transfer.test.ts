@@ -25,13 +25,14 @@ vi.mock('@/lib/format', () => ({
 vi.mock('@/lib/auth/household', async () => {
   return {
     requireHousehold: vi.fn(),
+    requireHouseholdAdmin: vi.fn(),
     requireUser: vi.fn(),
   };
 });
 
 import { PATCH } from '@/app/api/household/admin/route';
 import { db } from '@/lib/db';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHousehold, requireHouseholdAdmin } from '@/lib/auth/household';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -134,12 +135,17 @@ function fakeReq(body: unknown): Parameters<typeof PATCH>[0] {
 describe('PATCH /api/household/admin', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(requireHousehold).mockResolvedValue({
+    // The route now gates via requireHouseholdAdmin (B1 / L4). Existing tests
+    // exercise an admin caller, so resolve the gate with isAdmin=true. The
+    // route's in-tx caller re-read still asserts the concurrent-demote path.
+    const okCtx = {
       household: HOUSEHOLD,
       user: callerRow(),
       userId: 'clerk_admin',
       orgId: 'org_1',
-    } as unknown as Awaited<ReturnType<typeof requireHousehold>>);
+    } as unknown as Awaited<ReturnType<typeof requireHousehold>>;
+    vi.mocked(requireHousehold).mockResolvedValue(okCtx);
+    vi.mocked(requireHouseholdAdmin).mockResolvedValue(okCtx);
   });
 
   it('happy path — admin transfers to non-admin member', async () => {
