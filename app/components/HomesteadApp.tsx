@@ -4,8 +4,8 @@ import { useUser } from '@clerk/nextjs';
 import { G, SCRIM } from './tokens';
 import { GTabBar } from './shared';
 import { ScreenPost } from './ScreenPost';
-import { ScreenShifts } from './ScreenShifts';
-import { ScreenAlmanac } from './ScreenAlmanac';
+import { ScreenWhistles } from './ScreenWhistles';
+import { ScreenPerch } from './ScreenPerch';
 import { ScreenLantern } from './ScreenLantern';
 import { ScreenCircle } from './ScreenCircle';
 import { ScreenSettings } from './ScreenSettings';
@@ -317,7 +317,7 @@ function HomesteadInner() {
           display: screen === id ? 'block' : 'none',
         }}>
           {id === 'almanac' && (
-            <ScreenAlmanac
+            <ScreenPerch
               role={role} isDualRole={isDualRole}
               onRing={handleRing}
               onViewBell={() => navigate('lantern')}
@@ -325,7 +325,7 @@ function HomesteadInner() {
               onVillage={() => setScreen('circle')}
             />
           )}
-          {id === 'shifts' && <ScreenShifts onViewLantern={() => navigate('lantern')} />}
+          {id === 'shifts' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
           {id === 'lantern' && (
             <ScreenLantern
               initialCompose={bellCompose}

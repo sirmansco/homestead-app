@@ -5,7 +5,7 @@ import { join } from 'path';
 
 const streamRoute = readFileSync(join(__dirname, '../app/api/shifts/stream/route.ts'), 'utf-8');
 const contextSrc = readFileSync(join(__dirname, '../app/context/AppDataContext.tsx'), 'utf-8');
-const almanacSrc = readFileSync(join(__dirname, '../app/components/ScreenAlmanac.tsx'), 'utf-8');
+const almanacSrc = readFileSync(join(__dirname, '../app/components/ScreenPerch.tsx'), 'utf-8');
 
 describe('SSE stream route', () => {
   it('exports maxDuration = 300 for Vercel Pro streaming', () => {
@@ -47,7 +47,7 @@ describe('AppDataContext SSE wiring', () => {
   });
 });
 
-describe('ScreenAlmanac stream integration', () => {
+describe('ScreenPerch stream integration', () => {
   it('enables stream on mount and disables on unmount', () => {
     expect(almanacSrc).toContain('enableShiftStream(true)');
     expect(almanacSrc).toContain('enableShiftStream(false)');
