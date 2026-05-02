@@ -1,7 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { shifts, users, households, bells } from '@/lib/db/schema';
-import { pushToUser, pushToUsers } from '@/lib/push';
+import { pushToUser, pushToUsers, type PushResult } from '@/lib/push';
 import { fmtDateTime, fmtDateShort } from '@/lib/format/time';
 import { getCopy } from '@/lib/copy';
 
@@ -12,8 +12,43 @@ if (!RESEND_API_KEY) {
   console.warn('[notify] RESEND_API_KEY not set — email notifications disabled');
 }
 
+// L13 + L16: every callsite that surfaces "did the notification land" to the
+// client (bell POST, shift POST) returns this discriminated outcome. Every
+// silent-skip path (creator opted out, empty inner circle, Resend missing)
+// emits a structured `notify_*_skip` log line via logSkip() before returning,
+// so operations can distinguish intentional suppression from broken pipeline.
+export type NotifyResult =
+  | { kind: 'delivered'; recipients: number; delivered: number }
+  | { kind: 'partial'; recipients: number; delivered: number; failed: number; errors: string[] }
+  | { kind: 'no_recipients'; reason: 'empty_inner_circle' | 'empty_field' | 'no_caregivers' | 'targeted_caregiver_not_opted_in' }
+  | { kind: 'vapid_missing'; recipients: number }
+  | { kind: 'push_error'; recipients: number; error: string };
+
+function logSkip(event: string, payload: Record<string, unknown>) {
+  console.log(JSON.stringify({ event, ...payload }));
+}
+
+function pushResultToNotify(r: PushResult, recipients: number): NotifyResult {
+  if (r.reason === 'vapid_not_configured') return { kind: 'vapid_missing', recipients };
+  // Stage 2 review: targeted-caregiver path can return attempted:0 when the
+  // user is opted-in but has no push subscription rows. Without this guard
+  // the next branch (delivered === attempted && failed === 0) would report
+  // "delivered: 0 of 1" as kind:'delivered' — a silent-success regression.
+  if (r.attempted === 0) return { kind: 'push_error', recipients, error: 'no_subscriptions' };
+  if (r.delivered === r.attempted && r.failed === 0) return { kind: 'delivered', recipients, delivered: r.delivered };
+  if (r.delivered > 0) return { kind: 'partial', recipients, delivered: r.delivered, failed: r.failed, errors: r.errors.slice(0, 3) };
+  return { kind: 'push_error', recipients, error: r.errors[0] || 'all_subscriptions_failed' };
+}
+
 async function send(to: string[], subject: string, text: string) {
-  if (!RESEND_API_KEY || to.length === 0) return;
+  if (!RESEND_API_KEY) {
+    logSkip('notify_email_skip', { reason: 'resend_not_configured', recipients: to.length });
+    return;
+  }
+  if (to.length === 0) {
+    logSkip('notify_email_skip', { reason: 'empty_recipient_list' });
+    return;
+  }
   const t = getCopy();
   const from = process.env.NOTIFY_FROM || `${t.brand.name} <${t.emails.notify}>`;
   try {
@@ -35,7 +70,7 @@ async function send(to: string[], subject: string, text: string) {
   }
 }
 
-export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string): Promise<{ sent: number; eligible: number }> {
+export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string): Promise<NotifyResult> {
   const [row] = await db.select({
     shift: shifts,
     household: households,
@@ -46,7 +81,10 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
     .leftJoin(users, eq(shifts.createdByUserId, users.id))
     .where(eq(shifts.id, shiftId))
     .limit(1);
-  if (!row?.shift || !row.household) return { sent: 0, eligible: 0 };
+  if (!row?.shift || !row.household) {
+    logSkip('notify_new_shift_skip', { reason: 'shift_or_household_missing', shiftId });
+    return { kind: 'no_recipients', reason: 'no_caregivers' };
+  }
 
   // If a preferred caregiver is set, only notify that one person
   let recipients;
@@ -64,37 +102,46 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   const opted = recipients.filter(r => r.notifyShiftPosted !== false);
   const emails = opted.map(r => r.email).filter(Boolean);
   const optedIds = opted.map(r => r.id);
-  const eligible = opted.length;
 
   const t = getCopy();
   const when = fmtDateShort(row.shift.startsAt);
 
-  let pushSent = 0;
+  let result: NotifyResult;
   if (preferredCaregiverId) {
-    if (optedIds.includes(preferredCaregiverId)) {
+    if (!optedIds.includes(preferredCaregiverId)) {
+      logSkip('notify_new_shift_skip', { reason: 'targeted_caregiver_not_opted_in', shiftId, preferredCaregiverId });
+      result = { kind: 'no_recipients', reason: 'targeted_caregiver_not_opted_in' };
+    } else {
       try {
-        await pushToUser(preferredCaregiverId, {
+        const r = await pushToUser(preferredCaregiverId, {
           title: t.request.pushTitleTargeted(row.household!.name),
           body: `${row.shift.title} · ${when}`,
           url: `/?tab=${t.request.deepLinkTab}`,
           tag: `${t.request.tagPrefix}-${shiftId}`,
         });
-        pushSent = 1;
+        result = pushResultToNotify(r, 1);
       } catch (err) {
         console.error('[notify:newShift:push:targeted]', err);
+        result = { kind: 'push_error', recipients: 1, error: err instanceof Error ? err.message : String(err) };
       }
     }
   } else {
-    try {
-      await pushToUsers(optedIds, row.shift.householdId, {
-        title: t.request.pushTitle(row.household!.name),
-        body: `${row.shift.title} · ${when}`,
-        url: `/?tab=${t.request.deepLinkTab}`,
-        tag: `${t.request.tagPrefix}-${shiftId}`,
-      });
-      pushSent = optedIds.length;
-    } catch (err) {
-      console.error('[notify:newShift:push:broadcast]', err);
+    if (optedIds.length === 0) {
+      logSkip('notify_new_shift_skip', { reason: 'no_caregivers_opted_in', shiftId, householdId: row.shift.householdId });
+      result = { kind: 'no_recipients', reason: 'no_caregivers' };
+    } else {
+      try {
+        const r = await pushToUsers(optedIds, row.shift.householdId, {
+          title: t.request.pushTitle(row.household!.name),
+          body: `${row.shift.title} · ${when}`,
+          url: `/?tab=${t.request.deepLinkTab}`,
+          tag: `${t.request.tagPrefix}-${shiftId}`,
+        });
+        result = pushResultToNotify(r, optedIds.length);
+      } catch (err) {
+        console.error('[notify:newShift:push:broadcast]', err);
+        result = { kind: 'push_error', recipients: optedIds.length, error: err instanceof Error ? err.message : String(err) };
+      }
     }
   }
 
@@ -113,7 +160,7 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
     await send(emails, subject, text);
   }
 
-  return { sent: pushSent, eligible };
+  return result;
 }
 
 export async function notifyShiftClaimed(shiftId: string) {
@@ -125,14 +172,23 @@ export async function notifyShiftClaimed(shiftId: string) {
     .leftJoin(households, eq(shifts.householdId, households.id))
     .where(eq(shifts.id, shiftId))
     .limit(1);
-  if (!row?.shift || !row.shift.claimedByUserId) return;
+  if (!row?.shift || !row.shift.claimedByUserId) {
+    logSkip('notify_shift_claimed_skip', { reason: 'shift_or_claim_missing', shiftId });
+    return;
+  }
 
   const [creator] = await db.select().from(users).where(eq(users.id, row.shift.createdByUserId)).limit(1);
   const [claimer] = await db.select().from(users).where(eq(users.id, row.shift.claimedByUserId)).limit(1);
-  if (!creator) return;
+  if (!creator) {
+    logSkip('notify_shift_claimed_skip', { reason: 'creator_missing', shiftId });
+    return;
+  }
 
   // Respect the creator's notifyShiftClaimed preference
-  if (creator.notifyShiftClaimed === false) return;
+  if (creator.notifyShiftClaimed === false) {
+    logSkip('notify_shift_claimed_skip', { reason: 'creator_opted_out', shiftId, creatorId: creator.id });
+    return;
+  }
 
   const t = getCopy();
   const claimerName = claimer?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
@@ -149,7 +205,10 @@ export async function notifyShiftClaimed(shiftId: string) {
     console.error('[notify:shiftClaimed:push]', err);
   }
 
-  if (!creator.email) return;
+  if (!creator.email) {
+    logSkip('notify_shift_claimed_skip', { reason: 'creator_email_missing', shiftId, creatorId: creator.id });
+    return;
+  }
 
   const subject = `${claimerName} ${t.request.acceptVerb.toLowerCase()}ed your ${t.request.newLabel.toLowerCase()}`;
   const text = [
@@ -173,14 +232,23 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
     .leftJoin(households, eq(shifts.householdId, households.id))
     .where(eq(shifts.id, shiftId))
     .limit(1);
-  if (!row?.shift) return;
+  if (!row?.shift) {
+    logSkip('notify_shift_released_skip', { reason: 'shift_missing', shiftId });
+    return;
+  }
 
   const [creator] = await db.select().from(users).where(eq(users.id, row.shift.createdByUserId)).limit(1);
   const [releaser] = await db.select().from(users).where(eq(users.id, releasedByUserId)).limit(1);
-  if (!creator) return;
+  if (!creator) {
+    logSkip('notify_shift_released_skip', { reason: 'creator_missing', shiftId });
+    return;
+  }
 
   // Respect the creator's notifyShiftReleased preference
-  if (creator.notifyShiftReleased === false) return;
+  if (creator.notifyShiftReleased === false) {
+    logSkip('notify_shift_released_skip', { reason: 'creator_opted_out', shiftId, creatorId: creator.id });
+    return;
+  }
 
   const t = getCopy();
   const releaserName = releaser?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
@@ -211,11 +279,20 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
     .leftJoin(households, eq(shifts.householdId, households.id))
     .where(eq(shifts.id, shiftId))
     .limit(1);
-  if (!row?.shift) return;
+  if (!row?.shift) {
+    logSkip('notify_shift_cancelled_skip', { reason: 'shift_missing', shiftId });
+    return;
+  }
 
   const [recipient] = await db.select().from(users).where(eq(users.id, recipientUserId)).limit(1);
-  if (!recipient) return;
-  if (recipient.notifyShiftReleased === false) return;
+  if (!recipient) {
+    logSkip('notify_shift_cancelled_skip', { reason: 'recipient_missing', shiftId, recipientUserId });
+    return;
+  }
+  if (recipient.notifyShiftReleased === false) {
+    logSkip('notify_shift_cancelled_skip', { reason: 'recipient_opted_out', shiftId, recipientUserId });
+    return;
+  }
 
   const t = getCopy();
   const when = fmtDateShort(row.shift.startsAt);
@@ -246,13 +323,19 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
   await send([recipient.email], subject, text);
 }
 
-export async function notifyBellRing(bellId: string): Promise<{ sent: number; eligible: number }> {
+export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
   const t = getCopy();
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
-  if (!bell) return { sent: 0, eligible: 0 };
+  if (!bell) {
+    logSkip('notify_bell_ring_skip', { reason: 'bell_missing', bellId });
+    return { kind: 'no_recipients', reason: 'no_caregivers' };
+  }
 
   const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
-  if (!household) return { sent: 0, eligible: 0 };
+  if (!household) {
+    logSkip('notify_bell_ring_skip', { reason: 'household_missing', bellId, householdId: bell.householdId });
+    return { kind: 'no_recipients', reason: 'no_caregivers' };
+  }
 
   const innerCircle = await db.select({ id: users.id })
     .from(users)
@@ -262,26 +345,32 @@ export async function notifyBellRing(bellId: string): Promise<{ sent: number; el
       eq(users.villageGroup, 'covey'),
       eq(users.notifyBellRinging, true),
     ));
-  if (innerCircle.length === 0) return { sent: 0, eligible: 0 };
+  if (innerCircle.length === 0) {
+    logSkip('notify_bell_ring_skip', { reason: 'empty_inner_circle', bellId, householdId: bell.householdId });
+    return { kind: 'no_recipients', reason: 'empty_inner_circle' };
+  }
 
   try {
-    await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
+    const r = await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
       title: t.urgentSignal.pushTitle(household.name),
       body: t.urgentSignal.pushBody(bell.reason, bell.note ?? undefined),
       url: `/?tab=${t.urgentSignal.deepLinkTab}`,
       tag: `${t.urgentSignal.tagPrefix}-${bell.id}`,
     });
-    return { sent: innerCircle.length, eligible: innerCircle.length };
+    return pushResultToNotify(r, innerCircle.length);
   } catch (err) {
     console.error('[notify:bellRing:push]', err);
-    return { sent: 0, eligible: innerCircle.length };
+    return { kind: 'push_error', recipients: innerCircle.length, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
 export async function notifyBellEscalated(bellId: string) {
   const t = getCopy();
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
-  if (!bell) return;
+  if (!bell) {
+    logSkip('notify_bell_escalated_skip', { reason: 'bell_missing', bellId });
+    return;
+  }
 
   const sitters = await db.select({ id: users.id })
     .from(users)
@@ -291,7 +380,10 @@ export async function notifyBellEscalated(bellId: string) {
       eq(users.villageGroup, 'field'),
       eq(users.notifyBellRinging, true),
     ));
-  if (sitters.length === 0) return;
+  if (sitters.length === 0) {
+    logSkip('notify_bell_escalated_skip', { reason: 'empty_field', bellId, householdId: bell.householdId });
+    return;
+  }
 
   try {
     await pushToUsers(sitters.map(s => s.id), bell.householdId, {
@@ -312,10 +404,16 @@ export async function notifyBellResponse(
 ) {
   // Only push — no email for bell responses (time-sensitive, email is too slow)
   const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
-  if (!bell) return;
+  if (!bell) {
+    logSkip('notify_bell_response_skip', { reason: 'bell_missing', bellId });
+    return;
+  }
 
   const [responder] = await db.select().from(users).where(eq(users.id, responderId)).limit(1);
-  if (!responder) return;
+  if (!responder) {
+    logSkip('notify_bell_response_skip', { reason: 'responder_missing', bellId, responderId });
+    return;
+  }
 
   const name = responder.name || 'Someone';
 
@@ -325,7 +423,10 @@ export async function notifyBellResponse(
   );
 
   const optedParents = parents.filter(p => p.notifyBellResponse !== false);
-  if (optedParents.length === 0) return;
+  if (optedParents.length === 0) {
+    logSkip('notify_bell_response_skip', { reason: 'no_parents_opted_in', bellId, householdId: bell.householdId });
+    return;
+  }
 
   const t = getCopy();
   const msg = response === 'on_my_way'

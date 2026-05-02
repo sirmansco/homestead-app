@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 // ── Types (shared across screens) ───────────────────────────────────────────
 
@@ -95,8 +96,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setAllBells(bells);
       const ringing = bells.find((b) => b.status === 'ringing') ?? null;
       setActiveBell(ringing);
-    } catch {
-      // silent — polling; next tick will retry
+    } catch (err) {
+      Sentry.captureException(err, { tags: { source: 'appdata:bell' } });
+      console.warn('[appdata:bell] fetch failed', err instanceof Error ? err.message : String(err));
     } finally {
       setBellLoading(false);
     }
@@ -131,8 +133,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return;
       const data = await res.json() as { shifts: ShiftRow[] };
       setShifts(prev => ({ ...prev, [scope]: data.shifts }));
-    } catch {
-      // silent — screens show stale data rather than error on background refresh
+    } catch (err) {
+      Sentry.captureException(err, { tags: { source: `appdata:shifts:${scope}` } });
+      console.warn(`[appdata:shifts:${scope}] fetch failed`, err instanceof Error ? err.message : String(err));
     } finally {
       setShiftsLoading(prev => ({ ...prev, [scope]: false }));
     }
@@ -162,8 +165,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return;
       const data = await res.json();
       setVillage(data.adults || []);
-    } catch {
-      // silent
+    } catch (err) {
+      Sentry.captureException(err, { tags: { source: 'appdata:village' } });
+      console.warn('[appdata:village] fetch failed', err instanceof Error ? err.message : String(err));
     } finally {
       setVillageLoading(false);
     }

@@ -9,7 +9,7 @@ const claimerUsers = alias(users, 'claimer');
 import { requireHousehold, requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
-import { notifyNewShift } from '@/lib/notify';
+import { notifyNewShift, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -264,17 +264,16 @@ export async function POST(req: NextRequest) {
 
     const created = await db.insert(shifts).values(valuesList).returning();
 
-    let notifySent = 0;
-    let notifyEligible = 0;
+    let notify: NotifyResult = { kind: 'push_error', recipients: 0, error: 'notify_threw' };
     if (created[0]) {
       try {
-        ({ sent: notifySent, eligible: notifyEligible } = await notifyNewShift(created[0].id, preferredCaregiverId ?? undefined));
+        notify = await notifyNewShift(created[0].id, preferredCaregiverId ?? undefined);
       } catch (err) {
         console.error('[shifts:post:notify]', err);
       }
     }
 
-    return NextResponse.json({ shift: created[0], count: created.length, notifySent, notifyEligible });
+    return NextResponse.json({ shift: created[0], count: created.length, notify });
   } catch (err) {
     return authError(err, 'shifts:POST', `Could not post ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}. Try again.`);
   }
