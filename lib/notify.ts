@@ -17,7 +17,7 @@ async function send(to: string[], subject: string, text: string) {
   const t = getCopy();
   const from = process.env.NOTIFY_FROM || `${t.brand.name} <${t.emails.notify}>`;
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,6 +25,11 @@ async function send(to: string[], subject: string, text: string) {
       },
       body: JSON.stringify({ from, to, subject, text }),
     });
+    if (!res.ok) {
+      let body = '';
+      try { body = await res.text(); } catch { /* ignore */ }
+      console.error(`[notify:email] resend failed: status ${res.status} body ${body}`);
+    }
   } catch (err) {
     console.error('[notify:email]', err);
   }
