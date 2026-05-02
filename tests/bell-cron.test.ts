@@ -43,11 +43,16 @@ function makeRequest(authHeader: string | null) {
 }
 
 // Drizzle chain stub: db.select().from().where().limit() resolves to `rows`.
+// `limit` is a vi.fn so individual tests can assert it was called with the
+// expected bound — the route must apply LIMIT at the SELECT layer, not just
+// process whatever the DB returns. Without this assertion, a regression that
+// drops `.limit(BATCH_LIMIT)` from the route would still pass any test that
+// returns LIMIT rows from the stub.
 function makeSelectStub(rows: unknown[]) {
   const chain: Record<string, unknown> = {};
   chain['from']  = () => chain;
   chain['where'] = () => chain;
-  chain['limit'] = () => chain;
+  chain['limit'] = vi.fn(() => chain);
   chain['then']  = (resolve: (v: unknown) => void) => { resolve(rows); return chain; };
   chain['catch'] = () => chain;
   chain['finally'] = () => chain;
@@ -112,17 +117,22 @@ describe('GET /api/bell/cron — auth', () => {
 });
 
 describe('GET /api/bell/cron — LIMIT enforcement', () => {
-  it('processes exactly LIMIT (50) bells when more are due', async () => {
-    // Simulate the LIMIT 50 by returning 50 rows even though "51 are due" — the
-    // test asserts the route's contract: it processes whatever the bounded
-    // SELECT returns, never more. The chain stub captures the .limit() call.
+  it('applies .limit(50) at the SELECT layer and processes the bounded batch', async () => {
+    // Two halves to this regression test:
+    //  1. The route MUST call .limit(50) on the chain — without this, a
+    //     regression that drops the bound would still pass any test that
+    //     returns 50 rows from the stub.
+    //  2. Whatever rows the bounded SELECT returns, the route processes all
+    //     of them (no further drop on the application side).
     const bells = Array.from({ length: 50 }, (_, i) => makeBell(`bell-${i}`));
-    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
+    const stub = makeSelectStub(bells);
+    vi.mocked(db.select).mockReturnValueOnce(stub);
     vi.mocked(escalateBell).mockResolvedValue();
 
     const res = await GET(makeRequest(`Bearer ${SECRET}`));
     const body = await res.json();
 
+    expect(stub.limit).toHaveBeenCalledWith(50);
     expect(escalateBell).toHaveBeenCalledTimes(50);
     expect(body).toEqual({ processed: 50, failed: 0 });
   });
@@ -153,6 +163,11 @@ describe('GET /api/bell/cron — LIMIT enforcement', () => {
 
 describe('GET /api/bell/cron — concurrency cap', () => {
   it('never has more than CONCURRENCY (10) workers in flight at once', async () => {
+    // The assertions here are bounds, not exact values — `≤10` and `>1`. CI
+    // scheduler jitter cannot violate a bound, so this test is structurally
+    // stable rather than empirically stable. A regression that removed the cap
+    // would push highWater toward 30; cap=1 or any serial execution would pin
+    // highWater at 1 and fail the `>1` assertion.
     const bells = Array.from({ length: 30 }, (_, i) => makeBell(`bell-${i}`));
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
 
@@ -169,9 +184,6 @@ describe('GET /api/bell/cron — concurrency cap', () => {
     await GET(makeRequest(`Bearer ${SECRET}`));
 
     expect(highWater).toBeLessThanOrEqual(10);
-    // Sanity: confirm the cap was actually exercised (without a cap it would
-    // immediately reach 30). High-water of 1 would mean serial execution and
-    // the cap test would be vacuous.
     expect(highWater).toBeGreaterThan(1);
     expect(escalateBell).toHaveBeenCalledTimes(30);
   });
