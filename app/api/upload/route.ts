@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { users, kids } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { stripExif } from '@/lib/strip-exif';
+import { verifyImageMagicBytes } from '@/lib/upload/sniff';
 import { apiError, authError } from '@/lib/api-error';
 
 export async function POST(req: NextRequest) {
@@ -46,15 +47,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Max file size is 5 MB' }, { status: 400 });
     }
 
-    // Read bytes and strip EXIF/GPS for JPEG (privacy-critical for child photos)
+    // Read bytes first — magic-byte check before any further processing
     const rawBuf = Buffer.from(await file.arrayBuffer());
+
+    const sniff = verifyImageMagicBytes(rawBuf, ext);
+    if (!sniff.ok) {
+      console.warn(`[api:upload] magic-byte mismatch: ${sniff.reason} (file=${file.name}, type=${file.type})`);
+      return NextResponse.json({ error: 'bad_content_type' }, { status: 400 });
+    }
+
+    // Strip metadata. contentType is sourced from verified bytes, NOT file.type.
     const cleanBuf = stripExif(rawBuf, ext);
+    const verifiedContentType = sniff.mime;
 
     const pathname = `homestead/${household.id}/${targetType}-${targetId}.${ext}`;
-    console.log(`[api:upload] putting blob: ${pathname} (${cleanBuf.length}b, type=${file.type})`);
+    console.log(`[api:upload] putting blob: ${pathname} (${cleanBuf.length}b, contentType=${verifiedContentType})`);
     let url: string;
     try {
-      ({ url } = await put(pathname, cleanBuf, { access: 'public', addRandomSuffix: false, contentType: file.type }));
+      ({ url } = await put(pathname, cleanBuf, {
+        access: 'private',
+        contentType: verifiedContentType,
+      }));
     } catch (blobErr) {
       console.error('[api:upload] @vercel/blob put failed:', blobErr instanceof Error ? blobErr.message : blobErr);
       throw blobErr;
@@ -72,7 +85,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'type must be user or kid' }, { status: 400 });
     }
 
-    return NextResponse.json({ url });
+    // Return the proxy path, not the raw blob URL.
+    // The blob is private; callers must use /api/photo/[id] to render it.
+    const photoPath = `/api/photo/${targetId}`;
+    return NextResponse.json({ url: photoPath });
   } catch (err) {
     return apiError(err, 'Upload failed', 500, 'upload');
   }
