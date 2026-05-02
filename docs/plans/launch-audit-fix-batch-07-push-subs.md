@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 07 — Push subscription correctness
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L17, L18, L19
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B7
