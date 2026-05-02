@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// BUG-A regression: the active-lantern card on ScreenAlmanac was previously
+// BUG-A regression: the active-lantern card on ScreenPerch was previously
 // gated by `role === 'parent' && activeBell`, so caregivers never saw an
 // active Bell on the Almanac/"Open Whistles" tab. The cancel action remains
 // parent-only (server PATCH /api/bell/:id is gated server-side), but the card
@@ -12,7 +12,7 @@ import { join } from 'path';
 // notify-isolation.test.ts for the same pattern).
 
 const APP_ROOT = join(__dirname, '..');
-const ALMANAC = join(APP_ROOT, 'app', 'components', 'ScreenAlmanac.tsx');
+const ALMANAC = join(APP_ROOT, 'app', 'components', 'ScreenPerch.tsx');
 
 describe('Lantern card visibility on Almanac (BUG-A)', () => {
   const src = readFileSync(ALMANAC, 'utf8');
@@ -23,7 +23,7 @@ describe('Lantern card visibility on Almanac (BUG-A)', () => {
     const offendingPattern = /role\s*===\s*['"]parent['"]\s*&&\s*activeBell\s*&&\s*\(\s*<LanternCard/;
     expect(
       offendingPattern.test(src),
-      'ScreenAlmanac re-introduced the role==="parent" gate around <LanternCard>. ' +
+      'ScreenPerch re-introduced the role==="parent" gate around <LanternCard>. ' +
       'Caregivers must see the active-lantern card too. Cancel action stays parent-only.'
     ).toBe(false);
   });

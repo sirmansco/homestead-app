@@ -593,7 +593,7 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
   );
 });
 
-export function ScreenAlmanac({ role = 'parent', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
+export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
   role?: 'parent' | 'caregiver';
   isDualRole?: boolean;
   onRing?: () => void;      // compose mode — new bell

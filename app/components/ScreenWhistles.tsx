@@ -220,7 +220,7 @@ function SegmentControl({ value, onChange }: { value: 'open' | 'all'; onChange: 
   );
 }
 
-export function ScreenShifts({ onViewLantern }: { onViewLantern?: () => void }) {
+export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }) {
   const { activeBell, shifts: contextShifts, shiftsLoading, refreshShifts, refreshBell } = useAppData();
   const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [error, setError] = useState<string | null>(null);
