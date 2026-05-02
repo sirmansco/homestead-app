@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { caregiverUnavailability, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { parseTimeRange } from '@/lib/validate/time-range';
 
 // Resolve the caller's primary users row without requiring an active Clerk org.
 // Caregivers often have no active org yet but still need to manage their unavailability.
@@ -47,15 +48,14 @@ export async function POST(req: NextRequest) {
     if (!body.startsAt || !body.endsAt) {
       return NextResponse.json({ error: 'startsAt and endsAt required' }, { status: 400 });
     }
-    const starts = new Date(body.startsAt);
-    const ends = new Date(body.endsAt);
-    if (isNaN(+starts) || isNaN(+ends) || ends <= starts) {
-      return NextResponse.json({ error: 'invalid time range' }, { status: 400 });
+    const timeRange = parseTimeRange(body.startsAt, body.endsAt);
+    if ('error' in timeRange) {
+      return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
     }
     const [row] = await db.insert(caregiverUnavailability).values({
       userId: user.id,
-      startsAt: starts,
-      endsAt: ends,
+      startsAt: timeRange.starts,
+      endsAt: timeRange.ends,
       note: body.note?.trim() || null,
     }).returning();
     return NextResponse.json({ unavailability: row });

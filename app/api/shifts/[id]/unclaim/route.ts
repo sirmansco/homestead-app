@@ -6,10 +6,13 @@ import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftReleased } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
+import { requireUUID } from '@/lib/validate/uuid';
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await ctx.params;
+    const { id: rawId } = await ctx.params;
+    const id = requireUUID(rawId);
+    if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { userId } = await requireUser();
 
     const body = await req.json().catch(() => ({})) as { reason?: string };

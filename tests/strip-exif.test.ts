@@ -4,9 +4,15 @@ import { stripExif } from '../lib/strip-exif';
 function hex(...bytes: number[]) { return Buffer.from(bytes); }
 
 describe('stripExif', () => {
-  it('returns non-JPEG input unchanged', () => {
-    const png = hex(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00);
-    expect(stripExif(png, 'png').equals(png)).toBe(true);
+  it('returns PNG without metadata chunks with content intact (no-op strip)', () => {
+    // A minimal PNG that has no metadata chunks to strip.
+    // stripExif now processes PNG (PNG stripping was added in B10 / L27).
+    // The output should preserve all image-critical chunks.
+    // A truncated PNG with no chunks at all results in just the signature bytes.
+    const pngSig = hex(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+    const out = stripExif(pngSig, 'png');
+    // The 8-byte signature is reproduced; no chunks to strip or preserve.
+    expect(out.slice(0, 8).equals(pngSig)).toBe(true);
   });
 
   it('returns JPEG unchanged when no APP1/APP13 present', () => {

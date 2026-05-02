@@ -87,7 +87,11 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [localPhoto, setLocalPhoto] = useState<string | null>(photoUrl ?? null);
+  // Route through the auth proxy so private blobs are accessible.
+  // When targetId is set and a photo exists, use /api/photo/[id].
+  // When there is no targetId (display-only cards), fall back to photoUrl as-is.
+  const initialPhoto = photoUrl && targetId ? `/api/photo/${targetId}` : (photoUrl ?? null);
+  const [localPhoto, setLocalPhoto] = useState<string | null>(initialPhoto);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 

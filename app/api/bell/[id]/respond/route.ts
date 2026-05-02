@@ -8,14 +8,17 @@ import { authError } from '@/lib/api-error';
 import { notifyBellResponse } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { escalateBell } from '@/lib/bell-escalation';
+import { requireUUID } from '@/lib/validate/uuid';
 
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await requireUser();
+    const { id: rawId } = await params;
+    const bellId = requireUUID(rawId);
+    if (!bellId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
-    const { id: bellId } = await params;
+    const { userId } = await requireUser();
     const body = await req.json() as ResponseBody;
     const { response } = body;
 
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const client = await clerkClient();
       const memberships = await client.users.getOrganizationMembershipList({ userId });
       const isMember = memberships.data.some(m => m.organization.id === household.clerkOrgId);
-      if (!isMember) return NextResponse.json({ error: 'Not a member of this household' }, { status: 403 });
+      if (!isMember) return NextResponse.json({ error: 'no_access' }, { status: 403 });
 
       const cu = await client.users.getUser(userId);
       const email = cu.primaryEmailAddress?.emailAddress ?? '';

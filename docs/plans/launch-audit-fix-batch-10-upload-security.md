@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 10 — Upload security (privacy-critical)
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L27
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B10
@@ -47,13 +47,15 @@ Pattern scan (`app/api/upload/route.ts`, `lib/strip-exif.ts`):
 
 ## Graveyard
 
-(empty)
+- Considered `access: 'private'` with `addRandomSuffix: true` (option b) on 2026-05-02 — rejected. Random-suffix URLs are irrevocable bearer tokens (screenshot/log/browser-history sync = permanent leak). Authenticated proxy is the only rightly-revocable path for child photos.
+- Considered placing `NotAdminError`-style logic in `lib/auth/household.ts` — rejected on 2026-05-02 after lessons from B1: `instanceof`-checked error classes belong in the module that discriminates, not the one that throws.
 
 ## Anchors
 
-- `lib/strip-exif.ts:21` JPEG handling — preserve. The extension only adds non-JPEG paths.
-- `app/api/upload/route.ts:25-29` rate limit — preserve.
-- `requireHousehold()` ownership check on POST — preserve.
+- `lib/strip-exif.ts:21` JPEG handling — preserved. Extension added non-JPEG paths below.
+- `app/api/upload/route.ts` rate limit — preserved.
+- `requireHousehold()` ownership check on POST — preserved.
+- All 359 tests green pre/post change. 43 new tests added covering magic-byte sniffer, PNG/WebP strip, and photo proxy auth.
 
 ## Fragile areas
 

@@ -6,10 +6,13 @@ import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftCancelled } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
+import { requireUUID } from '@/lib/validate/uuid';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await ctx.params;
+    const { id: rawId } = await ctx.params;
+    const id = requireUUID(rawId);
+    if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { household, user } = await requireHousehold();
 
     const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);

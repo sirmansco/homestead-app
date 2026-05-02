@@ -5,12 +5,15 @@ import { bells } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
+import { requireUUID } from '@/lib/validate/uuid';
 
 // PATCH /api/bell/[id] — { status: 'handled' | 'cancelled' }
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { household, user } = await requireHousehold();
-    const { id: bellId } = await params;
+    const { id: rawId } = await params;
+    const bellId = requireUUID(rawId);
+    if (!bellId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { status } = await req.json() as { status: 'handled' | 'cancelled' };
 
     if (!['handled', 'cancelled'].includes(status)) {
