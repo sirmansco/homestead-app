@@ -42,18 +42,24 @@ The repair has two distinct surfaces and they must ship together: rebuilding the
 Pattern scan of B-snapshots surface (`drizzle/`, `drizzle/meta/`, `scripts/doctor.ts`, `scripts/migrate.ts`):
 
 - **Snapshot file shape:** verified by reading `0000`, `0002`, `0003` snapshots. Top-level: `{ id (uuid), prevId (uuid), version: "7", dialect: "postgresql", tables: {...}, enums: {...}, schemas: {...}, sequences: {...}, ... }`. Each snapshot represents post-tag schema state. The `prevId` chain wires snapshots together; gaps in the chain (current state) cause the kit's diff base to fall back to whichever snapshot it can find.
-- **`prevId` chain integrity:** `0000.id = 43e4d32a-... → 0002.prevId = 43e4d32a-...` — the chain *skips* `0001_notification_prefs` entirely on disk today. The kit appears tolerant of one-step gaps (`0002` and `0003` both work fine), but doesn't tolerate post-`0003` gaps (every generate since `0004` has been re-emitting). The repair preserves the kit's tolerance shape: `0001` is reconstructed for completeness but the `prevId` of `0002` is left untouched; the chain becomes `0000 → 0001 → 0002 → 0003 → 0004 → 0005` and `0001.id` matches what `0002.prevId` already points to (`43e4d32a-...`). This means `0001` re-uses `0000`'s id as its prevId AND its own id is set to `43e4d32a-...` — wait, `prevId` and `id` cannot be the same value. Re-think: leave `0002.prevId` pointing at `0000.id` (current state), and have `0001` point its prevId at `0000.id` and use a *different* id of its own. The kit's chain check is "does my prevId match some prior snapshot's id" not "is my prevId the immediately-preceding tag's id" — verified by the fact that `0002.prevId` skips `0001` today and the kit accepts it.
+- **`prevId` chain integrity:** the kit enforces a **strictly linear chain** — no two snapshots may share a `prevId`. **Empirically verified during build (2026-05-02):** the first generate attempt with `0001.prevId = 0000.id` AND `0002.prevId = 0000.id` (the original-on-disk state) failed immediately with `Error: [drizzle/meta/0001_snapshot.json, drizzle/meta/0002_snapshot.json] are pointing to a parent snapshot ... which is a collision`. The repair therefore must:
+  1. Reconstruct `0001` with a fresh id and `prevId = 0000.id`, AND
+  2. Repoint `0002.prevId` from `0000.id` to `0001.id` so the DAG collapses into a linear chain.
 
-  **Concrete chain post-repair:**
+  Doctor doesn't hash `meta/*.json` files — only `drizzle/*.sql` (`scripts/doctor.ts:34-36`) — so mutating an existing snapshot's `prevId` is safe from doctor's perspective. The hard constraint is "do not mutate any snapshot's `id`" (downstream `prevId`s reference it). `prevId` adjustments to fix the chain are allowed.
+
+  **Original plan hypothesis (now disproved):** an earlier draft of this section claimed the kit walked `prevId`s loosely and tolerated parallel siblings. That was wrong. Linear chain is required. Section rewritten 2026-05-02 after build-phase discovery.
+
+  **Concrete chain post-repair (linear):**
   - `0000.id = 43e4d32a-ed17-49b1-b700-ee2ecea2eea0`, `prevId = 00000000-...`
-  - `0001.id = <new uuid A>`, `prevId = 43e4d32a-...` (still derives from 0000's state — adds notify_* cols)
-  - `0002.id = b1c2d3e4-f5a6-7890-abcd-ef1234567890` (existing), `prevId = 43e4d32a-...` (existing — STAYS pointing at 0000, not 0001)
-  - `0003.id = d9ca87ff-3293-4302-bb48-0fc5ce5ff13c` (existing), `prevId = b1c2d3e4-...` (existing)
-  - `0004.id = <new uuid C>`, `prevId = d9ca87ff-...`
-  - `0005.id = <new uuid D>`, `prevId = <uuid C>`
-  - `0006.id = <new uuid E>`, `prevId = <uuid D>` (sister of new SET DEFAULT migration)
+  - `0001.id = 60de82d8-b797-45a7-ba02-f24cf84ad0cb` (new), `prevId = 43e4d32a-...`
+  - `0002.id = b1c2d3e4-f5a6-7890-abcd-ef1234567890` (existing), `prevId = 60de82d8-...` (**REPOINTED** from `43e4d32a-...`)
+  - `0003.id = d9ca87ff-3293-4302-bb48-0fc5ce5ff13c` (existing, untouched), `prevId = b1c2d3e4-...` (existing, untouched)
+  - `0004.id = 054cedfa-2863-4cde-9283-c4e110af2610` (new), `prevId = d9ca87ff-...`
+  - `0005.id = a53321b8-5bb3-43f0-8790-5eae08db643c` (new), `prevId = 054cedfa-...`
+  - `0006.id = b6b572fb-cd7f-4c67-b8b2-0de136e1debf` (kit-generated), `prevId = a53321b8-...`
 
-  Two parallel branches converge at `0002` (both `0001` and `0002` derive from `0000`) — this is unusual but the kit doesn't enforce a strict tree; it walks the highest-tag-numbered snapshot back through `prevId`s. Verify in pressure-test by running `db:generate` after the rebuild and confirming "no changes."
+  Pressure-test: after rebuild, `db:generate` must report "No schema changes, nothing to migrate" (the legitimately-pending default ALTER lands as `0006`, not as a phantom diff).
 
 - **Migration semantics already applied to prod (verified by `db:doctor` being clean):**
   - `0001` adds 5 `notify_*` boolean columns to `users`.
@@ -67,6 +73,9 @@ Pattern scan of B-snapshots surface (`drizzle/`, `drizzle/meta/`, `scripts/docto
 - **Doctor's existing checks** (`scripts/doctor.ts:13-21`): journal-disk consistency (1, 2), file hash (3), monotonic `when` (4), applied-vs-journal (5), live column drift (6, 7), enum drift. **No snapshot-file existence check.** That's the gap to close.
 
 ## File map
+
+- **`drizzle/meta/0002_snapshot.json` — edit (`prevId` repoint only).**
+  Change `prevId` from `43e4d32a-ed17-49b1-b700-ee2ecea2eea0` (0000.id) to `60de82d8-b797-45a7-ba02-f24cf84ad0cb` (the new 0001.id) to linearize the chain. `id` stays at `b1c2d3e4-...` so `0003.prevId` (which points at `0002.id`) is preserved. No table/column/enum body changes.
 
 - **`drizzle/meta/0001_snapshot.json` — new file (reconstruction).**
   Structure: copy `0000_snapshot.json`, mutate `users.columns` to add the five `notify_*` boolean columns (each `notNull: true, default: true`), set new `id` to a freshly-minted UUID, keep `prevId = 0000.id` (`43e4d32a-...`).
@@ -116,17 +125,18 @@ Pattern scan of B-snapshots surface (`drizzle/`, `drizzle/meta/`, `scripts/docto
   Doctor's monotonic-`when` check (line 80-86 of `scripts/doctor.ts`) enforces strict ordering. Use a current `Date.now()` value; today's millis are well above `0005`'s.
 
 - **`scripts/doctor.ts` — edit (add check #8).**
-  After the existing journal/file consistency checks (around line 73), add:
+  After the existing journal/file consistency checks, add a snapshot-existence check. **Important matching detail (discovered during build):** the kit names snapshot files by numeric prefix (`0006_snapshot.json`), NOT by full tag (`0006_village_group_default_snapshot.json`). The check matches `<tag>.sql` to `<numeric-prefix>_snapshot.json`. The original draft of this section incorrectly matched on full tag and would have false-warned forever; the as-shipped code matches by extracting the leading digits of each tag.
   ```ts
-  // 8: snapshot-file consistency — every migration tag has a matching meta/<tag>_snapshot.json
+  // 8: snapshot ⇄ migration. Every migration tag has a matching meta/<tag>_snapshot.json
+  // (matched by tag's numeric prefix — kit names snapshots <idx>_snapshot.json, not <full-tag>_snapshot.json).
   const snapshotFiles = readdirSync(path.join(drizzleDir, 'meta'))
-    .filter(f => f.endsWith('_snapshot.json'))
-    .map(f => f.replace(/_snapshot\.json$/, ''));
-  const snapshotTags = new Set(snapshotFiles);
+    .filter(f => f.endsWith('_snapshot.json') && !f.startsWith('._'));
+  const snapshotPrefixes = new Set(snapshotFiles.map(f => f.replace(/_snapshot\.json$/, '')));
   for (const tag of sqlTags) {
-    if (tag === '0000_baseline') continue; // baseline snapshot is named 0000_snapshot.json — special case
-    if (!snapshotTags.has(tag)) {
-      warn('snapshot-missing', `${tag}.sql exists on disk but meta/${tag}_snapshot.json is missing — drizzle-kit generate will produce dirty migrations bundling all changes since the last present snapshot. Reconstruct the snapshot before the next schema change.`);
+    const prefix = tag.match(/^(\d+)_/)?.[1];
+    if (!prefix) continue;
+    if (!snapshotPrefixes.has(prefix)) {
+      warn('snapshot-missing', `${tag}.sql exists on disk but meta/${prefix}_snapshot.json is missing — drizzle-kit generate will produce dirty migrations bundling all changes since the last present snapshot. Reconstruct the snapshot before the next schema change.`);
     }
   }
   ```
@@ -165,7 +175,7 @@ Pattern scan of B-snapshots surface (`drizzle/`, `drizzle/meta/`, `scripts/docto
 
 5. **`drizzle-kit introspect` (or `pull`) would overwrite snapshots from live DB.** It would not preserve the per-migration history; it would emit one snapshot reflecting the current state. We do NOT use it as the primary repair tool because it loses the chain semantics — Pressure-test §3 elaborates. Mentioned here so future operators don't reach for it as a "easier" fix.
 
-6. **The kit's tolerance of `prevId` skips is observed, not documented.** Today's chain `0000 → 0002 → 0003` skips `0001` and the kit accepts it. After repair the chain is `0000 → 0001 → 0002 → 0003 → 0004 → 0005 → 0006`, which is fully linear and what the kit expects. The post-repair chain is *more* conformant than today's; if the kit ever tightens its check, the repair is what makes us compliant. But — `0001`'s `prevId` will point at `0000.id`, AND `0002`'s existing `prevId` also points at `0000.id`. Two snapshots with the same `prevId`. Not a true tree, more a DAG. The kit's chain walker has been observed to walk the highest-tag-numbered snapshot back through `prevId`s — it doesn't care if a sibling exists. Verified by reading the kit's source isn't worth the time; the falsifiable test (db:generate produces "no changes") covers the behavior. If that test fails after repair, this is the first place to look.
+6. **The kit enforces a strictly linear `prevId` chain — DAGs are rejected at generate time.** Empirically discovered during build (2026-05-02): the first generate attempt with two snapshots (`0001` and `0002`) sharing `prevId = 0000.id` failed immediately with `Error: ... pointing to a parent snapshot ... which is a collision`. The repair therefore both reconstructs `0001` AND repoints `0002.prevId` from `0000.id` to `0001.id`. After repair the chain is fully linear: `0000 → 0001 → 0002 → 0003 → 0004 → 0005 → 0006`. An earlier draft of this fragile-area note hypothesized the kit tolerated parallel siblings; that hypothesis is wrong and is preserved here only as a warning to future operators. The falsifiable test is `db:generate produces "no changes"`; if that fails after a future repair, the chain is the first place to look.
 
 ## Pressure-tested decisions
 
