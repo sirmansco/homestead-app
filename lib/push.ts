@@ -43,10 +43,27 @@ export type PushResult = {
   reason?: string;
 };
 
+type WebPushDisposition =
+  | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' }
+  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' }
+  | { kind: 'unknown'; reason: string };
+
+function classifyWebPushError(err: unknown): WebPushDisposition {
+  const wpe = err as WebPushError;
+  const code = wpe?.statusCode;
+  if (code === 404) return { kind: 'prune', reason: 'gone_404' };
+  if (code === 410) return { kind: 'prune', reason: 'gone_410' };
+  if (code === 403) return { kind: 'prune', reason: 'auth_403' };
+  if (code === 413) return { kind: 'prune', reason: 'payload_413' };
+  if (code === 429) return { kind: 'retry', reason: 'ratelimit_429' };
+  if (typeof code === 'number' && code >= 500 && code < 600) return { kind: 'retry', reason: 'server_5xx' };
+  return { kind: 'unknown', reason: typeof code === 'number' ? `http_${code}` : 'no_status' };
+}
+
 /**
  * Send to a list of subscription rows. Automatically deletes rows when the
- * push service reports the subscription as gone (404/410). All errors are
- * captured and returned — callers must log the result.
+ * push service reports the subscription as permanently failed (404/410/403/413).
+ * All errors are captured and returned — callers must log the result.
  */
 async function sendBatch(
   subs: { id: string; endpoint: string; p256dh: string; auth: string }[],
@@ -62,6 +79,7 @@ async function sendBatch(
 
   const message = JSON.stringify(payload);
   const staleIds: string[] = [];
+  let dispPrune = 0, dispRetry = 0, dispUnknown = 0;
 
   await Promise.all(subs.map(async sub => {
     try {
@@ -71,22 +89,29 @@ async function sendBatch(
       );
       result.delivered++;
     } catch (err) {
+      const disp = classifyWebPushError(err);
       const wpe = err as WebPushError;
-      if (wpe?.statusCode === 404 || wpe?.statusCode === 410) {
-        // Subscription expired or invalid — mark for cleanup
+      const detail = wpe?.statusCode
+        ? `HTTP ${wpe.statusCode}: ${wpe.body || wpe.message}`
+        : (err instanceof Error ? err.message : String(err));
+      if (disp.kind === 'prune') {
         result.stale++;
         staleIds.push(sub.id);
+        result.errors.push(`${disp.reason}: ${detail}`);
+        dispPrune++;
+      } else if (disp.kind === 'retry') {
+        result.failed++;
+        result.errors.push(`${disp.reason}: ${detail}`);
+        dispRetry++;
       } else {
         result.failed++;
-        const msg = wpe?.statusCode
-          ? `HTTP ${wpe.statusCode}: ${wpe.body || wpe.message}`
-          : (err instanceof Error ? err.message : String(err));
-        result.errors.push(msg);
+        result.errors.push(`${disp.reason}: ${detail}`);
+        dispUnknown++;
       }
     }
   }));
 
-  // Clean up stale subscriptions in one query
+  // Clean up permanently-failed subscriptions in one query
   if (staleIds.length > 0) {
     try {
       await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, staleIds));
@@ -104,6 +129,7 @@ async function sendBatch(
     delivered: result.delivered,
     stale: result.stale,
     failed: result.failed,
+    dispositions: { prune: dispPrune, retry: dispRetry, unknown: dispUnknown },
     errors: result.errors.slice(0, 3),
   }));
 

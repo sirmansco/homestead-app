@@ -95,7 +95,9 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (t) => ({
+  userEndpointUnique: unique('push_subscriptions_user_endpoint_unique').on(t.userId, t.endpoint),
+}));
 
 export const familyInvites = pgTable('family_invites', {
   id: uuid('id').primaryKey().defaultRandom(),
