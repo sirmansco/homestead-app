@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
 
 export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
 export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'cancelled']);
@@ -83,7 +83,9 @@ export const bells = pgTable('bells', {
   handledAt: timestamp('handled_at'),
   escalatedAt: timestamp('escalated_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (t) => ({
+  statusEscalatedCreatedIdx: index('idx_bells_status_escalated_created').on(t.status, t.escalatedAt, t.createdAt),
+}));
 
 export const pushSubscriptions = pgTable('push_subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),

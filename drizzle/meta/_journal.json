@@ -50,6 +50,13 @@
       "when": 1777738576822,
       "tag": "0006_village_group_default",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777739500389,
+      "tag": "0007_bells_escalation_index",
+      "breakpoints": true
     }
   ]
 }
