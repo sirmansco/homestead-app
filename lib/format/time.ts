@@ -60,3 +60,14 @@ export function fmtDayOfWeekLong(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return date.toLocaleDateString(undefined, { weekday: 'long' });
 }
+
+// "YYYY-MM-DD" in the browser's local timezone — used for same-day comparisons
+// that must not drift when the server renders in UTC. Never use getTime() math
+// across a midnight boundary; use this key for equality checks instead.
+export function localDateKey(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
