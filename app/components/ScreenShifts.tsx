@@ -4,17 +4,20 @@ import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead } from './shared';
 import { HouseholdSwitcher } from './HouseholdSwitcher';
 import { useAppData, type ShiftRow } from '@/app/context/AppDataContext';
-import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong } from '@/lib/format/time';
+import { fmtTimeRange, durationH, fmtDateShort, fmtMonthAbbr, fmtDayOfWeek, fmtDayOfWeekLong, localDateKey } from '@/lib/format/time';
 import { getCopy } from '@/lib/copy';
 
 
 function fmtWhen(startIso: string) {
   const s = new Date(startIso);
   const now = new Date();
-  const days = Math.round((s.getTime() - now.setHours(0, 0, 0, 0)) / 86400000);
-  if (days === 0) return 'Tonight';
-  if (days === 1) return 'Tomorrow';
-  if (days > 1 && days < 7) return fmtDayOfWeekLong(s);
+  const shiftKey = localDateKey(s);
+  const todayKey = localDateKey(now);
+  const tomorrowKey = localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const in7Key = localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  if (shiftKey === todayKey) return 'Tonight';
+  if (shiftKey === tomorrowKey) return 'Tomorrow';
+  if (shiftKey < in7Key) return fmtDayOfWeekLong(s);
   return fmtDateShort(s);
 }
 function groupByDate(rows: ShiftRow[]): { key: string; label: string; rows: ShiftRow[] }[] {
