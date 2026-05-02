@@ -5,7 +5,7 @@ import { bells } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
-import { notifyBellRing } from '@/lib/notify';
+import { notifyBellRing, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 
 export async function POST(req: NextRequest) {
@@ -42,15 +42,14 @@ export async function POST(req: NextRequest) {
 
     // Notify covey caregivers (spec: Bell pings covey first).
     // Recipient resolution + preference filter live in notify.ts.
-    let notifySent = 0;
-    let notifyEligible = 0;
+    let notify: NotifyResult = { kind: 'push_error', recipients: 0, error: 'notify_threw' };
     try {
-      ({ sent: notifySent, eligible: notifyEligible } = await notifyBellRing(bell.id));
+      notify = await notifyBellRing(bell.id);
     } catch (err) {
       console.error('[bell:ring:notify]', err);
     }
 
-    return NextResponse.json({ bell, notifySent, notifyEligible });
+    return NextResponse.json({ bell, notify });
   } catch (err) {
     return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
   }

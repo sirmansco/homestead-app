@@ -59,8 +59,11 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsSaving, setPrefsSaving] = useState<keyof NotifPrefs | null>(null);
 
-  // Push permission state — lazy init reads window.Notification only on client
-  type PermState = 'unsupported' | 'default' | 'granted' | 'denied' | 'requesting';
+  // Push permission state — lazy init reads window.Notification only on client.
+  // L13 fix: 'granted_unregistered' covers the case where the browser allowed
+  // push but /api/push/subscribe failed — the user previously saw "Push
+  // notifications enabled" while no subscription was on file server-side.
+  type PermState = 'unsupported' | 'default' | 'granted' | 'denied' | 'requesting' | 'granted_unregistered' | 'failed';
   const [permState, setPermState] = useState<PermState>(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
     return Notification.permission as PermState;
@@ -69,7 +72,14 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
   async function handleEnableNotifications() {
     setPermState('requesting');
     const result = await requestPushPermission();
-    setPermState(result.ok ? 'granted' : (Notification.permission as PermState));
+    if (result.ok) {
+      setPermState('granted');
+    } else if (result.reason.startsWith('subscribe_api_') || result.reason === 'vapid_key_missing') {
+      setPermState('granted_unregistered');
+    } else {
+      // permission_denied / permission_default / push_not_supported — read browser state
+      setPermState(Notification.permission as PermState);
+    }
   }
 
   // Theme
@@ -242,6 +252,45 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
                 <div style={{ fontFamily: G.display, fontSize: 14, color: G.green, fontWeight: 500 }}>
                   Push notifications enabled
                 </div>
+              )}
+              {permState === 'granted_unregistered' && (
+                <>
+                  <div style={{ fontFamily: G.display, fontSize: 14, color: G.clay, fontWeight: 500 }}>
+                    Push allowed by your browser, but registration failed
+                  </div>
+                  <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, marginTop: 4, lineHeight: 1.5 }}>
+                    Try again — if it keeps failing, the server isn&apos;t configured for push yet.
+                  </div>
+                  <button
+                    onClick={handleEnableNotifications}
+                    style={{
+                      marginTop: 10, padding: '9px 14px', borderRadius: 8,
+                      background: G.ink, color: G.bg, border: 'none',
+                      fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                      textTransform: 'uppercase', cursor: 'pointer',
+                    }}
+                  >
+                    Try again
+                  </button>
+                </>
+              )}
+              {permState === 'failed' && (
+                <>
+                  <div style={{ fontFamily: G.display, fontSize: 14, color: G.clay, fontWeight: 500 }}>
+                    Couldn&apos;t enable notifications
+                  </div>
+                  <button
+                    onClick={handleEnableNotifications}
+                    style={{
+                      marginTop: 10, padding: '9px 14px', borderRadius: 8,
+                      background: G.ink, color: G.bg, border: 'none',
+                      fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                      textTransform: 'uppercase', cursor: 'pointer',
+                    }}
+                  >
+                    Try again
+                  </button>
+                </>
               )}
               {permState === 'denied' && (
                 <>

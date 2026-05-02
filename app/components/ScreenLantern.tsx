@@ -216,11 +216,14 @@ function BellCompose({ onRing, onBack, onPost }: {
       // Parse JSON once — calling .json() twice on the same response throws "body already used"
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Failed to ${getCopy().urgentSignal.actionLabel.toLowerCase()}`);
-      const warning = data.notifyEligible === 0
-        ? `${getCopy().urgentSignal.noun} lit — but no caregivers have notifications enabled. They'll see it when they open the app.`
-        : data.notifySent === 0
-        ? `${getCopy().urgentSignal.noun} lit — push delivery failed. Caregivers will see it when they open the app.`
-        : null;
+      const noun = getCopy().urgentSignal.noun;
+      const n = data.notify as { kind: string } | undefined;
+      const warning =
+        !n ? null :
+        n.kind === 'no_recipients' ? `${noun} lit — but no caregivers have notifications enabled. They'll see it when they open the app.` :
+        n.kind === 'vapid_missing' || n.kind === 'push_error' ? `${noun} lit — push delivery failed. Caregivers will see it when they open the app.` :
+        n.kind === 'partial' ? `${noun} lit — some caregivers may not have received the push. They'll see it when they open the app.` :
+        null;
       onRing(data.bell.id, reasons[why].label, warning ?? undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
