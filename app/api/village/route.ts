@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray } from 'drizzle-orm';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, kids, households } from '@/lib/db/schema';
 import { requireHousehold, requireHouseholdAdmin, requireUser } from '@/lib/auth/household';
 import { normaliseStoredName } from '@/lib/format';
 import { authError } from '@/lib/api-error';
+import { tombstoneUser } from '@/lib/users/tombstone';
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,13 +96,55 @@ export async function DELETE(req: NextRequest) {
 
     if (type === 'kid') {
       await db.delete(kids).where(and(eq(kids.id, id), eq(kids.householdId, household.id)));
-    } else if (type === 'adult') {
-      await db.delete(users).where(and(eq(users.id, id), eq(users.householdId, household.id)));
-    } else {
-      return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
+      return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ ok: true });
+    if (type === 'adult') {
+      // Cache target's clerkUserId before tombstone — anonymize rewrites it.
+      const [target] = await db.select().from(users).where(and(
+        eq(users.id, id), eq(users.householdId, household.id),
+      )).limit(1);
+      if (!target) return NextResponse.json({ error: 'not found' }, { status: 404 });
+
+      const outcome = await tombstoneUser({ userId: id, householdId: household.id });
+
+      // DB first, Clerk last (BUILD-LESSONS Principle 6). Drop org membership
+      // using the cached clerkUserId so anonymize's rewrite doesn't lose it.
+      // Surfaces clerkDropped to the caller per account/route.ts:148-156 parity
+      // so a Clerk-side failure isn't invisible.
+      let clerkDropped = true;
+      try {
+        const client = await clerkClient();
+        const memberships = await client.organizations.getOrganizationMembershipList({
+          organizationId: household.clerkOrgId,
+        });
+        const membership = memberships.data.find(
+          m => m.publicUserData?.userId === target.clerkUserId,
+        );
+        if (membership) {
+          await client.organizations.deleteOrganizationMembership({
+            organizationId: household.clerkOrgId,
+            userId: target.clerkUserId,
+          });
+        }
+      } catch (clerkErr) {
+        clerkDropped = false;
+        console.error('[village:DELETE:clerk]', clerkErr);
+      }
+
+      console.log(JSON.stringify({
+        event: 'village_delete_adult',
+        userId: id,
+        householdId: household.id,
+        outcome,
+        clerkDropped,
+        at: new Date().toISOString(),
+      }));
+
+      return NextResponse.json({ ok: true, clerkDropped });
+    }
+
+    return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
   } catch (err) {
     return authError(err, 'village:PATCH', 'Village action failed');
   }

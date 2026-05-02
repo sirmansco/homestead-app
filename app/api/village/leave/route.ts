@@ -1,26 +1,28 @@
 import { NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { tombstoneUser } from '@/lib/users/tombstone';
 
 // POST /api/village/leave
 // Caregiver self-removal from the active household. Admin authority is NOT
 // required — this is the *self* mutation path; admin-gated village DELETE is
 // for *other-row* mutations (B2 / synthesis L2).
 //
-// FK behavior: a user with authored shifts/bells will currently 5xx via
-// onDelete:'restrict'. L9 (synthesis Theme B) lands tombstone behavior here
-// rather than threading it through the conflated village DELETE.
+// Self-leave does not drop Clerk org membership. The user retains their Clerk
+// identity for any other household they belong to; this is per-household
+// removal, not account deletion.
 export async function POST() {
   try {
     const { household, user } = await requireHousehold();
 
-    await db.delete(users).where(and(
-      eq(users.id, user.id),
-      eq(users.householdId, household.id),
-    ));
+    const outcome = await tombstoneUser({ userId: user.id, householdId: household.id });
+    console.log(JSON.stringify({
+      event: 'village_leave',
+      userId: user.id,
+      householdId: household.id,
+      outcome,
+      at: new Date().toISOString(),
+    }));
 
     return NextResponse.json({ ok: true });
   } catch (err) {
