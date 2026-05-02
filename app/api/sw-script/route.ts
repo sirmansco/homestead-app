@@ -64,14 +64,21 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url || '/';
+  const targetUrl = new URL(url, self.location.origin).toString();
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
+          try {
+            await client.navigate(targetUrl);
+          } catch (e) {
+            // navigate can throw on cross-origin or restricted URLs; fall back to focus only.
+            console.warn('[sw:notificationclick] navigate failed', e);
+          }
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(url);
+      if (clients.openWindow) return clients.openWindow(targetUrl);
     })
   );
 });
