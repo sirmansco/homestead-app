@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 02 — Authz, invite-flow, multi-household scoping
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L1, L2 (authz half), L3, L6, L7
 deferred: L5 (notification preferences scope — user direction pending 2026-05-02; opens as separate plan once decided)
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
