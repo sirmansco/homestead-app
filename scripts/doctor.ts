@@ -18,6 +18,11 @@
  *   6. Live DB has all tables expected by schema.ts (sampled key tables).
  *   7. Live DB users.* and bells.* columns match schema.ts (the spots that
  *      have bitten us). Add more as schema grows.
+ *   8. Every migration tag has a matching meta/<tag>_snapshot.json. Missing
+ *      snapshots cause drizzle-kit generate to silently re-emit changes from
+ *      every migration after the last present snapshot — the failure mode
+ *      that produced 2026-05-02 B-snapshots. WARN-mode in this rev; promote
+ *      to error in a follow-up batch once the snapshot chain has soaked.
  */
 import { config } from 'dotenv';
 config({ path: '.env.local' });
@@ -69,6 +74,19 @@ async function main() {
   }
   for (const tag of journalTags) {
     if (!sqlTags.has(tag)) fail('journal', `_journal.json references ${tag} but ${tag}.sql is missing`);
+  }
+
+  // 8: snapshot ⇄ migration. Every migration tag has a matching meta/<tag>_snapshot.json
+  // (matched by tag's numeric prefix — kit names snapshots <idx>_snapshot.json, not <full-tag>_snapshot.json).
+  const snapshotFiles = readdirSync(path.join(drizzleDir, 'meta'))
+    .filter(f => f.endsWith('_snapshot.json') && !f.startsWith('._'));
+  const snapshotPrefixes = new Set(snapshotFiles.map(f => f.replace(/_snapshot\.json$/, '')));
+  for (const tag of sqlTags) {
+    const prefix = tag.match(/^(\d+)_/)?.[1];
+    if (!prefix) continue;
+    if (!snapshotPrefixes.has(prefix)) {
+      warn('snapshot-missing', `${tag}.sql exists on disk but meta/${prefix}_snapshot.json is missing — drizzle-kit generate will produce dirty migrations bundling all changes since the last present snapshot. Reconstruct the snapshot before the next schema change.`);
+    }
   }
 
   // 3: hash check
