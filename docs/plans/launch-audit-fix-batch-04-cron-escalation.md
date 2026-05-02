@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 04 — Cron wiring + bounded escalation
 date: 2026-05-02
-status: pending
+status: shipped
 governs: L14 (primary), L15 (paired)
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B4
