@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
-import { requireHousehold, requireUser } from '@/lib/auth/household';
+import { requireHousehold, requireHouseholdAdmin, requireUser } from '@/lib/auth/household';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { authError } from '@/lib/api-error';
 
@@ -73,7 +73,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { household } = await requireHousehold();
+    const { household } = await requireHouseholdAdmin();
     const body = await req.json();
     const { name, glyph } = body as { name?: string; glyph?: string };
 

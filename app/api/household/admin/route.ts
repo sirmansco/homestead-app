@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHouseholdAdmin } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 
 // PATCH /api/household/admin — body { targetUserId }
@@ -12,7 +12,7 @@ import { authError } from '@/lib/api-error';
 // transaction so the household never has zero or two admins.
 export async function PATCH(req: NextRequest) {
   try {
-    const { household, user: caller } = await requireHousehold();
+    const { household, user: caller } = await requireHouseholdAdmin();
 
     const body = await req.json().catch(() => ({})) as { targetUserId?: unknown };
     const targetUserId = typeof body.targetUserId === 'string' ? body.targetUserId.trim() : '';

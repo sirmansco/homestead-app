@@ -3,15 +3,12 @@ import { and, eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { requireHousehold } from '@/lib/auth/household';
+import { requireHouseholdAdmin } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
-    const { household, user } = await requireHousehold();
-    if (user.role !== 'parent') {
-      return NextResponse.json({ error: 'Only parents can change roles' }, { status: 403 });
-    }
+    const { household } = await requireHouseholdAdmin();
     const body = await req.json() as {
       role?: 'parent' | 'caregiver';
       villageGroup?: 'covey' | 'field';
@@ -38,10 +35,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
-    const { household, user } = await requireHousehold();
-    if (user.role !== 'parent') {
-      return NextResponse.json({ error: 'Only parents can remove members' }, { status: 403 });
-    }
+    const { household, user } = await requireHouseholdAdmin();
     if (id === user.id) {
       return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
     }

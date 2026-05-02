@@ -3,6 +3,9 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
 import { looksLikeSlug } from '@/lib/format';
+import { NotAdminError } from '@/lib/api-error';
+
+export { NotAdminError };
 
 export async function requireUser() {
   const { userId } = await auth();
@@ -77,4 +80,15 @@ export async function requireHousehold() {
   }
 
   return { household, user, userId, orgId };
+}
+
+// Authorization gate for household-administration writes (household profile
+// PATCH, member PATCH/DELETE, admin transfer, village CRUD, village invite).
+// Re-reads the caller's `users` row inside the active household via
+// requireHousehold() and throws NotAdminError unless `users.isAdmin === true`.
+// `authError()` maps the throw to 403 `{ error: 'no_access' }`.
+export async function requireHouseholdAdmin() {
+  const ctx = await requireHousehold();
+  if (!ctx.user.isAdmin) throw new NotAdminError();
+  return ctx;
 }

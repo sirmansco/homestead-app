@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 01 — Admin authority foundation
 date: 2026-05-02
-status: pending
+status: shipped-pr-open
 governs: L4
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B1
@@ -32,6 +32,7 @@ Pattern scan of the seed routes (`lib/auth/household.ts`, `lib/api-error.ts`, `a
 - `app/api/household/route.ts` (PATCH at line 76) — gate via `requireHouseholdAdmin()`.
 - `app/api/household/members/[id]/route.ts` (PATCH at line 12, DELETE at line 42) — replace `user.role !== 'parent'` with `requireHouseholdAdmin()`.
 - `tests/auth-access-household-admin.test.ts` — new file (regression test for L4 / synthesis).
+- `tests/admin-transfer.test.ts` — extend the `@/lib/auth/household` mock factory to include `requireHouseholdAdmin` (the route imports it now). Scope-creep noted: this is a one-line mock update, not new test logic; documented here per Protos §"Scope-creep interrupt." Decision: kept in B1 because the route migration would otherwise leave a hard-rule #6 regression-test gap.
 
 ## Graveyard
 
@@ -42,6 +43,8 @@ Pattern scan of the seed routes (`lib/auth/household.ts`, `lib/api-error.ts`, `a
 - `app/api/household/admin/route.ts` correctly gates on `users.isAdmin` today — this batch generalizes that contract; do not regress it.
 - `lib/auth/household.ts` `requireHousehold()` already centralizes Clerk + DB + per-household-identity creation; do not duplicate that work in the new helper.
 - `account/route.ts` self-deletion does not require admin (a user deleting their own account is allowed without admin) — admin helper is for *other-row* mutations.
+- After B1: `requireHouseholdAdmin()` is the canonical helper for household-administration writes. `NotAdminError` lives in `lib/api-error.ts` (re-exported from `lib/auth/household.ts`); `authError()` maps it to 403 `{ error: 'no_access' }`. Tests that mock `@/lib/auth/household` must include `requireHouseholdAdmin` in the mock factory.
+- After B1: `app/api/household/admin/route.ts` admin transfer still re-reads the caller inside the transaction — that asserts the concurrent-demote path and is independent of the outer gate. Don't collapse it.
 
 ## Fragile areas
 
