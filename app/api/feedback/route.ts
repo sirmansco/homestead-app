@@ -3,18 +3,31 @@ import { db } from '@/lib/db';
 import { feedback } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 
 const VALID_KINDS = ['bug', 'idea', 'general'] as const;
 type FeedbackKind = typeof VALID_KINDS[number];
 
 export async function POST(req: NextRequest) {
   try {
+    // Content-Length guard: catches common over-size POSTs. Not a hard guarantee
+    // since clients can omit the header on chunked bodies.
+    const cl = Number(req.headers.get('content-length') ?? '0');
+    if (cl > 16_384) return NextResponse.json({ error: 'request too large' }, { status: 413 });
+
     const { household, user } = await requireHousehold();
+
+    const rl = rateLimit({ key: `feedback:${user.id}`, limit: 5, windowMs: 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const body = await req.json() as { message?: string; kind?: string };
     const message = body.message?.trim();
     if (!message) {
       return NextResponse.json({ error: 'message required' }, { status: 400 });
+    }
+    if (message.length > 4000) {
+      return NextResponse.json({ error: 'message too long (max 4000 chars)' }, { status: 400 });
     }
     if (!body.kind || !VALID_KINDS.includes(body.kind as FeedbackKind)) {
       return NextResponse.json({ error: 'kind must be bug | idea | general' }, { status: 400 });

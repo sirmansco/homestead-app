@@ -7,6 +7,7 @@ import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
 import { notifyBellRing, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
+import { parseTimeRange } from '@/lib/validate/time-range';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,13 +31,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'reason, startsAt, endsAt required' }, { status: 400 });
     }
 
+    const timeRange = parseTimeRange(startsAt, endsAt, { maxWindowMs: 86_400_000 });
+    if ('error' in timeRange) {
+      return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
+    }
+
     const [bell] = await db.insert(bells).values({
       householdId: household.id,
       createdByUserId: user.id,
       reason,
       note: note || null,
-      startsAt: new Date(startsAt),
-      endsAt: new Date(endsAt),
+      startsAt: timeRange.starts,
+      endsAt: timeRange.ends,
       status: 'ringing',
     }).returning();
 

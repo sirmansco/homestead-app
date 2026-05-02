@@ -11,8 +11,8 @@ import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyNewShift, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { parseTimeRange } from '@/lib/validate/time-range';
+import { UUID_RE } from '@/lib/validate/uuid';
 
 export async function GET(req: NextRequest) {
   try {
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
   try {
     const { household, user } = await requireHousehold();
     if (user.role !== 'parent') {
-      return NextResponse.json({ error: `Only ${getCopy().roles.keeper.plural.toLowerCase()} can post ${getCopy().request.tabLabel.toLowerCase()}` }, { status: 403 });
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
     // Rate limit: 20 shifts per hour per user (generous — covers recurring batches)
@@ -182,11 +182,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'title, startsAt, endsAt required' }, { status: 400 });
     }
 
-    const starts = new Date(body.startsAt);
-    const ends = new Date(body.endsAt);
-    if (isNaN(+starts) || isNaN(+ends) || ends <= starts) {
-      return NextResponse.json({ error: 'invalid time range' }, { status: 400 });
+    const timeRange = parseTimeRange(body.startsAt, body.endsAt);
+    if ('error' in timeRange) {
+      return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
     }
+    const { starts, ends } = timeRange;
 
     // Coerce invalid/empty preferredCaregiverId to null so bad client state
     // doesn't cause a uuid cast failure in Postgres.

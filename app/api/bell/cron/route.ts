@@ -34,7 +34,7 @@ async function runWithConcurrency<T, R>(
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
   }
 
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000);

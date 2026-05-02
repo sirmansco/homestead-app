@@ -8,9 +8,12 @@ import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { notifyShiftClaimed } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
+import { requireUUID } from '@/lib/validate/uuid';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await ctx.params;
+    const { id: rawId } = await ctx.params;
+    const id = requireUUID(rawId);
+    if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { userId } = await requireUser();
 
     const rl = rateLimit({ key: `shift-claim:${userId}`, limit: 10, windowMs: 60 * 60_000 });

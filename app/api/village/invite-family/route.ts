@@ -4,11 +4,16 @@ import { db } from '@/lib/db';
 import { familyInvites, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 // Caregiver invites a parent of a new family to join Homestead
 // Creates a pending invite; parent accepts via /accept-family-invite?token=...
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await requireUser();
+
+    const rl = rateLimit({ key: `invite-family:${userId}`, limit: 5, windowMs: 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const body = await req.json() as {
       parentName?: string;
