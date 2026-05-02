@@ -500,7 +500,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
   }
 
   // First-time onboarding checklist. Each step reflects real state:
-  //   1. Name your homestead — done once household exists (always true here).
+  //   1. Name your household — done once household exists (always true here).
   //   2. Invite your village — done when villageSize > 0.
   //   3. Post your first need — done when the user has posted at least one shift.
   // When all three are done, this whole panel hides (handled by caller).

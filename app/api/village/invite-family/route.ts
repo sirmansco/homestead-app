@@ -5,7 +5,7 @@ import { familyInvites, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
-// Caregiver invites a parent of a new family to join Homestead
+// Caregiver invites a parent of a new family to join Covey
 // Creates a pending invite; parent accepts via /accept-family-invite?token=...
 export async function POST(req: NextRequest) {
   try {

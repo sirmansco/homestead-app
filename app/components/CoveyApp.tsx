@@ -172,11 +172,11 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
 }
 
 // ── Provider shell — HouseholdProvider must be outermost (AppDataProvider reads no household state)
-export function HomesteadApp() {
+export function CoveyApp() {
   return (
     <HouseholdProvider>
       <AppDataProvider>
-        <HomesteadInner />
+        <CoveyInner />
       </AppDataProvider>
     </HouseholdProvider>
   );
@@ -185,7 +185,7 @@ export function HomesteadApp() {
 // Tab screens that stay mounted permanently for zero-cost switching
 const TAB_SCREENS: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
 
-function HomesteadInner() {
+function CoveyInner() {
   const { user } = useUser();
   const { isDualRole, active, rolesByHousehold } = useHousehold();
   const { activeBell, refreshBell } = useAppData();

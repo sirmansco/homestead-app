@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 const APP_SHA = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
 
 // Covey staging domains are attached to Vercel before TM clearance. Noindex
-// them so search engines don't learn "Homestead is at joincovey.co" during
-// the staging window. Lifted automatically once COVEY_BRAND_ACTIVE goes true.
+// them so search engines don't index the app during the staging window.
+// Lifted automatically once COVEY_BRAND_ACTIVE goes true.
 const COVEY_STAGING_HOSTS = new Set(['joincovey.co', 'thecovey.app']);
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -1,5 +1,5 @@
-import { HomesteadApp } from './components/HomesteadApp';
+import { CoveyApp } from './components/CoveyApp';
 
 export default function Page() {
-  return <HomesteadApp />;
+  return <CoveyApp />;
 }
