@@ -16,6 +16,13 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-02 · #57 · B7 — DB indexing pass: L20/L21/L22 hot-path indexes
+**Branch:** `fix/b7-db-indexes` → main (`6c6ba81`)
+**Plan:** [docs/plans/launch-audit-fix-batch-07-db-indexes.md](docs/plans/launch-audit-fix-batch-07-db-indexes.md)
+**What shipped:** Closes synthesis Theme H (L20 blocks-launch + L21 blocks-launch + L22 should-fix). Single Drizzle migration `0010_nappy_leader.sql` adds 8 secondary indexes — no route changes, no logic changes. L20: `bells(household_id, status, ends_at)` covers the `/api/bell/active` 10s-polling filter; `bell_responses(bell_id)` covers the join. Non-conflicting with B4's `idx_bells_status_escalated_created` (different leading column). L21: five composites for `GET /api/shifts`'s four scopes — `(household_id, ends_at, starts_at)`, `(household_id, status, ends_at, starts_at)`, `(claimed_by_user_id, ends_at)`, `(created_by_user_id, ends_at)`, `(preferred_caregiver_id, status, ends_at)`. Ships all five; staging `EXPLAIN ANALYZE` pre-launch will prune redundant ones. L22: partial unique index `users(cal_token) WHERE cal_token IS NOT NULL` — ICS token lookup is now O(log n). ICS time-bound and `Cache-Control` headers deferred (Fragile area §3 in plan). Snapshot chain: `db:generate` clean on first run; second run (resource-fork preflight per macOS lessons.md) reported "No schema changes, nothing to migrate." Stale `launch-audit-fix-batch-08-db-indexes.md` deleted (superseded by B7 plan with fuller conventions section).
+**Verification:** 250/250 tests (29 files, +20 new). `tests/perf-indexes.test.ts` — 20 source-grep assertions: 9 schema-declaration tests + 11 migration-file tests (existence, content, journal monotonicity, snapshot existence). Falsifiability proven: removed `bellIdIdx` from `schema.ts` → `schema declares idx_bell_responses_bell_id on (bellId)` went red; restored. Lint: 27 problems (6 errors, 21 warnings) — identical to main. `db:doctor`: 0 errors, 1 expected pending-migration warning. CI: Vercel deploy passed on first poll.
+**Follow-ups:** Pre-launch staging `EXPLAIN ANALYZE` pass on all 5 shifts indexes — prune any that are redundant after real query shapes are observed. ICS time-bound + `Cache-Control`/ETag (L22 fix-shape part 2 — deferred). Theme H closes.
+
 ### 2026-05-02 · #56 · B6 — Push subscription correctness: uniqueness + permanent-failure pruning + deep-link click
 **Branch:** `fix/b6-push-correctness` → main (`63d0dd8`)
 **Plan:** [docs/plans/launch-audit-fix-batch-06-push-correctness.md](docs/plans/launch-audit-fix-batch-06-push-correctness.md)

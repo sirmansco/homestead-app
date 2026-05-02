@@ -1,7 +1,7 @@
 ---
 title: Launch fix batch 07 — DB indexing pass
 date: 2026-05-02
-status: pending
+status: shipped — PR #57, merged 6c6ba81
 governs: L20, L21, L22
 parent-audit: docs/plans/launch-audit-2026-05-02/synthesis.md
 batch-id: B7
