@@ -591,7 +591,7 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
           )}
           {family.kids.length > 0 && (
             <div style={{ flex: 1 }}>
-              <GLabel style={{ marginBottom: 5 }}>Kids</GLabel>
+              <GLabel style={{ marginBottom: 5 }}>The {getCopy().circle.kidLabel}s</GLabel>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {family.kids.map(k => (
                   <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
