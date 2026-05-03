@@ -46,7 +46,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
-  const [exportFilename, setExportFilename] = useState<string>('covey-export.json');
+  const [exportFilename, setExportFilename] = useState<string>(`${getCopy().brand.name.toLowerCase()}-export.json`);
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -156,7 +156,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       setExportUrl(url);
-      setExportFilename(`covey-export-${Date.now()}.json`);
+      setExportFilename(`${getCopy().brand.name.toLowerCase()}-export-${Date.now()}.json`);
       setExportingState('idle');
     } catch (e) {
       setExportingState('error');
