@@ -615,6 +615,22 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
           )}
         </div>
 
+        {/* Sign out */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Account</GLabel>
+          <button
+            onClick={() => signOut({ redirectUrl: '/' })}
+            style={{
+              marginTop: 10, padding: '10px 16px', borderRadius: 8,
+              background: 'transparent', color: G.ink, border: `1px solid ${G.hairline2}`,
+              fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
+              textTransform: 'uppercase', cursor: 'pointer',
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+
         {/* Danger zone */}
         <div style={{
           marginTop: 40, padding: 16, borderRadius: 10,
