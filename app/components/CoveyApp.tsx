@@ -257,13 +257,13 @@ function CoveyInner() {
       window.history.replaceState({}, '', clean.pathname + (clean.search || ''));
       return; // don't apply localStorage over the deep-link
     }
-    const savedScreen = localStorage.getItem('hs.screen') as LegacyTabId | null;
+    const savedScreen = localStorage.getItem('covey.screen') as LegacyTabId | null;
     if (savedScreen) setScreen(normalizeTabId(savedScreen));
   }, []);
 
-  useEffect(() => { localStorage.setItem('hs.screen', screen); }, [screen]);
+  useEffect(() => { localStorage.setItem('covey.screen', screen); }, [screen]);
   useEffect(() => {
-    if (canSwitchRole) localStorage.setItem('hs.role', role);
+    if (canSwitchRole) localStorage.setItem('covey.role', role);
   }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
