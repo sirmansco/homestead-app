@@ -91,8 +91,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Safe-area cascade: constant() for iOS <11.2, env() overrides for ≥11.2 */
+/* Safe-area bottom padding: hardcoded 34px for home-indicator iPhones */
 .safe-area-pb {
-  padding-bottom: constant(safe-area-inset-bottom, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: constant(safe-area-inset-bottom, 34px);
+  padding-bottom: env(safe-area-inset-bottom, 34px);
 }
