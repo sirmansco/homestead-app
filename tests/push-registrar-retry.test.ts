@@ -116,4 +116,30 @@ describe('PushRegistrar — subscribeWithRetry (BUG-D)', () => {
     expect(mockSubscribe).not.toHaveBeenCalled();
     expect(mockFetch).toHaveBeenCalledWith('/api/push/subscribe', expect.any(Object));
   });
+
+  // iOS stale-subscription regression: getSubscription() returns a sub with
+  // null keys (known WebKit bug). Must unsubscribe + subscribe fresh instead
+  // of forwarding null keys to the API (which returns 400).
+  it('unsubscribes and resubscribes when existing subscription has null keys', async () => {
+    const mockUnsubscribe = vi.fn().mockResolvedValue(true);
+    const staleSubNullKeys = {
+      toJSON: () => ({ endpoint: 'https://fcm.test/stale', keys: { p256dh: null, auth: null } }),
+      unsubscribe: mockUnsubscribe,
+    };
+    mockGetSubscription.mockResolvedValueOnce(staleSubNullKeys);
+    mockSubscribe.mockResolvedValueOnce(FAKE_SUB);
+
+    const promise = requestPushPermission();
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result.ok).toBe(true);
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(mockSubscribe).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith('/api/push/subscribe', expect.any(Object));
+    // Verify the body sent to the API has valid keys (not the null ones)
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.keys?.p256dh).toBeTruthy();
+    expect(body.keys?.auth).toBeTruthy();
+  });
 });
