@@ -218,7 +218,6 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'parent', bellCou
     { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
-    { id: 'perch',    label: getCopy().schedule.caregiverTitle, icon: Icons.perch },
     { id: 'whistles', label: getCopy().request.tabLabel, icon: Icons.whistles },
     { id: 'lantern',  label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
     { id: 'circle',   label: getCopy().circle.caregiverTitle, icon: Icons.village },

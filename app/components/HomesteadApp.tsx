@@ -282,12 +282,13 @@ function HomesteadInner() {
   type NavTab = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
   const activeTab: NavTab =
     screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'perch') :
+    screen === 'perch' && role === 'caregiver' ? 'whistles' :
     (screen === 'settings' || screen === 'diagnostics') ? 'circle' :
     screen as NavTab;
 
   useEffect(() => {
-    const parentMap:    TabId[] = ['perch',   'post',    'circle'];
-    const caregiverMap: TabId[] = ['perch', 'whistles', 'lantern', 'circle'];
+    const parentMap:    TabId[] = ['perch',    'post',    'circle'];
+    const caregiverMap: TabId[] = ['whistles', 'lantern', 'circle'];
     const map = role === 'caregiver' ? caregiverMap : parentMap;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
@@ -306,7 +307,7 @@ function HomesteadInner() {
 
   const handleRoleChange = useCallback((r: Role) => {
     setRole(r);
-    setScreen('perch');
+    setScreen(r === 'caregiver' ? 'whistles' : 'perch');
   }, []);
 
   // Keep-alive screen layout: all tab-bar screens mounted simultaneously,
