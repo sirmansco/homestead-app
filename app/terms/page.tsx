@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Terms of Service',
-  description: 'The rules for using this app.',
+  description: 'The rules for using Covey.',
 };
 
 export default function TermsPage() {
@@ -23,102 +23,190 @@ export default function TermsPage() {
         Terms of Service
       </h2>
       <p style={{ color: '#7A6C5D', fontSize: 13, marginTop: 0 }}>
-        Last updated: April 22, 2026
+        Last updated: May 3, 2026
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>The short version</h3>
       <p>
-        {t.brand.name} is a coordination tool. We help you organize the people you already trust with your kids.
-        We do not vet, employ, or insure any caregivers, and we are not responsible for anything that happens
-        outside of the app.
+        {t.brand.name} is a coordination tool. It helps you organize the people you already trust with your
+        kids. We are not a marketplace, an employer, a background-check service, or an emergency service.
+        You choose who is in your circle — that choice and its consequences are yours.
+      </p>
+
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Who we are</h3>
+      <p>
+        {t.brand.name} is operated by Covey &amp; Co., based in South Carolina, United States. References to
+        &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo; in these terms refer to Covey &amp; Co.
+        You can reach us at <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a>.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Who can use {t.brand.name}</h3>
       <p>
-        You must be at least 18 years old to create an account. {t.brand.name} is not intended for use by children.
-        Parents may add information about their children to the app, but children do not sign in.
+        You must be at least 18 years old to create an account. {t.brand.name} is for adults only — parents,
+        guardians, and trusted caregivers. Children do not create accounts, sign in, or interact with the app
+        directly. Any information about children in the app is entered and managed entirely by adults.
+      </p>
+      <p>
+        By creating an account, you represent that you are at least 18 years old and have the legal authority
+        to agree to these terms.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>What {t.brand.name} is — and isn&rsquo;t</h3>
       <p>
-        {t.brand.name} is software. We&rsquo;re a coordination tool for people who have already agreed to help each
-        other. We&rsquo;re not a babysitter marketplace, an employment platform, a payment processor, or an
-        emergency service.
+        {t.brand.name} is software for coordinating care among people who have already chosen to trust each other.
+        We are not:
       </p>
       <ul>
-        <li>We do not background-check, employ, or endorse anyone on the platform.</li>
-        <li>You choose who&rsquo;s in your circle. You&rsquo;re responsible for that choice.</li>
-        <li>Any payment between parents and caregivers happens outside the app. We are not involved.</li>
-        <li>{t.brand.name} is not a substitute for 911 or any emergency service. If your child is in danger,
-          call emergency services immediately.</li>
+        <li>A marketplace or referral service for caregivers.</li>
+        <li>An employment agency. No employment, agency, or contractor relationship is created between
+          {t.brand.name} and any user, and no employment relationship is created or implied between keepers
+          and watchers by virtue of using the app.</li>
+        <li>A background-check or vetting service. We do not screen, verify, endorse, or certify any user.
+          You are solely responsible for determining whether the people you add to your circle are suitable
+          to care for your children.</li>
+        <li>A payment processor. Any financial arrangements between keepers and watchers happen outside the
+          app and are entirely your own business.</li>
+        <li>An emergency service. If your child is in danger, call 911 immediately.
+          {t.brand.name}&rsquo;s Lantern feature is a coordination tool, not a substitute for emergency
+          services. Push notifications can fail. Do not rely on {t.brand.name} as your only communication
+          channel in an emergency.</li>
       </ul>
+
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Children&rsquo;s information</h3>
+      <p>
+        If you enter information about a child into {t.brand.name} — name, birthday, care notes, photos — you
+        represent that you are that child&rsquo;s parent, legal guardian, or an adult who has been authorized
+        by the parent or guardian to share that information through the app. Responsibility for the accuracy,
+        appropriateness, and legal right to share that information rests entirely with you.
+      </p>
+      <p>
+        We collect only the information you choose to add. We do not share it with anyone outside your
+        designated circle or our infrastructure providers. See our Privacy Policy for details.
+      </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Your content</h3>
       <p>
-        You own the data you put into {t.brand.name}. By using the app, you give us a limited license to store,
-        display, and transmit that data so the app can function — to show your shifts to your village, to
-        deliver notifications, to display photos you upload, and so on. We don&rsquo;t use your data for
-        anything else.
+        You own the data you put into {t.brand.name}. By using the app, you grant us a limited, non-exclusive
+        license to store, display, and transmit that data solely to operate the service — to show your
+        Whistles to your circle, deliver Lantern alerts, display photos you upload, and so on. We do not
+        use your content for any other purpose, including advertising or training AI models.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Acceptable use</h3>
       <p>Don&rsquo;t use {t.brand.name} to:</p>
       <ul>
         <li>Harass, threaten, or harm anyone.</li>
-        <li>Spam the bell feature or send bulk notifications that aren&rsquo;t genuine requests for help.</li>
-        <li>Upload content that isn&rsquo;t yours or that you don&rsquo;t have permission to share.</li>
-        <li>Interfere with the service, attempt to reverse-engineer it, or abuse our infrastructure.</li>
+        <li>Misuse the Lantern feature — sending false or non-urgent alerts that abuse the system.</li>
+        <li>Upload content you don&rsquo;t own or don&rsquo;t have permission to share.</li>
+        <li>Attempt to reverse-engineer, scrape, or interfere with the service or its infrastructure.</li>
         <li>Collect information about other users beyond what the app is designed to share with you.</li>
+        <li>Violate any applicable law, including laws governing children&rsquo;s privacy and data
+          protection.</li>
       </ul>
       <p>
-        We can suspend or terminate accounts that violate these rules.
+        We may suspend or terminate accounts that violate these rules, at our discretion and without
+        advance notice in serious cases.
       </p>
 
-      <h3 style={{ fontSize: 18, marginTop: 32 }}>Availability</h3>
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Push notifications</h3>
       <p>
-        We work hard to keep {t.brand.name} running, but we don&rsquo;t guarantee uptime. Push notifications can fail
-        or be delayed for reasons outside our control (your device, your network, your phone&rsquo;s OS).
-        <strong> Do not rely on {t.brand.name} as your only communication channel for an emergency.</strong>
+        When you enable push notifications, you consent to receiving service notifications — Lantern alerts,
+        Whistle updates, circle invites, and similar coordination messages. You can withdraw this consent at
+        any time by disabling notifications in your browser or device settings.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Subscriptions</h3>
       <p>
-        Some features may require a paid subscription. When we introduce paid plans, pricing and terms will
-        be shown at checkout. Subscriptions renew automatically until cancelled. You can cancel at any time
-        from your account settings; you&rsquo;ll keep access through the end of the current billing period.
-        We don&rsquo;t offer prorated refunds, except where required by law.
+        Some features may require a paid subscription. When paid plans are available, pricing, billing
+        frequency, and included features will be clearly disclosed before purchase. Key terms that will
+        apply to any paid subscription:
+      </p>
+      <ul>
+        <li>Subscriptions renew automatically at the end of each billing period until cancelled.</li>
+        <li>You can cancel at any time from your account settings. Access continues through the end of the
+          current paid period.</li>
+        <li>We do not offer prorated refunds for unused time, except where required by law.</li>
+        <li>If you are on an annual plan, we will send you a reminder before renewal. California residents
+          are entitled to this reminder under state law; we extend it to all subscribers.</li>
+        <li>We will notify you before any price increase takes effect and give you the opportunity to
+          cancel.</li>
+      </ul>
+
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Availability</h3>
+      <p>
+        We work hard to keep {t.brand.name} running, but we do not guarantee uptime or uninterrupted
+        service. Push notifications can fail or be delayed for reasons outside our control — your device,
+        your network, your browser, or your operating system.{' '}
+        <strong>Do not rely on {t.brand.name} as your only means of communicating in an emergency.</strong>
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Disclaimers</h3>
       <p>
-        {t.brand.name} is provided &ldquo;as is.&rdquo; We make no warranties, express or implied, about the
-        accuracy, reliability, or availability of the service. To the fullest extent allowed by law, we
-        disclaim all warranties, including merchantability and fitness for a particular purpose.
+        {t.brand.name} is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; To the fullest extent
+        permitted by law, Covey &amp; Co. disclaims all warranties, express or implied, including warranties
+        of merchantability, fitness for a particular purpose, title, and non-infringement. We make no
+        warranty that the service will be error-free, uninterrupted, secure, or that any defects will be
+        corrected.
+      </p>
+      <p>
+        We are not responsible for the actions, omissions, or conduct of any user, including any caregiver
+        who uses the app. We do not endorse or verify any user.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Limitation of liability</h3>
       <p>
-        To the fullest extent permitted by law, {t.brand.name} is not liable for indirect, incidental, special,
-        consequential, or punitive damages, or for any loss of profits or revenue, whether incurred directly
-        or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from your
-        use of the service.
+        To the fullest extent permitted by applicable law, Covey &amp; Co. will not be liable for any
+        indirect, incidental, special, consequential, or punitive damages, or for any loss of profits,
+        revenue, data, goodwill, or other intangible losses, arising out of or related to your use of — or
+        inability to use — the service. Our total liability to you for any claim arising from these terms
+        or your use of the service will not exceed the greater of (a) the amount you paid us in the twelve
+        months before the claim arose, or (b) $10 USD.
+      </p>
+      <p>
+        Some jurisdictions do not allow certain liability limitations. In those jurisdictions, our liability
+        is limited to the maximum extent permitted by law.
       </p>
 
-      <h3 style={{ fontSize: 18, marginTop: 32 }}>Changes to these terms</h3>
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Indemnification</h3>
       <p>
-        We may update these terms from time to time. If we make meaningful changes, we&rsquo;ll notify active
-        users by email. Continued use of the app after changes means you accept the updated terms.
+        You agree to defend, indemnify, and hold harmless Covey &amp; Co. from any claims, damages, losses,
+        and costs (including reasonable attorneys&rsquo; fees) arising from: (a) your use of the service;
+        (b) your violation of these terms; (c) your violation of any applicable law or third-party right;
+        or (d) any information you submit through the app, including information about children.
+      </p>
+
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Dispute resolution</h3>
+      <p>
+        We prefer to resolve disputes informally. If you have a concern, email us first at{' '}
+        <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a> and we will make a good-faith effort
+        to resolve it within 30 days.
+      </p>
+      <p>
+        If informal resolution fails, disputes will be resolved by binding individual arbitration under
+        the American Arbitration Association&rsquo;s Consumer Arbitration Rules. You waive any right to
+        participate in a class action or class-wide arbitration. This arbitration agreement does not apply
+        to claims that qualify for small claims court.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Governing law</h3>
       <p>
-        These terms are governed by the laws of the State of South Carolina, United States, without regard to
-        conflict-of-law principles.
+        These terms are governed by the laws of the State of South Carolina, without regard to conflict-of-law
+        principles. Any dispute not subject to arbitration will be brought exclusively in the state or federal
+        courts located in South Carolina, and you consent to personal jurisdiction there.
+      </p>
+
+      <h3 style={{ fontSize: 18, marginTop: 32 }}>Changes to these terms</h3>
+      <p>
+        We may update these terms from time to time. If we make material changes, we will notify active users
+        by email at least 14 days before the changes take effect. Continued use of the app after the effective
+        date constitutes acceptance of the updated terms. If you do not agree to the changes, you may close
+        your account before they take effect.
       </p>
 
       <h3 style={{ fontSize: 18, marginTop: 32 }}>Contact</h3>
       <p>
-        Questions? <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a>
+        Questions about these terms?{' '}
+        <a href={`mailto:${t.emails.contact}`}>{t.emails.contact}</a>
       </p>
     </main>
   );
