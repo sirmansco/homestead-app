@@ -12,6 +12,8 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const POLL_INTERVAL_MS = 3_000;
+// Self-terminate before Vercel's hard 300s kill — client reconnects cleanly on 'reconnect' event
+const MAX_CONNECTION_MS = 270_000;
 
 const claimerUsers = alias(users, 'claimer');
 
@@ -81,6 +83,7 @@ export async function GET(req: NextRequest) {
     async start(controller) {
       let lastHash = '';
       let closed = false;
+      const connectedAt = Date.now();
 
       req.signal.addEventListener('abort', () => {
         closed = true;
@@ -91,6 +94,13 @@ export async function GET(req: NextRequest) {
       controller.enqueue(encoder.encode(': connected\n\n'));
 
       while (!closed) {
+        // Self-terminate before Vercel's hard 300s kill so the close is clean
+        if (Date.now() - connectedAt >= MAX_CONNECTION_MS) {
+          controller.enqueue(encoder.encode('event: reconnect\ndata: max_age\n\n'));
+          try { controller.close(); } catch { /* already closed */ }
+          break;
+        }
+
         try {
           const payload = await queryVillageShifts(userId);
           const hash = hashPayload(payload);

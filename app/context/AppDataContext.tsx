@@ -198,6 +198,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         esRef.current = null;
         setTimeout(() => { if (active) connect(); }, 5_000);
       });
+
+      es.addEventListener('reconnect', () => {
+        // Server self-terminated before Vercel's hard kill — reconnect immediately
+        es.close();
+        esRef.current = null;
+        if (active) connect();
+      });
     }
 
     connect();
