@@ -45,16 +45,20 @@ export async function GET() {
       // dbOk stays false
     }
 
-    // Push (web-push) needs all three of: VAPID_PRIVATE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    // Push (web-push) needs all three of: VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY,
     // VAPID_SUBJECT. See lib/push.ts — it short-circuits with `vapid_not_configured` if any
-    // are missing. The legacy `VAPID_PUBLIC_KEY` (no prefix) is unused; do not surface it
-    // here, it caused stale "configured" reads while pushes were silently no-ops.
+    // are missing. Server-side uses VAPID_PUBLIC_KEY (no prefix) so the value isn't inlined
+    // into the build bundle by Next.js — a NEXT_PUBLIC_ var freezes its value at build time
+    // and any bad key baked in stays frozen across redeploys. The client subscribe flow
+    // (PushRegistrar.tsx) still uses NEXT_PUBLIC_VAPID_PUBLIC_KEY — surface both so ops can
+    // verify the client and server agree.
     const envVars = {
       DATABASE_URL: !!process.env.DATABASE_URL,
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
       CLERK_SECRET_KEY: !!process.env.CLERK_SECRET_KEY,
       BLOB_READ_WRITE_TOKEN: !!process.env.BLOB_READ_WRITE_TOKEN,
       VAPID_PRIVATE_KEY: !!process.env.VAPID_PRIVATE_KEY,
+      VAPID_PUBLIC_KEY: !!process.env.VAPID_PUBLIC_KEY,
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       VAPID_SUBJECT: !!process.env.VAPID_SUBJECT,
       RESEND_API_KEY: !!process.env.RESEND_API_KEY,

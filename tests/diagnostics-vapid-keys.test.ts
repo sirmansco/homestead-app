@@ -2,14 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// Audit item 19 regression: app/api/diagnostics/route.ts previously checked
-// `VAPID_PUBLIC_KEY` (no prefix), but lib/push.ts reads
-// `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. The diagnostics page reported "configured"
-// while push was silently no-oping with `vapid_not_configured`.
+// Server-side push uses VAPID_PUBLIC_KEY (no prefix). NEXT_PUBLIC_ vars are
+// inlined into the build bundle by Next.js, so a bad key set during a prior
+// build stays frozen in the server chunk regardless of the current Vercel env.
+// The earlier convention (NEXT_PUBLIC_VAPID_PUBLIC_KEY server-side) caused the
+// push-frozen-key incident on 2026-05-03 — the prod bundle baked in a stale
+// invalid base64 key and every POST /api/lantern threw "Vapid public key must
+// be URL safe Base 64" until the var was un-prefixed.
 //
-// The keys exposed by /api/diagnostics must match the keys lib/push.ts
-// actually consumes: VAPID_PRIVATE_KEY, NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-// VAPID_SUBJECT.
+// Diagnostics must surface the keys lib/push.ts actually consumes —
+// VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT — and should also surface
+// NEXT_PUBLIC_VAPID_PUBLIC_KEY so ops can verify the client and server agree.
 
 const APP_ROOT = join(__dirname, '..');
 const DIAGNOSTICS = join(APP_ROOT, 'app', 'api', 'diagnostics', 'route.ts');
@@ -19,20 +22,26 @@ describe('Diagnostics surfaces the same VAPID env vars push.ts consumes (audit i
   const diagSrc = readFileSync(DIAGNOSTICS, 'utf8');
   const pushSrc = readFileSync(PUSH, 'utf8');
 
-  it('does not surface the legacy VAPID_PUBLIC_KEY (no prefix)', () => {
-    // The legacy var is unused — surfacing it in diagnostics caused a
-    // false-positive "push is configured" reading. Make sure it's gone.
-    const legacy = /process\.env\.VAPID_PUBLIC_KEY\b/;
+  it('lib/push.ts does NOT read NEXT_PUBLIC_VAPID_PUBLIC_KEY server-side', () => {
+    // NEXT_PUBLIC_ vars are inlined at build time. A bad key set during a
+    // prior build will stay frozen in the server bundle until the next deploy.
+    // Server-side must read VAPID_PUBLIC_KEY (no prefix) so the value is
+    // resolved at runtime. Match `process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+    // specifically, not bare mentions in comments.
     expect(
-      legacy.test(diagSrc),
-      'app/api/diagnostics/route.ts must not surface the legacy VAPID_PUBLIC_KEY ' +
-      '(no NEXT_PUBLIC_ prefix). lib/push.ts uses NEXT_PUBLIC_VAPID_PUBLIC_KEY.'
+      /process\.env\.NEXT_PUBLIC_VAPID_PUBLIC_KEY\b/.test(pushSrc),
+      'lib/push.ts runs server-side and must not read process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY. ' +
+      'NEXT_PUBLIC_ vars are inlined at build time — read VAPID_PUBLIC_KEY (no prefix) instead.'
     ).toBe(false);
   });
 
-  it('surfaces NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT', () => {
+  it('lib/push.ts reads VAPID_PUBLIC_KEY (no prefix)', () => {
+    expect(/process\.env\.VAPID_PUBLIC_KEY\b/.test(pushSrc)).toBe(true);
+  });
+
+  it('surfaces VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT', () => {
     // These are the three keys lib/push.ts actually requires (see vapid_not_configured).
-    expect(/NEXT_PUBLIC_VAPID_PUBLIC_KEY/.test(diagSrc)).toBe(true);
+    expect(/\bVAPID_PUBLIC_KEY\b/.test(diagSrc)).toBe(true);
     expect(/VAPID_PRIVATE_KEY/.test(diagSrc)).toBe(true);
     expect(/VAPID_SUBJECT/.test(diagSrc)).toBe(true);
   });
@@ -42,7 +51,7 @@ describe('Diagnostics surfaces the same VAPID env vars push.ts consumes (audit i
     const pushVars = new Set<string>();
     for (const m of pushSrc.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
       const name = m[1];
-      if (name.startsWith('VAPID') || name === 'NEXT_PUBLIC_VAPID_PUBLIC_KEY') {
+      if (name.startsWith('VAPID')) {
         pushVars.add(name);
       }
     }

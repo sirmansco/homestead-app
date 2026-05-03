@@ -40,7 +40,7 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.stubEnv('VAPID_SUBJECT', 'mailto:test@test.com');
-vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'test-public-key');
+vi.stubEnv('VAPID_PUBLIC_KEY', 'test-public-key');
 vi.stubEnv('VAPID_PRIVATE_KEY', 'test-private-key');
 
 import { pushToUser } from '@/lib/push';

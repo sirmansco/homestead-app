@@ -8,9 +8,16 @@ import { pushSubscriptions, users } from '@/lib/db/schema';
 // VAPID env vars are not available during Next.js "Collecting page data".
 // Note: deliberately NOT cached — setVapidDetails is cheap and caching
 // caused warm lambdas to keep a stale VAPID_SUBJECT after env-var changes.
+//
+// Server-side reads VAPID_PUBLIC_KEY (no prefix). NEXT_PUBLIC_ vars are
+// inlined into the build bundle by Next.js, so a bad key set during a prior
+// build stays frozen in the server chunk regardless of the current Vercel
+// env. Reading the un-prefixed var means the value is fetched at runtime.
+// The client (PushRegistrar.tsx) still uses NEXT_PUBLIC_VAPID_PUBLIC_KEY —
+// it has to, because the browser cannot read non-public env vars.
 function ensureVapid(): boolean {
   const missing = (
-    ['VAPID_SUBJECT', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const
+    ['VAPID_SUBJECT', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const
   ).filter(k => !process.env[k]);
   if (missing.length > 0) {
     console.error(`[push:vapid] missing env vars: ${missing.join(', ')} — push delivery disabled`);
@@ -18,7 +25,7 @@ function ensureVapid(): boolean {
   }
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT!,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );
   return true;
