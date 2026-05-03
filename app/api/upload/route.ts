@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const cleanBuf = stripExif(rawBuf, ext);
     const verifiedContentType = sniff.mime;
 
-    const pathname = `homestead/${household.id}/${targetType}-${targetId}.${ext}`;
+    const pathname = `covey/${household.id}/${targetType}-${targetId}.${ext}`;
     console.log(`[api:upload] putting blob: ${pathname} (${cleanBuf.length}b, contentType=${verifiedContentType})`);
     let url: string;
     try {
