@@ -763,7 +763,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
-  const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
+  const myRole: AppRole = roleProp ?? 'parent';
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -782,8 +782,6 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
       }
       if (meRes.ok) {
         const me = await meRes.json();
-        // Only use API role if no prop was passed (don't override dev switcher)
-        if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
     } catch (err) {
