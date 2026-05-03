@@ -11,6 +11,32 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+const RETRY_DELAYS_MS = [500, 1500, 3000];
+
+// iOS PWA: pushManager.subscribe() can fail immediately after serviceWorker.ready
+// because the SW activation and push registration aren't synchronized on first install.
+// Retry with exponential backoff so transient activation-timing failures self-heal.
+async function subscribeWithRetry(reg: ServiceWorkerRegistration): Promise<PushSubscription> {
+  let lastErr: unknown;
+  for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
+    try {
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return existing;
+      return await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    } catch (err) {
+      lastErr = err;
+      if (i < RETRY_DELAYS_MS.length) {
+        console.warn(`[push:registrar] subscribe attempt ${i + 1} failed, retrying in ${RETRY_DELAYS_MS[i]}ms`, err instanceof Error ? err.message : String(err));
+        await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[i]));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export function PushRegistrar() {
   const { isSignedIn } = useUser();
 
@@ -40,17 +66,15 @@ export function PushRegistrar() {
         // Only subscribe if permission already granted — don't prompt here
         if (Notification.permission !== 'granted') return;
 
-        const existing = await reg.pushManager.getSubscription();
-        const sub = existing || await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-
-        await fetch('/api/push/subscribe', {
+        const sub = await subscribeWithRetry(reg);
+        const res = await fetch('/api/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sub.toJSON()),
         });
+        if (!res.ok) {
+          console.error('[push:registrar] /api/push/subscribe returned', res.status);
+        }
       } catch (err) {
         console.warn('[push:registrar] registration or subscribe failed', err instanceof Error ? err.message : String(err));
       }
@@ -81,11 +105,7 @@ export async function requestPushPermission(): Promise<PushPermissionResult> {
       return { ok: false, reason: 'vapid_key_missing' };
     }
     const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    const sub = existing || await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+    const sub = await subscribeWithRetry(reg);
 
     const res = await fetch('/api/push/subscribe', {
       method: 'POST',
