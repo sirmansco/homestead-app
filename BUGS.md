@@ -1,6 +1,8 @@
 ## Active
 
-(none)
+- [x] **BUG-E — Apple push 403 BadJwtToken + warm lambda VAPID cache causes valid subscriptions to be pruned.** Two root causes: (1) `classifyWebPushError` mapped all 403s to `prune` — Apple returns 403 + `{"reason":"BadJwtToken"}` when the JWT is malformed, NOT when the subscription is invalid; pruning deletes valid subs. (2) `ensureVapid()` latched `vapidInitialised = true` on first call per lambda instance, so env-var changes to `VAPID_SUBJECT` didn't take effect in warm lambdas until cold start. Fix: (1) inspect `wpe.body` in 403 branch — `BadJwtToken`/`ExpiredJwtToken` → `retry:jwt_error`, not prune; (2) removed `vapidInitialised` latch so `setVapidDetails` re-reads env on every call. verified-by: `tests/push-classification.test.ts` (24 tests, including two Apple 403 regression cases).
+
+- [x] **BUG-D — iOS PWA push subscription silently fails on first install / after key rotation.** Two root causes: (1) iOS SW activation/push registration timing race — fixed with retry loop (exponential backoff, 3 attempts). (2) iOS WebKit stale-subscription bug: `getSubscription()` returns a subscription whose keys serialize as `null` after push credential rotation; forwarding null keys causes `POST /api/push/subscribe` to 400. Fix: `hasValidKeys()` guard in `subscribeWithRetry` — unsubscribes and resubscribes fresh when null keys detected; belt-and-suspenders null-check in `requestPushPermission` before POSTing; improved error logging includes response body. verified-by: `tests/push-registrar-retry.test.ts` (6 tests, including null-keys regression).
 
 ## Fixed
 

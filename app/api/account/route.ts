@@ -129,7 +129,7 @@ export async function DELETE(req: NextRequest) {
         await db.update(users)
           .set({
             name: '[deleted]',
-            email: `deleted+${row.id}@homestead.app`,
+            email: `deleted+${row.id}@covey.app`,
             photoUrl: null,
             clerkUserId: `deleted+${row.id}`,
           })

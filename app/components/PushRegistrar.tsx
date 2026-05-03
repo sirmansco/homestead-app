@@ -11,6 +11,48 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+const RETRY_DELAYS_MS = [500, 1500, 3000];
+
+// iOS PWA: pushManager.subscribe() can fail immediately after serviceWorker.ready
+// because the SW activation and push registration aren't synchronized on first install.
+// Retry with exponential backoff so transient activation-timing failures self-heal.
+//
+// iOS stale-subscription guard: getSubscription() can return a subscription
+// whose keys serialise as null (known iOS WebKit bug with rotated/expired
+// push registrations). Returning that object causes the API to reject with 400.
+// Detect the bad state, unsubscribe, and subscribe fresh so the caller always
+// receives a subscription with valid keys.
+function hasValidKeys(sub: PushSubscription): boolean {
+  const json = sub.toJSON();
+  return !!(json.keys?.p256dh && json.keys?.auth);
+}
+
+async function subscribeWithRetry(reg: ServiceWorkerRegistration): Promise<PushSubscription> {
+  let lastErr: unknown;
+  for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
+    try {
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        if (hasValidKeys(existing)) return existing;
+        // Stale/broken subscription — drop it and subscribe fresh.
+        console.warn('[push:registrar] existing subscription has null keys; unsubscribing to get a fresh one');
+        await existing.unsubscribe();
+      }
+      return await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    } catch (err) {
+      lastErr = err;
+      if (i < RETRY_DELAYS_MS.length) {
+        console.warn(`[push:registrar] subscribe attempt ${i + 1} failed, retrying in ${RETRY_DELAYS_MS[i]}ms`, err instanceof Error ? err.message : String(err));
+        await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[i]));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export function PushRegistrar() {
   const { isSignedIn } = useUser();
 
@@ -40,17 +82,15 @@ export function PushRegistrar() {
         // Only subscribe if permission already granted — don't prompt here
         if (Notification.permission !== 'granted') return;
 
-        const existing = await reg.pushManager.getSubscription();
-        const sub = existing || await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-
-        await fetch('/api/push/subscribe', {
+        const sub = await subscribeWithRetry(reg);
+        const res = await fetch('/api/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sub.toJSON()),
         });
+        if (!res.ok) {
+          console.error('[push:registrar] /api/push/subscribe returned', res.status);
+        }
       } catch (err) {
         console.warn('[push:registrar] registration or subscribe failed', err instanceof Error ? err.message : String(err));
       }
@@ -81,20 +121,25 @@ export async function requestPushPermission(): Promise<PushPermissionResult> {
       return { ok: false, reason: 'vapid_key_missing' };
     }
     const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    const sub = existing || await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+    const sub = await subscribeWithRetry(reg);
+
+    // Belt-and-suspenders: subscribeWithRetry already guards against null keys,
+    // but validate once more before sending — a malformed body always yields 400.
+    const subJson = sub.toJSON();
+    if (!subJson.keys?.p256dh || !subJson.keys?.auth) {
+      console.error('[push:registrar] subscription keys are null after subscribe; cannot register');
+      return { ok: false, reason: 'null_subscription_keys' };
+    }
 
     const res = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sub.toJSON()),
+      body: JSON.stringify(subJson),
     });
 
     if (!res.ok) {
-      console.error('[push:registrar] /api/push/subscribe returned', res.status);
+      const body = await res.json().catch(() => ({}));
+      console.error('[push:registrar] /api/push/subscribe returned', res.status, body);
       return { ok: false, reason: `subscribe_api_${res.status}` };
     }
     return { ok: true };

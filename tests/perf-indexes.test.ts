@@ -22,7 +22,7 @@ describe('B7 hot-path indexes — schema declarations', () => {
     schema = readFileSync(SCHEMA_FILE, 'utf-8');
   });
 
-  // L20 — /api/bell/active polling index
+  // L20 — /api/lantern/active polling index
   it("schema declares idx_bells_household_status_ends_at on (householdId, status, endsAt)", () => {
     expect(schema).toContain("index('idx_bells_household_status_ends_at')");
     expect(schema).toContain('idx_bells_household_status_ends_at');

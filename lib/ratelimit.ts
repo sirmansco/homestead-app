@@ -3,7 +3,7 @@
  *
  * Trade-offs:
  * - Per-instance: if Vercel spawns multiple function instances, each has its
- *   own counter. For Homestead's scale (low thousands of families) this is
+ *   own counter. For Covey's scale (low thousands of families) this is
  *   acceptable — a determined attacker could still burst a few × limit, but
  *   absolute abuse is prevented.
  * - Upgrade path: when you outgrow this, swap to @upstash/ratelimit. Same API.

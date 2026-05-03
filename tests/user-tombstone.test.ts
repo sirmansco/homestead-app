@@ -32,8 +32,8 @@ import { db } from '@/lib/db';
 import { clerkClient } from '@clerk/nextjs/server';
 import { requireHousehold, requireHouseholdAdmin } from '@/lib/auth/household';
 import { tombstoneUser } from '@/lib/users/tombstone';
-import { POST as villageLeavePOST } from '@/app/api/village/leave/route';
-import { DELETE as villageDELETE } from '@/app/api/village/route';
+import { POST as villageLeavePOST } from '@/app/api/circle/leave/route';
+import { DELETE as villageDELETE } from '@/app/api/circle/route';
 import { DELETE as memberDELETE } from '@/app/api/household/members/[id]/route';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ function targetRow(overrides: Partial<{ id: string; clerkUserId: string; househo
     householdId: overrides.householdId ?? HH_A,
     email: 'u@example.com',
     name: 'Target',
-    role: 'caregiver' as const,
+    role: 'watcher' as const,
     villageGroup: 'covey' as const,
     isAdmin: false,
   };
@@ -64,7 +64,7 @@ function adminRow() {
     householdId: HH_A,
     email: 'a@example.com',
     name: 'Admin',
-    role: 'parent' as const,
+    role: 'keeper' as const,
     villageGroup: 'covey' as const,
     isAdmin: true,
   };
@@ -238,7 +238,7 @@ describe('tombstoneUser — service unit tests', () => {
 
 // ── Route integration regression (L9 + B2 SHIPLOG follow-up) ─────────────────
 
-describe('POST /api/village/leave — tombstone integration', () => {
+describe('POST /api/circle/leave — tombstone integration', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('returns { ok: true } and never 5xx for caregiver with no authored history', async () => {
@@ -300,7 +300,7 @@ describe('POST /api/village/leave — tombstone integration', () => {
   });
 });
 
-describe('DELETE /api/village (admin, type=adult) — tombstone + Clerk-membership drop', () => {
+describe('DELETE /api/circle (admin, type=adult) — tombstone + Clerk-membership drop', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   function urlReq(url: string) {
@@ -346,7 +346,7 @@ describe('DELETE /api/village (admin, type=adult) — tombstone + Clerk-membersh
       organizations: { getOrganizationMembershipList, deleteOrganizationMembership },
     } as unknown as Awaited<ReturnType<typeof clerkClient>>);
 
-    const res = await villageDELETE(urlReq('http://localhost/api/village?id=user-target&type=adult'));
+    const res = await villageDELETE(urlReq('http://localhost/api/circle?id=user-target&type=adult'));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
     expect(deleteOrganizationMembership).toHaveBeenCalledWith({
@@ -380,7 +380,7 @@ describe('DELETE /api/village (admin, type=adult) — tombstone + Clerk-membersh
 
     vi.mocked(clerkClient).mockRejectedValue(new Error('Clerk API down'));
 
-    const res = await villageDELETE(urlReq('http://localhost/api/village?id=user-target&type=adult'));
+    const res = await villageDELETE(urlReq('http://localhost/api/circle?id=user-target&type=adult'));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, clerkDropped: false });
   });
@@ -397,7 +397,7 @@ describe('DELETE /api/village (admin, type=adult) — tombstone + Clerk-membersh
       makeSelectChain([]) as unknown as ReturnType<typeof db.select>,
     );
 
-    const res = await villageDELETE(urlReq('http://localhost/api/village?id=ghost&type=adult'));
+    const res = await villageDELETE(urlReq('http://localhost/api/circle?id=ghost&type=adult'));
     expect(res.status).toBe(404);
     expect(vi.mocked(db.transaction)).not.toHaveBeenCalled();
   });

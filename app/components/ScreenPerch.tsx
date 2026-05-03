@@ -409,11 +409,11 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
   onRing?: () => void;
   onPost?: () => void;
   onVillage?: () => void;
-  role: 'parent' | 'caregiver';
+  role: 'keeper' | 'watcher';
   villageSize: number;
   hasPosted: boolean;
 }) {
-  if (role === 'caregiver') {
+  if (role === 'watcher') {
     return (
       <div style={{
         margin: '18px 0', padding: '26px 20px', textAlign: 'center',
@@ -500,7 +500,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
   }
 
   // First-time onboarding checklist. Each step reflects real state:
-  //   1. Name your homestead — done once household exists (always true here).
+  //   1. Name your covey — done once household exists (always true here).
   //   2. Invite your village — done when villageSize > 0.
   //   3. Post your first need — done when the user has posted at least one shift.
   // When all three are done, this whole panel hides (handled by caller).
@@ -593,8 +593,8 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
   );
 });
 
-export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
-  role?: 'parent' | 'caregiver';
+export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
+  role?: 'keeper' | 'watcher';
   isDualRole?: boolean;
   onRing?: () => void;      // compose mode — new bell
   onViewBell?: () => void;  // status mode — view existing active bell
@@ -604,7 +604,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
   const { activeBell, village, shifts: contextShifts, refreshShifts, refreshBell, enableShiftStream } = useAppData();
-  const scope = (isDualRole || multiHousehold || role === 'caregiver') ? 'all' : 'household';
+  const scope = (isDualRole || multiHousehold || role === 'watcher') ? 'all' : 'household';
   // When the SSE stream is active it writes to shifts['all']. For single-household
   // parents (scope='household'), we read from 'all' and filter client-side so they
   // also get live updates without seeing other families' shifts.
@@ -654,7 +654,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   }, [scope, refreshShifts, refreshBell]);
 
   const loadUnavail = useCallback(async () => {
-    if (role !== 'caregiver' && !isDualRole) return;
+    if (role !== 'watcher' && !isDualRole) return;
     try {
       const res = await fetch('/api/unavailability');
       if (res.ok) {
@@ -709,7 +709,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const cancelShift = useCallback(async (id: string) => {
     setCancellingId(id);
     try {
-      const res = await fetch(`/api/shifts/${id}/cancel`, { method: 'POST' });
+      const res = await fetch(`/api/whistles/${id}/cancel`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'cancel failed');
@@ -725,7 +725,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const claimShift = useCallback(async (id: string) => {
     setClaimingId(id);
     try {
-      const res = await fetch(`/api/shifts/${id}/claim`, { method: 'POST' });
+      const res = await fetch(`/api/whistles/${id}/claim`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'claim failed');
@@ -748,8 +748,8 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   // Dual-role split: own household vs other families needing help
   const ownShifts = useMemo(() => isDualRole
     ? upcoming.filter(r => r.shift.householdId === myHouseholdId)
-    // Pure caregiver: only open shifts — claimed shifts live on the Schedule screen
-    : role === 'caregiver'
+    // Pure watcher: only open shifts — claimed shifts live on the Schedule screen
+    : role === 'watcher'
       ? upcoming.filter(r => r.shift.status === 'open')
       : upcoming,
   [upcoming, isDualRole, myHouseholdId, role]);
@@ -769,7 +769,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const week     = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'week'), [ownShifts]);
   const later    = useMemo(() => ownShifts.filter(r => bucketOf(r.shift.startsAt) === 'later'), [ownShifts]);
 
-  const title = role === 'caregiver' ? getCopy().schedule.caregiverTitle : getCopy().schedule.title;
+  const title = role === 'watcher' ? getCopy().schedule.caregiverTitle : getCopy().schedule.title;
   // Pretty name of the active household, shown as a subtitle so multi-household
   // users (Karson) can see which family they're looking at without opening the switcher.
   const activeHouseholdLabel = active?.name
@@ -791,7 +791,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
         statusLine = 'Nothing on the books yet.';
       } else if (multiHousehold) {
         statusLine = `${upcoming.filter(r => r.shift.status === 'open').length} open · ${upcoming.filter(r => r.claimedByMe).length} you're covering.`;
-      } else if (role === 'parent') {
+      } else if (role === 'keeper') {
         statusLine = `${upcoming.filter(r => r.shift.status === 'claimed').length} claimed · ${upcoming.filter(r => r.shift.status === 'open').length} still open.`;
       } else {
         const openCount = upcoming.filter(r => r.shift.status === 'open').length;
@@ -805,7 +805,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
       <GMasthead
         leftAction={<HouseholdSwitcher />}
-        rightAction={role === 'parent' && onRing ? <BellButton onRing={onRing} /> : undefined}
+        rightAction={role === 'keeper' && onRing ? <BellButton onRing={onRing} /> : undefined}
         right={fmtDateShort(new Date())}
         title={title}
         tagline={tagline}
@@ -813,16 +813,16 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {/* Active lantern card — visible to caregivers and parents.
-            Cancel action is parent-only (PATCH /api/bell/:id is gated server-side). */}
+            Cancel action is parent-only (PATCH /api/lantern/:id is gated server-side). */}
         {activeBell && (
           <LanternCard
             bell={activeBell}
             onView={onViewBell ?? (() => {})}
-            onCancel={role === 'parent' ? async () => {
+            onCancel={role === 'keeper' ? async () => {
               if (cancellingBell) return;
               setCancellingBell(true);
               try {
-                const res = await fetch(`/api/bell/${activeBell.id}`, {
+                const res = await fetch(`/api/lantern/${activeBell.id}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ status: 'cancelled' }),
@@ -863,13 +863,13 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed'
-  ? (role === 'caregiver'
+  ? (role === 'watcher'
       ? (r.claimedByMe ? 'Claimed by you' : 'Covered')
       : (r.claimer ? `Claimed · ${shortName(r.claimer.name)}` : 'Covered'))
   : 'Open · needs someone'}
-              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
+              onCancel={role === 'keeper' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -884,13 +884,13 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed'
-  ? (role === 'caregiver'
+  ? (role === 'watcher'
       ? (r.claimedByMe ? 'Claimed by you' : 'Covered')
       : (r.claimer ? `Claimed · ${shortName(r.claimer.name)}` : 'Covered'))
   : 'Open · needs someone'}
-              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
+              onCancel={role === 'keeper' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -925,13 +925,13 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
                       key={r.shift.id} row={r}
                       accent={r.shift.status === 'claimed' ? G.green : G.clay}
                       tagline={r.shift.status === 'claimed'
-  ? (role === 'caregiver'
+  ? (role === 'watcher'
       ? (r.claimedByMe ? 'Claimed by you' : 'Covered')
       : (r.claimer ? `Claimed · ${shortName(r.claimer.name)}` : 'Covered'))
   : 'Open · needs someone'}
-                      onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
+                      onCancel={role === 'keeper' && r.createdByMe ? cancelShift : undefined}
                       cancelling={cancellingId === r.shift.id}
-                      onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
+                      onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
                       claiming={claimingId === r.shift.id}
                       showHousehold={multiHousehold}
                       onOpen={setOpenRow}
@@ -950,13 +950,13 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
               key={r.shift.id} row={r}
               accent={r.shift.status === 'claimed' ? G.green : G.clay}
               tagline={r.shift.status === 'claimed'
-  ? (role === 'caregiver'
+  ? (role === 'watcher'
       ? (r.claimedByMe ? 'Claimed by you' : 'Covered')
       : (r.claimer ? `Claimed · ${shortName(r.claimer.name)}` : 'Covered'))
   : 'Open · needs someone'}
-              onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
+              onCancel={role === 'keeper' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -1009,7 +1009,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
         )}
 
         {/* ── Not Available section (caregiver only) ── */}
-        {(role === 'caregiver' || isDualRole) && (
+        {(role === 'watcher' || isDualRole) && (
           <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${G.hairline2}` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <div>
@@ -1111,7 +1111,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
             setOpenRow(null);
           }}
           claiming={claimingId === openRow.shift.id}
-          canClaim={openRow.shift.status === 'open' && role === 'caregiver'}
+          canClaim={openRow.shift.status === 'open' && role === 'watcher'}
         />
       )}
     </div>

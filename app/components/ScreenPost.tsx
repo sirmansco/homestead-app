@@ -39,9 +39,9 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [preferredCaregiverId, setPreferredCaregiverId] = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/village').then(r => r.ok ? r.json() : null).then(d => {
+    fetch('/api/circle').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.kids) setKids(d.kids);
-      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'caregiver'));
+      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'watcher'));
     }).catch(() => {});
   }, [active?.id]);
 
@@ -123,7 +123,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         endsBy: recurEnds === 'date' ? recurEndDate : undefined,
         occurrences: recurEnds === 'count' ? parseInt(recurCount) || undefined : undefined,
       } : undefined;
-      const res = await fetch('/api/shifts', {
+      const res = await fetch('/api/whistles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

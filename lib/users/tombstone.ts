@@ -98,7 +98,7 @@ async function anonymize(
   await tx.update(users)
     .set({
       name: '[deleted]',
-      email: `deleted+${userId}@homestead.app`,
+      email: `deleted+${userId}@covey.app`,
       photoUrl: null,
       clerkUserId: `deleted+${userId}`,
     })

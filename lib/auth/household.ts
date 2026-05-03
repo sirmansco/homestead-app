@@ -42,7 +42,7 @@ export async function requireHousehold() {
     const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || email;
 
     const meta = (clerkUser.publicMetadata ?? {}) as {
-      appRole?: 'parent' | 'caregiver';
+      appRole?: 'keeper' | 'watcher';
       villageGroup?: 'covey' | 'field' | 'inner_circle' | 'sitter';
       name?: string;
     };
@@ -55,7 +55,7 @@ export async function requireHousehold() {
       householdId: household.id,
       email,
       name: meta.name || name,
-      role: meta.appRole || (isFirstUser ? 'parent' : 'caregiver'),
+      role: meta.appRole || (isFirstUser ? 'keeper' : 'watcher'),
       villageGroup: normalizeVillageGroup(meta.villageGroup || (isFirstUser ? 'covey' : 'field')),
       isAdmin: isFirstUser,
     }).onConflictDoNothing();

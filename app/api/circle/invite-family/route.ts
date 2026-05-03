@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { familyInvites, users } from '@/lib/db/schema';
+import { requireUser } from '@/lib/auth/household';
+import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
+// Caregiver invites a parent of a new family to join Covey
+// Creates a pending invite; parent accepts via /accept-family-invite?token=...
+export async function POST(req: NextRequest) {
+  try {
+    const { userId } = await requireUser();
+
+    const rl = rateLimit({ key: `invite-family:${userId}`, limit: 5, windowMs: 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
+
+    const body = await req.json() as {
+      parentName?: string;
+      parentEmail?: string;
+      villageGroup?: 'covey' | 'field';
+      mode?: 'email' | 'link';
+    };
+
+    if (!body.parentEmail?.trim()) {
+      return NextResponse.json({ error: 'Parent email required' }, { status: 400 });
+    }
+
+    // Use the caregiver's first users row for the from_user_id link
+    const [me] = await db.select().from(users).where(eq(users.clerkUserId, userId)).limit(1);
+    if (!me) return NextResponse.json({ error: 'No user record' }, { status: 404 });
+
+    const token = crypto.randomUUID();
+    await db.insert(familyInvites).values({
+      token,
+      fromUserId: me.id,
+      parentEmail: body.parentEmail.trim(),
+      parentName: body.parentName?.trim() || null,
+      villageGroup: body.villageGroup || 'covey',
+      status: 'pending',
+    });
+
+    const origin = req.headers.get('origin') || new URL(req.url).origin;
+    const inviteUrl = `${origin}/accept-family-invite?token=${token}`;
+
+    return NextResponse.json({ ok: true, inviteUrl });
+  } catch (err) {
+    return authError(err, 'village:invite-family', 'Invite failed');
+  }
+}

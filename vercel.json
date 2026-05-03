@@ -1,9 +1,9 @@
 {
   "buildCommand": "next build",
   "crons": [
-    { "path": "/api/bell/cron", "schedule": "*/1 * * * *" }
+    { "path": "/api/lantern/cron", "schedule": "*/1 * * * *" }
   ],
   "functions": {
-    "app/api/bell/cron/route.ts": { "maxDuration": 60 }
+    "app/api/lantern/cron/route.ts": { "maxDuration": 60 }
   }
 }

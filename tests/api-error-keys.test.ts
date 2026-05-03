@@ -11,8 +11,8 @@ function read(rel: string) {
   return readFileSync(path.join(API_ROOT, rel), 'utf8');
 }
 
-describe('bell/cron/route.ts — L8 fix', () => {
-  const src = read('bell/cron/route.ts');
+describe('lantern/cron/route.ts — L8 fix', () => {
+  const src = read('lantern/cron/route.ts');
 
   it('uses canonical not_signed_in key', () => {
     expect(src).toContain("'not_signed_in'");
@@ -23,8 +23,8 @@ describe('bell/cron/route.ts — L8 fix', () => {
   });
 });
 
-describe('bell/[id]/escalate/route.ts — L8 fix', () => {
-  const src = read('bell/[id]/escalate/route.ts');
+describe('lantern/[id]/escalate/route.ts — L8 fix', () => {
+  const src = read('lantern/[id]/escalate/route.ts');
 
   it('uses canonical no_access key for household mismatch', () => {
     expect(src).toContain("'no_access'");
@@ -35,21 +35,21 @@ describe('bell/[id]/escalate/route.ts — L8 fix', () => {
   });
 });
 
-describe('shifts/route.ts POST — L8 fix', () => {
-  const src = read('shifts/route.ts');
+describe('whistles/route.ts POST — L8 fix', () => {
+  const src = read('whistles/route.ts');
 
   it('uses canonical no_access key for role check', () => {
     expect(src).toContain("'no_access'");
   });
 
   it('does not contain the old free-text role error', () => {
-    // Old pattern: Only <keepers> can post <shifts>
+    // Old pattern: Only <keepers> can post <whistles>
     expect(src).not.toMatch(/Only.*can post/);
   });
 });
 
-describe('bell/[id]/respond/route.ts — L8 fix', () => {
-  const src = read('bell/[id]/respond/route.ts');
+describe('lantern/[id]/respond/route.ts — L8 fix', () => {
+  const src = read('lantern/[id]/respond/route.ts');
 
   it('uses canonical no_access key for membership check', () => {
     expect(src).toContain("'no_access'");

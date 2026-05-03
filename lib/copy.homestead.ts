@@ -92,11 +92,6 @@ export const homesteadCopy: AppCopy = {
     contact: 'hello@homestead.app',
     notify: 'notify@homestead.app',
   },
-  api: {
-    urgentSignal: '/api/bell',
-    request: '/api/shifts',
-    circle: '/api/village',
-  },
   guide: {
     whatIsTitle: 'What is Homestead?',
     whatIsBody1: 'Homestead is a private coordination app for families who rely on a village of caregivers — grandparents, sitters, close friends — to keep life running. It\'s not a marketplace. Everyone here already knows each other.',

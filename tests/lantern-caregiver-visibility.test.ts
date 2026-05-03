@@ -3,9 +3,9 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // BUG-A regression: the active-lantern card on ScreenPerch was previously
-// gated by `role === 'parent' && activeBell`, so caregivers never saw an
+// gated by `role === 'keeper' && activeBell`, so watchers never saw an
 // active Bell on the Almanac/"Open Whistles" tab. The cancel action remains
-// parent-only (server PATCH /api/bell/:id is gated server-side), but the card
+// keeper-only (server PATCH /api/lantern/:id is gated server-side), but the card
 // itself must render for any role when activeBell is non-null.
 //
 // We verify this at the source level (no RTL set up in this project — see
@@ -17,14 +17,14 @@ const ALMANAC = join(APP_ROOT, 'app', 'components', 'ScreenPerch.tsx');
 describe('Lantern card visibility on Almanac (BUG-A)', () => {
   const src = readFileSync(ALMANAC, 'utf8');
 
-  it('does not gate the LanternCard on role === "parent"', () => {
-    // The previous bug was a JSX guard like `{role === 'parent' && activeBell && (`
+  it('does not gate the LanternCard on role === "keeper"', () => {
+    // The previous bug was a JSX guard like `{role === 'keeper' && activeBell && (`
     // wrapping <LanternCard ...>. Make sure that pattern is gone.
-    const offendingPattern = /role\s*===\s*['"]parent['"]\s*&&\s*activeBell\s*&&\s*\(\s*<LanternCard/;
+    const offendingPattern = /role\s*===\s*['"]keeper['"]\s*&&\s*activeBell\s*&&\s*\(\s*<LanternCard/;
     expect(
       offendingPattern.test(src),
-      'ScreenPerch re-introduced the role==="parent" gate around <LanternCard>. ' +
-      'Caregivers must see the active-lantern card too. Cancel action stays parent-only.'
+      'ScreenPerch re-introduced the role==="keeper" gate around <LanternCard>. ' +
+      'Watchers must see the active-lantern card too. Cancel action stays keeper-only.'
     ).toBe(false);
   });
 
@@ -40,14 +40,14 @@ describe('Lantern card visibility on Almanac (BUG-A)', () => {
     ).toBe(true);
   });
 
-  it('only passes onCancel when role === "parent"', () => {
-    // Cancel must remain parent-only at the prop layer too — caregivers should
+  it('only passes onCancel when role === "keeper"', () => {
+    // Cancel must remain keeper-only at the prop layer too — watchers should
     // never see a Cancel button for a Bell they cannot cancel.
-    const guardedOnCancel = /onCancel=\{role\s*===\s*['"]parent['"]\s*\?/;
+    const guardedOnCancel = /onCancel=\{role\s*===\s*['"]keeper['"]\s*\?/;
     expect(
       guardedOnCancel.test(src),
-      'Lantern onCancel must be guarded by `role === "parent" ? ... : undefined` so ' +
-      'caregivers do not see a Cancel button for a Bell they cannot cancel.'
+      'Lantern onCancel must be guarded by `role === "keeper" ? ... : undefined` so ' +
+      'watchers do not see a Cancel button for a Bell they cannot cancel.'
     ).toBe(true);
   });
 });

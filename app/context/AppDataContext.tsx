@@ -92,7 +92,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const fetchBell = useCallback(async () => {
     setBellLoading(true);
     try {
-      const res = await fetch('/api/bell/active');
+      const res = await fetch('/api/lantern/active');
       if (!res.ok) return;
       const data = await res.json();
       const bells: ActiveBellData[] = data.bells || [];
@@ -128,7 +128,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const fetchShifts = useCallback(async (scope: string) => {
     setShiftsLoading(prev => ({ ...prev, [scope]: true }));
     try {
-      const res = await fetch(`/api/shifts?scope=${scope}`);
+      const res = await fetch(`/api/whistles?scope=${scope}`);
       if (res.status === 401 || res.status === 409) {
         setShifts(prev => ({ ...prev, [scope]: [] }));
         return;
@@ -178,7 +178,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     function connect() {
       if (esRef.current) esRef.current.close();
-      const es = new EventSource('/api/shifts/stream');
+      const es = new EventSource('/api/whistles/stream');
       esRef.current = es;
 
       es.onmessage = (evt) => {
@@ -198,6 +198,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         esRef.current = null;
         setTimeout(() => { if (active) connect(); }, 5_000);
       });
+
+      es.addEventListener('reconnect', () => {
+        // Server self-terminated before Vercel's hard kill — reconnect immediately
+        es.close();
+        esRef.current = null;
+        if (active) connect();
+      });
     }
 
     connect();
@@ -216,13 +223,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const fetchVillage = useCallback(async () => {
     setVillageLoading(true);
     try {
-      const res = await fetch('/api/village');
+      const res = await fetch('/api/circle');
       if (!res.ok) return;
       const data = await res.json();
       setVillage(data.adults || []);
     } catch (err) {
-      Sentry.captureException(err, { tags: { source: 'appdata:village' } });
-      console.warn('[appdata:village] fetch failed', err instanceof Error ? err.message : String(err));
+      Sentry.captureException(err, { tags: { source: 'appdata:circle' } });
+      console.warn('[appdata:circle] fetch failed', err instanceof Error ? err.message : String(err));
     } finally {
       setVillageLoading(false);
     }
