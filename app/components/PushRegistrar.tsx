@@ -11,6 +11,15 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+// Compare two ArrayBuffers/Uint8Arrays byte-for-byte.
+function buffersEqual(a: ArrayBuffer | null, b: Uint8Array): boolean {
+  if (!a) return false;
+  const av = new Uint8Array(a);
+  if (av.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < av.byteLength; i++) if (av[i] !== b[i]) return false;
+  return true;
+}
+
 const RETRY_DELAYS_MS = [500, 1500, 3000];
 
 // iOS PWA: pushManager.subscribe() can fail immediately after serviceWorker.ready
@@ -27,20 +36,34 @@ function hasValidKeys(sub: PushSubscription): boolean {
   return !!(json.keys?.p256dh && json.keys?.auth);
 }
 
+// Returns true if the existing subscription was created against the current
+// VAPID public key. After a key rotation, getSubscription() will return a sub
+// bound to the OLD applicationServerKey — Apple/FCM then reject any push
+// signed with the new private key (BadJwtToken). Detect the mismatch so we
+// drop and resubscribe automatically instead of requiring users to uninstall.
+function matchesCurrentVapidKey(sub: PushSubscription, currentKey: Uint8Array): boolean {
+  const opts = sub.options as PushSubscriptionOptions & { applicationServerKey?: ArrayBuffer | null };
+  return buffersEqual(opts.applicationServerKey ?? null, currentKey);
+}
+
 async function subscribeWithRetry(reg: ServiceWorkerRegistration): Promise<PushSubscription> {
   let lastErr: unknown;
+  const currentKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
   for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
     try {
       const existing = await reg.pushManager.getSubscription();
       if (existing) {
-        if (hasValidKeys(existing)) return existing;
-        // Stale/broken subscription — drop it and subscribe fresh.
-        console.warn('[push:registrar] existing subscription has null keys; unsubscribing to get a fresh one');
+        if (hasValidKeys(existing) && matchesCurrentVapidKey(existing, currentKey)) {
+          return existing;
+        }
+        // Either keys serialise as null (iOS WebKit bug) OR the subscription
+        // was created against a previous VAPID public key. Drop and resubscribe.
+        console.warn('[push:registrar] existing subscription stale (null keys or VAPID mismatch); resubscribing');
         await existing.unsubscribe();
       }
       return await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: currentKey,
       });
     } catch (err) {
       lastErr = err;
