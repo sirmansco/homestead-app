@@ -48,8 +48,8 @@ export type PushResult = {
 };
 
 type WebPushDisposition =
-  | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' }
-  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' | 'jwt_error' }
+  | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' | 'jwt_error' }
+  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' }
   | { kind: 'unknown'; reason: string };
 
 // Apple push (web.push.apple.com) returns HTTP 403 with body {"reason":"BadJwtToken"}
