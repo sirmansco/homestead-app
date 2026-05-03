@@ -1055,7 +1055,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
             <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 14 }}>
-              Rename Covey
+              Rename {getCopy().brand.name}
             </div>
             <input
               value={newName}
