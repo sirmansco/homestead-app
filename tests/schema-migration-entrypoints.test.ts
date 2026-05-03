@@ -9,14 +9,14 @@ import { join } from 'path';
 const SCRIPTS = join(__dirname, '..', 'scripts');
 
 describe('L11 — no legacy DDL scripts outside drizzle/', () => {
-  it('scripts/migrate-kids.ts does not exist', () => {
+  it('scripts/migrate-chicks.ts does not exist', () => {
     const files = readdirSync(SCRIPTS);
-    expect(files).not.toContain('migrate-kids.ts');
+    expect(files).not.toContain('migrate-chicks.ts');
   });
 
-  it('scripts/migrate-shifts.ts does not exist', () => {
+  it('scripts/migrate-whistles.ts does not exist', () => {
     const files = readdirSync(SCRIPTS);
-    expect(files).not.toContain('migrate-shifts.ts');
+    expect(files).not.toContain('migrate-whistles.ts');
   });
 
   it('scripts/migrate-users-unique.ts does not exist', () => {

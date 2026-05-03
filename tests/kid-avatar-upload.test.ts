@@ -7,9 +7,9 @@ const src = readFileSync(
   'utf8',
 );
 
-// Extract only the kids rendering block (kids.map call with MemberCard entries).
+// Extract only the chicks rendering block (chicks.map call with MemberCard entries).
 const kidsSection = (() => {
-  const start = src.indexOf('{kids.map');
+  const start = src.indexOf('{chicks.map');
   if (start === -1) return '';
   const end = src.indexOf('))}\n', start) + 4;
   return src.slice(start, end);
@@ -52,9 +52,9 @@ describe('Kid avatar upload wiring — ScreenVillage', () => {
   });
 
   it('kid cards do NOT gate upload on a role field', () => {
-    // Constraint: kids may not have a role field — upload must not be gated on it
-    // The kids.map block should not reference .role before the targetType/targetId props
-    const kidsMapStart = kidsSection.indexOf('{kids.map');
+    // Constraint: chicks may not have a role field — upload must not be gated on it
+    // The chicks.map block should not reference .role before the targetType/targetId props
+    const kidsMapStart = kidsSection.indexOf('{chicks.map');
     const targetTypePos = kidsSection.indexOf('targetType="kid"', kidsMapStart);
     const roleGate = kidsSection.indexOf('.role', kidsMapStart);
 

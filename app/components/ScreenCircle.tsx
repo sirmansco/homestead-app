@@ -304,7 +304,7 @@ function EmptyGroup({ label }: { label: string }) {
 }
 
 function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => void; onInvited: () => void; caregiverMode?: boolean }) {
-  // Caregivers can only invite families (adults), never add kids
+  // Caregivers can only invite families (adults), never add chicks
   const [kind, setKind] = useState<'adult' | 'kid'>(caregiverMode ? 'adult' : 'adult');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -522,7 +522,7 @@ const btnStyleAlt: React.CSSProperties = {
 type FamilyData = {
   household: { id: string; name: string; glyph: string };
   adults: Adult[];
-  kids: Kid[];
+  chicks: Kid[];
 };
 
 const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }: {
@@ -577,7 +577,7 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
       </div>
 
       {/* Parents + Kids in one row grid */}
-      {(parents.length > 0 || family.kids.length > 0) && (
+      {(parents.length > 0 || family.chicks.length > 0) && (
         <div style={{ display: 'flex', gap: 16, marginBottom: caregivers.length > 1 ? 8 : 0 }}>
           {parents.length > 0 && (
             <div style={{ flex: 1 }}>
@@ -592,11 +592,11 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
               </div>
             </div>
           )}
-          {family.kids.length > 0 && (
+          {family.chicks.length > 0 && (
             <div style={{ flex: 1 }}>
               <GLabel style={{ marginBottom: 5 }}>The {getCopy().circle.kidLabel}s</GLabel>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {family.kids.map(k => (
+                {family.chicks.map(k => (
                   <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <GAvatar name={k.name} size={26} />
                     <span style={{ fontFamily: G.display, fontSize: 12, fontWeight: 500 }}>{shortName(k.name)}</span>
@@ -759,7 +759,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
 export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keeper' | 'watcher'; onOpenSettings?: () => void }) {
   const { refresh: refreshHousehold } = useHousehold();
   const [adults, setAdults] = useState<Adult[]>([]);
-  const [kids, setKids] = useState<Kid[]>([]);
+  const [chicks, setChicks] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -777,7 +777,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
       } else {
         const data = await villageRes.json();
         setAdults(data.adults || []);
-        setKids(data.kids || []);
+        setChicks(data.chicks || []);
         setLoadError(null);
       }
       if (meRes.ok) {
@@ -857,7 +857,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
     load();
   }, [load]);
   const removeKid = useCallback(async (id: string) => {
-    setKids(prev => prev.filter(k => k.id !== id));
+    setChicks(prev => prev.filter(k => k.id !== id));
     await fetch(`/api/circle?type=kid&id=${id}`, { method: 'DELETE' });
     load();
   }, [load]);
@@ -869,7 +869,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
   if (!loading && myRole === 'watcher') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
-  const total = adults.length + kids.length;
+  const total = adults.length + chicks.length;
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -1004,10 +1004,10 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
               );
             })}
 
-            <GroupHeader count={kids.length} label={`The ${getCopy().circle.kidLabel}s`} note="who we&rsquo;re coordinating for" />
-            {kids.length === 0 ? <EmptyGroup label={`the ${getCopy().circle.kidLabel.toLowerCase()}s`} /> : (
+            <GroupHeader count={chicks.length} label={`The ${getCopy().circle.kidLabel}s`} note="who we&rsquo;re coordinating for" />
+            {chicks.length === 0 ? <EmptyGroup label={`the ${getCopy().circle.kidLabel.toLowerCase()}s`} /> : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 18 }}>
-                {kids.map(k => (
+                {chicks.map(k => (
                   <MemberCard
                     key={k.id}
                     name={k.name}

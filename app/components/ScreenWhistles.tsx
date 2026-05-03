@@ -221,7 +221,7 @@ function SegmentControl({ value, onChange }: { value: 'open' | 'all'; onChange: 
 }
 
 export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }) {
-  const { activeBell, shifts: contextShifts, shiftsLoading, refreshShifts, refreshBell } = useAppData();
+  const { activeBell, whistles: contextShifts, whistlesLoading, refreshWhistles, refreshBell } = useAppData();
   const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -231,9 +231,9 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
 
   // Fetch both scopes on mount
   useEffect(() => {
-    refreshShifts('village');
-    refreshShifts('mine');
-  }, [refreshShifts]);
+    refreshWhistles('village');
+    refreshWhistles('mine');
+  }, [refreshWhistles]);
 
   const now = new Date();
 
@@ -255,10 +255,10 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
   );
 
   const load = useCallback(() => {
-    refreshShifts('village');
-    refreshShifts('mine');
+    refreshWhistles('village');
+    refreshWhistles('mine');
     refreshBell();
-  }, [refreshShifts, refreshBell]);
+  }, [refreshWhistles, refreshBell]);
 
   // Auto-dismiss claim errors after 5s. Release errors stay until the user acts.
   useEffect(() => {
@@ -330,8 +330,8 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
     }
   }
 
-  const firstLoad = (shiftsLoading['village'] && villageRows.length === 0) ||
-    (shiftsLoading['mine'] && mineRows.length === 0);
+  const firstLoad = (whistlesLoading['village'] && villageRows.length === 0) ||
+    (whistlesLoading['mine'] && mineRows.length === 0);
 
   const showMySection = filter === 'all';
 

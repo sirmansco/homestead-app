@@ -15,7 +15,7 @@ describe('circle/invite-family/route.ts — L25: rate limit', () => {
   });
 
   it('uses invite-family: key prefix', () => {
-    expect(src).toMatch(/`invite-family:\$\{userId\}`/);
+    expect(src).toMatch(/`invite-family:\$\{user(?:Id|\.id)\}`/);
   });
 
   it('uses limit 5 per 60_000 ms window', () => {
@@ -26,7 +26,7 @@ describe('circle/invite-family/route.ts — L25: rate limit', () => {
   it('rate limit fires after auth, before body parse', () => {
     const rlIdx = src.indexOf('rateLimitResponse');
     const jsonIdx = src.indexOf('req.json()');
-    const authIdx = src.indexOf('requireUser');
+    const authIdx = src.indexOf('requireHousehold');
     // auth resolves before rate-limit check
     expect(authIdx).toBeLessThan(rlIdx);
     // rate-limit fires before body parse

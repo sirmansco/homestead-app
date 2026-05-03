@@ -3,7 +3,7 @@ import { and, eq, gte, inArray, isNull, or, asc } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { shifts, users, households } from '@/lib/db/schema';
+import { whistles, users, households } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { createHash } from 'crypto';
 
@@ -33,32 +33,32 @@ async function queryVillageShifts(userId: string): Promise<string> {
   const myUserIdForFilter = myUserRows[0]?.id ?? null;
 
   const where = and(
-    inArray(shifts.householdId, hhIds),
-    gte(shifts.endsAt, new Date()),
+    inArray(whistles.householdId, hhIds),
+    gte(whistles.endsAt, new Date()),
     or(
-      eq(shifts.status, 'claimed'),
+      eq(whistles.status, 'claimed'),
       and(
-        eq(shifts.status, 'open'),
+        eq(whistles.status, 'open'),
         or(
-          isNull(shifts.preferredCaregiverId),
-          ...(myUserIdForFilter ? [eq(shifts.preferredCaregiverId, myUserIdForFilter)] : []),
+          isNull(whistles.preferredCaregiverId),
+          ...(myUserIdForFilter ? [eq(whistles.preferredCaregiverId, myUserIdForFilter)] : []),
         ),
       ),
     ),
   );
 
   const rows = await db.select({
-    shift: shifts,
+    shift: whistles,
     household: households,
     creator: { id: users.id, name: users.name },
     claimer: { id: claimerUsers.id, name: claimerUsers.name },
   })
-    .from(shifts)
-    .leftJoin(households, eq(shifts.householdId, households.id))
-    .leftJoin(users, eq(shifts.createdByUserId, users.id))
-    .leftJoin(claimerUsers, eq(shifts.claimedByUserId, claimerUsers.id))
+    .from(whistles)
+    .leftJoin(households, eq(whistles.householdId, households.id))
+    .leftJoin(users, eq(whistles.createdByUserId, users.id))
+    .leftJoin(claimerUsers, eq(whistles.claimedByUserId, claimerUsers.id))
     .where(where)
-    .orderBy(asc(shifts.startsAt));
+    .orderBy(asc(whistles.startsAt));
 
   return JSON.stringify(rows);
 }
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
             controller.enqueue(encoder.encode(': ping\n\n'));
           }
         } catch (err) {
-          console.error('[shifts:stream] poll error', err instanceof Error ? err.message : String(err));
+          console.error('[whistles:stream] poll error', err instanceof Error ? err.message : String(err));
           // Send an error event so the client can reconnect
           controller.enqueue(encoder.encode('event: error\ndata: poll_failed\n\n'));
         }

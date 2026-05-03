@@ -45,6 +45,19 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
     )).limit(1);
     if (!target) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
+    if (target.isAdmin) {
+      const adminCount = await db.$count(
+        users,
+        and(eq(users.householdId, household.id), eq(users.isAdmin, true)),
+      );
+      if (adminCount === 1) {
+        return NextResponse.json(
+          { error: 'last_admin', message: 'Cannot remove the only admin. Transfer admin first.' },
+          { status: 409 },
+        );
+      }
+    }
+
     const outcome = await tombstoneUser({ userId: id, householdId: household.id });
 
     // DB first, Clerk last (BUILD-LESSONS Principle 6). Use cached clerkUserId

@@ -1,20 +1,20 @@
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
-  users, shifts, bells, pushSubscriptions, caregiverUnavailability, familyInvites,
+  users, whistles, lanterns, pushSubscriptions, unavailability, familyInvites,
 } from '@/lib/db/schema';
 
 export type TombstoneOutcome =
   | { kind: 'noop' }
   | { kind: 'deleted' }
-  | { kind: 'anonymized'; reason: { authoredShifts: number; authoredBells: number } };
+  | { kind: 'anonymized'; reason: { authoredWhistles: number; authoredLanterns: number } };
 
 // Removes a per-household users row safely against the ON DELETE restrict FKs
-// on shifts.createdByUserId and bells.createdByUserId. Per spec NN #16b: if
+// on whistles.createdByUserId and lanterns.createdByUserId. Per spec NN #16b: if
 // authored history exists, the row is anonymized in place using the canonical
 // [deleted] placeholder pattern from app/api/account/route.ts; otherwise the
-// row is hard-deleted (PG cascades pushSubscriptions, caregiverUnavailability,
-// bellResponses, feedback, familyInvites.fromUserId).
+// row is hard-deleted (PG cascades pushSubscriptions, unavailability,
+// lanternResponses, feedback, familyInvites.fromUserId).
 //
 // Clerk side-effects are caller-owned. The service touches the DB only.
 //
@@ -39,21 +39,21 @@ export async function tombstoneUser(args: {
     }
 
     // Pre-cleanup runs on both branches so the count is meaningful.
-    await tx.update(shifts)
+    await tx.update(whistles)
       .set({ claimedByUserId: null })
-      .where(eq(shifts.claimedByUserId, userId));
+      .where(eq(whistles.claimedByUserId, userId));
 
-    await tx.update(shifts)
+    await tx.update(whistles)
       .set({ status: 'cancelled' })
       .where(and(
-        eq(shifts.createdByUserId, userId),
-        gte(shifts.startsAt, new Date()),
+        eq(whistles.createdByUserId, userId),
+        gte(whistles.startsAt, new Date()),
       ));
 
-    const authoredShifts = await tx.$count(shifts, eq(shifts.createdByUserId, userId));
-    const authoredBells = await tx.$count(bells, eq(bells.createdByUserId, userId));
+    const authoredWhistles = await tx.$count(whistles, eq(whistles.createdByUserId, userId));
+    const authoredLanterns = await tx.$count(lanterns, eq(lanterns.createdByUserId, userId));
 
-    if (authoredShifts === 0 && authoredBells === 0) {
+    if (authoredWhistles === 0 && authoredLanterns === 0) {
       try {
         await tx.delete(users).where(eq(users.id, userId));
         return { kind: 'deleted' };
@@ -63,12 +63,12 @@ export async function tombstoneUser(args: {
         console.warn('[tombstone] hard-delete lost a race, anonymizing', {
           userId, householdId, err: err instanceof Error ? err.message : String(err),
         });
-        const recountShifts = await tx.$count(shifts, eq(shifts.createdByUserId, userId));
-        const recountBells = await tx.$count(bells, eq(bells.createdByUserId, userId));
+        const recountWhistles = await tx.$count(whistles, eq(whistles.createdByUserId, userId));
+        const recountLanterns = await tx.$count(lanterns, eq(lanterns.createdByUserId, userId));
         await anonymize(tx, userId);
         return {
           kind: 'anonymized',
-          reason: { authoredShifts: recountShifts, authoredBells: recountBells },
+          reason: { authoredWhistles: recountWhistles, authoredLanterns: recountLanterns },
         };
       }
     }
@@ -76,13 +76,13 @@ export async function tombstoneUser(args: {
     await anonymize(tx, userId);
     return {
       kind: 'anonymized',
-      reason: { authoredShifts, authoredBells },
+      reason: { authoredWhistles, authoredLanterns },
     };
   });
 }
 
 // Strips PII and clears Clerk-identifying columns. Preserves users.id so
-// authored shifts/bells continue to resolve. Explicitly removes pushSubs,
+// authored whistles/lanterns continue to resolve. Explicitly removes pushSubs,
 // availability windows, and pending family-invites because the row no longer
 // represents a household member.
 async function anonymize(
@@ -90,7 +90,7 @@ async function anonymize(
   userId: string,
 ): Promise<void> {
   await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
-  await tx.delete(caregiverUnavailability).where(eq(caregiverUnavailability.userId, userId));
+  await tx.delete(unavailability).where(eq(unavailability.userId, userId));
   await tx.delete(familyInvites).where(and(
     eq(familyInvites.fromUserId, userId),
     eq(familyInvites.status, 'pending'),

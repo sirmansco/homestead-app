@@ -92,6 +92,14 @@ export async function PATCH(req: NextRequest) {
       .where(eq(households.id, household.id))
       .returning();
 
+    if (updates.setupCompleteAt) {
+      console.log(JSON.stringify({
+        event: 'setup_complete',
+        householdId: household.id,
+        at: new Date().toISOString(),
+      }));
+    }
+
     if (updates.name) {
       const { orgId } = await auth();
       if (orgId) {

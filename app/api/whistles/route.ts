@@ -3,7 +3,7 @@ import { and, eq, gte, desc, asc, inArray, or, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { shifts, users, households } from '@/lib/db/schema';
+import { whistles, users, households } from '@/lib/db/schema';
 
 const claimerUsers = alias(users, 'claimer');
 import { requireHousehold, requireUser } from '@/lib/auth/household';
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     const scope = req.nextUrl.searchParams.get('scope') || 'household';
 
-    // scope=mine doesn't need an active org — just find all shifts claimed by
+    // scope=mine doesn't need an active org — just find all whistles claimed by
     // this user across every household they belong to.
     // All other scopes need requireHousehold() for the active household context.
     let activeHousehold: { id: string } | null = null;
@@ -55,80 +55,80 @@ export async function GET(req: NextRequest) {
 
     let where;
     if (scope === 'village') {
-      if (!hhIds.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
-      // Show all non-cancelled upcoming shifts visible to this caregiver:
-      // - Open shifts not targeted at someone else (null preferred OR targeted at me)
-      // - Claimed shifts (so they know coverage), always visible
+      if (!hhIds.length) return NextResponse.json({ whistles: [], meClerkUserId: userId });
+      // Show all non-cancelled upcoming whistles visible to this caregiver:
+      // - Open whistles not targeted at someone else (null preferred OR targeted at me)
+      // - Claimed whistles (so they know coverage), always visible
       const myUserIdForFilter = myUserIds[0] ?? null;
       where = and(
-        inArray(shifts.householdId, hhIds),
-        gte(shifts.endsAt, new Date()),
+        inArray(whistles.householdId, hhIds),
+        gte(whistles.endsAt, new Date()),
         or(
-          // Claimed shifts always show
-          eq(shifts.status, 'claimed'),
-          // Open shifts: show if no preference, or preference is this caregiver
+          // Claimed whistles always show
+          eq(whistles.status, 'claimed'),
+          // Open whistles: show if no preference, or preference is this caregiver
           and(
-            eq(shifts.status, 'open'),
+            eq(whistles.status, 'open'),
             or(
-              isNull(shifts.preferredCaregiverId),
-              ...(myUserIdForFilter ? [eq(shifts.preferredCaregiverId, myUserIdForFilter)] : []),
+              isNull(whistles.preferredCaregiverId),
+              ...(myUserIdForFilter ? [eq(whistles.preferredCaregiverId, myUserIdForFilter)] : []),
             ),
           ),
         ),
       );
     } else if (scope === 'mine') {
       // Find all users rows for this Clerk user (across all households, not just active org)
-      // so caregivers see shifts they claimed even before setting an active org.
+      // so caregivers see whistles they claimed even before setting an active org.
       const allMyUserRows = await db.select({ id: users.id })
         .from(users)
         .where(eq(users.clerkUserId, userId));
       const allMyUserIds = allMyUserRows.map(u => u.id);
-      if (!allMyUserIds.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
+      if (!allMyUserIds.length) return NextResponse.json({ whistles: [], meClerkUserId: userId });
       where = and(
         or(
-          inArray(shifts.claimedByUserId, allMyUserIds),
-          inArray(shifts.createdByUserId, allMyUserIds),
+          inArray(whistles.claimedByUserId, allMyUserIds),
+          inArray(whistles.createdByUserId, allMyUserIds),
         ),
-        gte(shifts.endsAt, new Date()),
+        gte(whistles.endsAt, new Date()),
       );
     } else if (scope === 'all') {
       // Unified view across all households:
-      // - As keeper: shifts in households where user has role=keeper (created by anyone in that hh)
-      // - As watcher: open shifts in households where user has role=watcher
-      // - Always: shifts the user personally claimed (regardless of role)
-      if (!hhIds.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
+      // - As keeper: whistles in households where user has role=keeper (created by anyone in that hh)
+      // - As watcher: open whistles in households where user has role=watcher
+      // - Always: whistles the user personally claimed (regardless of role)
+      if (!hhIds.length) return NextResponse.json({ whistles: [], meClerkUserId: userId });
       const parentHhIds = myUserRows.filter(u => u.role === 'keeper').map(u => u.householdId);
       const caregiverHhIds = myUserRows.filter(u => u.role === 'watcher').map(u => u.householdId);
       const clauses = [];
-      if (parentHhIds.length) clauses.push(inArray(shifts.householdId, parentHhIds));
-      if (caregiverHhIds.length) clauses.push(and(inArray(shifts.householdId, caregiverHhIds), eq(shifts.status, 'open')));
-      if (myUserIds.length) clauses.push(inArray(shifts.claimedByUserId, myUserIds));
-      if (!clauses.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
+      if (parentHhIds.length) clauses.push(inArray(whistles.householdId, parentHhIds));
+      if (caregiverHhIds.length) clauses.push(and(inArray(whistles.householdId, caregiverHhIds), eq(whistles.status, 'open')));
+      if (myUserIds.length) clauses.push(inArray(whistles.claimedByUserId, myUserIds));
+      if (!clauses.length) return NextResponse.json({ whistles: [], meClerkUserId: userId });
       where = and(
-        gte(shifts.endsAt, new Date()),
+        gte(whistles.endsAt, new Date()),
         or(...clauses as [typeof clauses[0], ...typeof clauses]),
       );
     } else {
       if (!activeHousehold) return NextResponse.json({ error: 'no_household' }, { status: 409 });
       where = and(
-        eq(shifts.householdId, activeHousehold.id),
-        gte(shifts.endsAt, new Date()),
+        eq(whistles.householdId, activeHousehold.id),
+        gte(whistles.endsAt, new Date()),
       );
     }
 
     // village/all/mine = ascending (soonest first); household = descending (most recent first)
-    const orderBy = (scope === 'village' || scope === 'all' || scope === 'mine') ? asc(shifts.startsAt) : desc(shifts.startsAt);
+    const orderBy = (scope === 'village' || scope === 'all' || scope === 'mine') ? asc(whistles.startsAt) : desc(whistles.startsAt);
 
     const rows = await db.select({
-      shift: shifts,
+      shift: whistles,
       household: households,
       creator: { id: users.id, name: users.name },
       claimer: { id: claimerUsers.id, name: claimerUsers.name },
     })
-      .from(shifts)
-      .leftJoin(households, eq(shifts.householdId, households.id))
-      .leftJoin(users, eq(shifts.createdByUserId, users.id))
-      .leftJoin(claimerUsers, eq(shifts.claimedByUserId, claimerUsers.id))
+      .from(whistles)
+      .leftJoin(households, eq(whistles.householdId, households.id))
+      .leftJoin(users, eq(whistles.createdByUserId, users.id))
+      .leftJoin(claimerUsers, eq(whistles.claimedByUserId, claimerUsers.id))
       .where(where)
       .orderBy(orderBy);
 
@@ -146,9 +146,9 @@ export async function GET(req: NextRequest) {
       requestedForMe: r.shift.preferredCaregiverId ? myUserIdSet.has(r.shift.preferredCaregiverId) : false,
     }));
 
-    return NextResponse.json({ shifts: enriched, meClerkUserId: userId });
+    return NextResponse.json({ whistles: enriched, meClerkUserId: userId });
   } catch (err) {
-    return authError(err, 'shifts:GET');
+    return authError(err, 'whistles:GET');
   }
 }
 
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
-    // Rate limit: 20 shifts per hour per user (generous — covers recurring batches)
+    // Rate limit: 20 whistles per hour per user (generous — covers recurring batches)
     const rl = rateLimit({ key: `shift-post:${user.id}`, limit: 20, windowMs: 60 * 60_000 });
     const limited = rateLimitResponse(rl);
     if (limited) return limited;
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
       preferredCaregiverId,
     };
 
-    // If recurrence is provided, expand into N shifts matching the selected
+    // If recurrence is provided, expand into N whistles matching the selected
     // weekdays starting from the initial starts/ends pair.
     const recurrence = body.recurrence;
     const valuesList: Array<typeof baseValues & {
@@ -262,19 +262,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const created = await db.insert(shifts).values(valuesList).returning();
+    const created = await db.insert(whistles).values(valuesList).returning();
 
     let notify: NotifyResult = { kind: 'push_error', recipients: 0, error: 'notify_threw' };
     if (created[0]) {
       try {
         notify = await notifyNewShift(created[0].id, preferredCaregiverId ?? undefined);
       } catch (err) {
-        console.error('[shifts:post:notify]', err);
+        console.error('[whistles:post:notify]', err);
       }
     }
 
     return NextResponse.json({ shift: created[0], count: created.length, notify });
   } catch (err) {
-    return authError(err, 'shifts:POST', `Could not post ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}. Try again.`);
+    return authError(err, 'whistles:POST', `Could not post ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}. Try again.`);
   }
 }

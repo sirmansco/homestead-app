@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull, lte } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells } from '@/lib/db/schema';
+import { lanterns } from '@/lib/db/schema';
 import { escalateBell } from '@/lib/bell-escalation';
 
 const BATCH_LIMIT = 50;
@@ -38,11 +38,11 @@ export async function GET(req: NextRequest) {
   }
 
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000);
-  const due = await db.select().from(bells)
+  const due = await db.select().from(lanterns)
     .where(and(
-      eq(bells.status, 'ringing'),
-      isNull(bells.escalatedAt),
-      lte(bells.createdAt, fiveMinutesAgo),
+      eq(lanterns.status, 'ringing'),
+      isNull(lanterns.escalatedAt),
+      lte(lanterns.createdAt, fiveMinutesAgo),
     ))
     .limit(BATCH_LIMIT);
 

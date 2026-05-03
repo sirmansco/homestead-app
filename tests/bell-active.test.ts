@@ -130,13 +130,13 @@ describe('GET /api/lantern/active', () => {
 
     const res = await GET();
     const body = await res.json();
-    expect(body.bells).toEqual([]);
+    expect(body.lanterns).toEqual([]);
   });
 
   it('returns a ringing bell with no handledByName', async () => {
     const bell = makeBell({ status: 'ringing', handledByUserId: null });
 
-    // Call order: (1) users, (2) bells, (3) bellResponses.
+    // Call order: (1) users, (2) lanterns, (3) lanternResponses.
     // No handler-users call — handledByUserId is null so handlerIds is empty.
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
@@ -146,16 +146,16 @@ describe('GET /api/lantern/active', () => {
     const res = await GET();
     const body = await res.json();
 
-    expect(body.bells).toHaveLength(1);
-    expect(body.bells[0].status).toBe('ringing');
-    expect(body.bells[0].handledByName).toBeNull();
+    expect(body.lanterns).toHaveLength(1);
+    expect(body.lanterns[0].status).toBe('ringing');
+    expect(body.lanterns[0].handledByName).toBeNull();
   });
 
   // ── Regression: accepted Bell must remain visible ────────────────────────
   it('returns a handled bell with handledByName populated', async () => {
     const bell = makeBell({ status: 'handled', handledByUserId: CAREGIVER_USER_ID });
 
-    // Call order: (1) users, (2) bells, (3) bellResponses, (4) handler-users.
+    // Call order: (1) users, (2) lanterns, (3) lanternResponses, (4) handler-users.
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([bell]))
@@ -165,41 +165,41 @@ describe('GET /api/lantern/active', () => {
     const res = await GET();
     const body = await res.json();
 
-    expect(body.bells).toHaveLength(1);
-    expect(body.bells[0].status).toBe('handled');
-    expect(body.bells[0].handledByName).toBe(CAREGIVER_NAME);
+    expect(body.lanterns).toHaveLength(1);
+    expect(body.lanterns[0].status).toBe('handled');
+    expect(body.lanterns[0].handledByName).toBe(CAREGIVER_NAME);
   });
 
-  it('excludes cancelled bells', async () => {
+  it('excludes cancelled lanterns', async () => {
     // DB simulates the status IN ('ringing','handled') filter — cancelled bell not returned.
-    // Empty bells path: (1) users, (2) bells. bellResponses + handler-users skipped (bellIds empty).
+    // Empty lanterns path: (1) users, (2) lanterns. lanternResponses + handler-users skipped (bellIds empty).
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([]));
 
     const res = await GET();
     const body = await res.json();
-    expect(body.bells).toHaveLength(0);
+    expect(body.lanterns).toHaveLength(0);
   });
 
-  it('excludes expired bells (endsAt in the past)', async () => {
-    // DB simulates the gt(bells.endsAt, now()) filter — expired bell not returned.
-    // Empty bells path: (1) users, (2) bells.
+  it('excludes expired lanterns (endsAt in the past)', async () => {
+    // DB simulates the gt(lanterns.endsAt, now()) filter — expired bell not returned.
+    // Empty lanterns path: (1) users, (2) lanterns.
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([]));
 
     const res = await GET();
     const body = await res.json();
-    expect(body.bells).toHaveLength(0);
+    expect(body.lanterns).toHaveLength(0);
   });
 
-  it('sorts ringing bells before handled bells', async () => {
+  it('sorts ringing lanterns before handled lanterns', async () => {
     const ringing = makeBell({ id: 'bell-ringing', status: 'ringing', handledByUserId: null, createdAt: new Date(Date.now() - 1000).toISOString() });
     const handled = makeBell({ id: 'bell-handled', status: 'handled', handledByUserId: CAREGIVER_USER_ID, createdAt: new Date().toISOString() });
 
     // DB returns handled first (simulating createdAt DESC order); route sort must flip them.
-    // Call order: (1) users, (2) bells, (3) bellResponses, (4) handler-users.
+    // Call order: (1) users, (2) lanterns, (3) lanternResponses, (4) handler-users.
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([handled, ringing]))
@@ -209,15 +209,15 @@ describe('GET /api/lantern/active', () => {
     const res = await GET();
     const body = await res.json();
 
-    expect(body.bells).toHaveLength(2);
-    expect(body.bells[0].id).toBe('bell-ringing');
-    expect(body.bells[1].id).toBe('bell-handled');
+    expect(body.lanterns).toHaveLength(2);
+    expect(body.lanterns[0].id).toBe('bell-ringing');
+    expect(body.lanterns[1].id).toBe('bell-handled');
   });
 
-  // Regression: caregiver belonging to multiple households must see bells from all of them,
+  // Regression: caregiver belonging to multiple households must see lanterns from all of them,
   // not just the active-org household. /api/lantern/active uses requireUser() (not requireHousehold())
   // and queries across all users rows for this clerkUserId.
-  it('returns bells across all households for a multi-household caregiver', async () => {
+  it('returns lanterns across all households for a multi-household caregiver', async () => {
     const HH2 = 'hh-002';
     const CAREGIVER_ROW_HH1 = { id: 'user-cg-hh1', householdId: HOUSEHOLD_ID, role: 'watcher' };
     const CAREGIVER_ROW_HH2 = { id: 'user-cg-hh2', householdId: HH2, role: 'watcher' };
@@ -226,14 +226,14 @@ describe('GET /api/lantern/active', () => {
 
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([CAREGIVER_ROW_HH1, CAREGIVER_ROW_HH2])) // users rows
-      .mockReturnValueOnce(makeSelectStub([bellHH1, bellHH2]))                      // bells
-      .mockReturnValueOnce(makeSelectStub([]));                                      // bellResponses
+      .mockReturnValueOnce(makeSelectStub([bellHH1, bellHH2]))                      // lanterns
+      .mockReturnValueOnce(makeSelectStub([]));                                      // lanternResponses
 
     const res = await GET();
     const body = await res.json();
 
-    expect(body.bells).toHaveLength(2);
-    expect(body.bells.map((b: { id: string }) => b.id)).toContain('bell-hh1');
-    expect(body.bells.map((b: { id: string }) => b.id)).toContain('bell-hh2');
+    expect(body.lanterns).toHaveLength(2);
+    expect(body.lanterns.map((b: { id: string }) => b.id)).toContain('bell-hh1');
+    expect(body.lanterns.map((b: { id: string }) => b.id)).toContain('bell-hh2');
   });
 });

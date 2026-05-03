@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells } from '@/lib/db/schema';
+import { lanterns } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Verify this bell belongs to the caller's active household — prevents one
     // household from cancelling another household's bell by guessing the UUID.
-    const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+    const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
     if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
     if (bell.householdId !== household.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.handledAt = new Date();
     }
 
-    await db.update(bells).set(updates).where(eq(bells.id, bellId));
+    await db.update(lanterns).set(updates).where(eq(lanterns.id, bellId));
     return NextResponse.json({ ok: true });
   } catch (err) {
     return authError(err, 'bell:id', `${getCopy().urgentSignal.noun} action failed`);

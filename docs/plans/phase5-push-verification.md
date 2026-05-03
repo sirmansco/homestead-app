@@ -147,3 +147,25 @@ Check sw.js response header: should include covey-v2 in script comment
 - What worked: All push copy verified as flowing through getCopy() — no hardcoded strings found in notify.ts or push.ts
 - What's blocked: Requires Vercel preview env var change (Preview scope `COVEY_BRAND_ACTIVE=true`) + real device with push permissions
 - Next action: Matt sets the two Preview env vars in Vercel dashboard, triggers a preview deploy from a feature branch, then runs Test 1–5 above
+
+## Kill-switch handoff — 2026-05-03
+
+**Ruled out (class of fix eliminated):**
+- Role/recipient filter: Meredith's row has `role=watcher`, `village_group=covey`, `notify_bell_ringing=true` — she passes the filter. Not the problem.
+- Subscription registration: PushRegistrar.tsx null-keys guard fixed (PR #83). Subscription does reach the DB when she toggles on. Not the problem.
+- Apple 403 over-pruning: Fixed in PR #84 — 403+BadJwtToken now retries instead of deleting the sub.
+- `ensureVapid()` warm-lambda cache: Fixed in PR #84 — no longer latched.
+- `VAPID_SUBJECT` missing `mailto:` prefix: Fixed in Vercel env.
+
+**What's still failing:**
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in Vercel production has had invalid base64 characters across two replacement attempts (non-URL-safe chars), causing `web-push` to throw `"Vapid public key must be URL safe Base 64"` on every push attempt. The env var has been set a third time using `npx web-push generate-vapid-keys --json` output, which is the only reliable source. Current key: `BGBWRhZAfAqYcJxuzJu5-NoMPiv1jFdWkZUGijLriJQVmq5m5qIxqQxxjAbsQxT1b8ZypzY3CbPM_NK-_oIfn78`. This was validated locally with `setVapidDetails()` before being set.
+- Every VAPID key rotation invalidates all existing subscriptions. Meredith must re-toggle notifications **after** the deploy containing the correct key is live.
+
+**Next action in new session:**
+1. Confirm the 15:22+ deploy is serving the new key: `curl -s https://joincovey.co | grep -o 'VAPID[^"]*'` won't work — instead check Vercel logs for `push_batch` after a test lantern — if no `"Vapid public key"` error appears, the key is good.
+2. Have Meredith toggle off/on from Home Screen PWA.
+3. Confirm her subscription appears in DB (`push_subscriptions` table, `created_at` after deploy time).
+4. Light Lantern. Check `push_batch` log for `delivered:1`.
+5. If still `BadJwtToken`: the issue is the subscription was created with a different public key than what's now signing. Solution: delete all of Meredith's stale subscriptions from DB directly, force fresh subscribe.
+
+**What to read first:** `lib/push.ts` (current `ensureVapid` impl), `BUGS.md` (BUG-D, BUG-E), Vercel env vars for VAPID.

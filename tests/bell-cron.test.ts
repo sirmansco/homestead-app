@@ -124,8 +124,8 @@ describe('GET /api/lantern/cron — LIMIT enforcement', () => {
     //     returns 50 rows from the stub.
     //  2. Whatever rows the bounded SELECT returns, the route processes all
     //     of them (no further drop on the application side).
-    const bells = Array.from({ length: 50 }, (_, i) => makeBell(`bell-${i}`));
-    const stub = makeSelectStub(bells);
+    const lanterns = Array.from({ length: 50 }, (_, i) => makeBell(`bell-${i}`));
+    const stub = makeSelectStub(lanterns);
     vi.mocked(db.select).mockReturnValueOnce(stub);
     vi.mocked(escalateBell).mockResolvedValue();
 
@@ -138,8 +138,8 @@ describe('GET /api/lantern/cron — LIMIT enforcement', () => {
   });
 
   it('emits a structured log line with batch_limit and concurrency', async () => {
-    const bells = Array.from({ length: 3 }, (_, i) => makeBell(`bell-${i}`));
-    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
+    const lanterns = Array.from({ length: 3 }, (_, i) => makeBell(`bell-${i}`));
+    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
     vi.mocked(escalateBell).mockResolvedValue();
 
     await GET(makeRequest(`Bearer ${SECRET}`));
@@ -168,8 +168,8 @@ describe('GET /api/lantern/cron — concurrency cap', () => {
     // stable rather than empirically stable. A regression that removed the cap
     // would push highWater toward 30; cap=1 or any serial execution would pin
     // highWater at 1 and fail the `>1` assertion.
-    const bells = Array.from({ length: 30 }, (_, i) => makeBell(`bell-${i}`));
-    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
+    const lanterns = Array.from({ length: 30 }, (_, i) => makeBell(`bell-${i}`));
+    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
 
     let inFlight = 0;
     let highWater = 0;
@@ -191,8 +191,8 @@ describe('GET /api/lantern/cron — concurrency cap', () => {
 
 describe('GET /api/lantern/cron — per-bell failure isolation', () => {
   it('reports failed count without poisoning successful workers', async () => {
-    const bells = Array.from({ length: 5 }, (_, i) => makeBell(`bell-${i}`));
-    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
+    const lanterns = Array.from({ length: 5 }, (_, i) => makeBell(`bell-${i}`));
+    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
 
     vi.mocked(escalateBell).mockImplementation(async (id: string) => {
       if (id === 'bell-2') throw new Error('notify failed');

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells } from '@/lib/db/schema';
+import { lanterns } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
@@ -19,7 +19,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
-    const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+    const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
     if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
     if (bell.householdId !== household.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });

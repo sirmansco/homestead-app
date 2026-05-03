@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, gte, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { caregiverUnavailability, households, users } from '@/lib/db/schema';
+import { unavailability, households, users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { parseTimeRange } from '@/lib/validate/time-range';
@@ -34,12 +34,12 @@ export async function GET() {
     if (!user) return NextResponse.json({ unavailability: [] });
 
     const rows = await db.select()
-      .from(caregiverUnavailability)
+      .from(unavailability)
       .where(and(
-        eq(caregiverUnavailability.userId, user.id),
-        gte(caregiverUnavailability.endsAt, new Date()),
+        eq(unavailability.userId, user.id),
+        gte(unavailability.endsAt, new Date()),
       ))
-      .orderBy(desc(caregiverUnavailability.startsAt));
+      .orderBy(desc(unavailability.startsAt));
     return NextResponse.json({ unavailability: rows });
   } catch (err) {
     return authError(err, 'unavailability', 'Request failed');
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if ('error' in timeRange) {
       return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
     }
-    const [row] = await db.insert(caregiverUnavailability).values({
+    const [row] = await db.insert(unavailability).values({
       userId: user.id,
       startsAt: timeRange.starts,
       endsAt: timeRange.ends,
@@ -82,8 +82,8 @@ export async function DELETE(req: NextRequest) {
 
     const id = new URL(req.url).searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-    await db.delete(caregiverUnavailability).where(
-      and(eq(caregiverUnavailability.id, id), eq(caregiverUnavailability.userId, user.id))
+    await db.delete(unavailability).where(
+      and(eq(unavailability.id, id), eq(unavailability.userId, user.id))
     );
     return NextResponse.json({ ok: true });
   } catch (err) {

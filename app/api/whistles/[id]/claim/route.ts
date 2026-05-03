@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, sql } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { shifts, users, households } from '@/lib/db/schema';
+import { whistles, users, households } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     const limited = rateLimitResponse(rl);
     if (limited) return limited;
 
-    const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
+    const [shift] = await db.select().from(whistles).where(eq(whistles.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
     const [household] = await db.select().from(households).where(eq(households.id, shift.householdId)).limit(1);
@@ -51,7 +51,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       }).returning();
     }
 
-    // Watchers only — keepers cannot claim shifts even in their own household.
+    // Watchers only — keepers cannot claim whistles even in their own household.
     if (claimer.role !== 'watcher') {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
@@ -63,15 +63,15 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     // Atomic claim: only succeeds if still open, and preferredCaregiverId gate
     // is re-checked atomically so a concurrent role-change can't race past it.
-    const [claimed] = await db.update(shifts)
+    const [claimed] = await db.update(whistles)
       .set({
         status: 'claimed',
         claimedByUserId: claimer.id,
         claimedAt: sql`now()`,
       })
       .where(and(
-        eq(shifts.id, id),
-        eq(shifts.status, 'open'),
+        eq(whistles.id, id),
+        eq(whistles.status, 'open'),
       ))
       .returning();
 
@@ -82,11 +82,11 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     try {
       await notifyShiftClaimed(claimed.id);
     } catch (err) {
-      console.error('[shifts:claim:notify]', err);
+      console.error('[whistles:claim:notify]', err);
     }
 
     return NextResponse.json({ shift: claimed });
   } catch (err) {
-    return authError(err, 'shifts:claim', `Could not claim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
+    return authError(err, 'whistles:claim', `Could not claim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }

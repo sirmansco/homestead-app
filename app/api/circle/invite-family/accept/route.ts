@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { familyInvites, users } from '@/lib/db/schema';
 import { apiError } from '@/lib/api-error';
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
         parentEmail: familyInvites.parentEmail,
         villageGroup: familyInvites.villageGroup,
         status: familyInvites.status,
+        expiresAt: familyInvites.expiresAt,
         fromName: users.name,
       })
       .from(familyInvites)
@@ -30,6 +32,9 @@ export async function GET(req: NextRequest) {
 
     if (!invite) return NextResponse.json({ error: 'invite_not_found' }, { status: 404 });
     if (invite.status !== 'pending') return NextResponse.json({ error: 'invite_used' }, { status: 410 });
+    if (invite.expiresAt && invite.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'invite_expired' }, { status: 410 });
+    }
 
     return NextResponse.json({
       ok: true,
@@ -46,9 +51,8 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/circle/invite-family/accept — consume a pending invite token.
-// Requires the caller to be signed in. Atomically marks the token as accepted
-// and binds the signed-in Clerk user to the invite's parentEmail.
-// The GET preview must be called first to validate the token before posting.
+// Requires the caller to be signed in. Validates that the signed-in user's email
+// matches the invite's parentEmail, checks expiry, then atomically marks accepted.
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await requireUser();
@@ -65,19 +69,38 @@ export async function POST(req: NextRequest) {
 
     if (!invite) return NextResponse.json({ error: 'invite_not_found' }, { status: 404 });
     if (invite.status !== 'pending') return NextResponse.json({ error: 'invite_used' }, { status: 410 });
+    if (invite.expiresAt && invite.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'invite_expired' }, { status: 410 });
+    }
 
-    // Atomic consume: only succeeds if status is still 'pending'.
+    // Verify the signed-in user's email matches the invite target.
+    // requireUser() only returns the Clerk userId — fetch the full Clerk user to get email.
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(userId);
+    const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase() ?? '';
+    if (!primaryEmail || primaryEmail !== invite.parentEmail.toLowerCase()) {
+      return NextResponse.json({ error: 'email_mismatch' }, { status: 403 });
+    }
+
+    // Resolve the household the invite creator belongs to, to set acceptedHouseholdId.
+    const [fromUser] = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, invite.fromUserId))
+      .limit(1);
+
+    // Atomic consume: AND status = 'pending' guards against a concurrent accept.
     const [updated] = await db
       .update(familyInvites)
       .set({
         status: 'accepted',
         acceptedAt: new Date(),
-        acceptedHouseholdId: invite.acceptedHouseholdId,
+        acceptedHouseholdId: fromUser?.householdId ?? null,
       })
-      .where(eq(familyInvites.id, invite.id))
+      .where(and(eq(familyInvites.id, invite.id), ne(familyInvites.status, 'accepted')))
       .returning();
 
-    if (!updated || updated.status !== 'accepted') {
+    if (!updated) {
       return NextResponse.json({ error: 'invite_used' }, { status: 410 });
     }
 

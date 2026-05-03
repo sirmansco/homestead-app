@@ -139,7 +139,7 @@ vi.mock('@/lib/db', () => ({
 }));
 vi.mock('@/lib/db/schema', () => ({
   users: 'users_table',
-  kids: 'kids_table',
+  chicks: 'kids_table',
 }));
 
 function makeFormData(bodyBytes: Buffer, filename: string, mimeType: string, targetType = 'user', targetId = 'u-1'): FormData {

@@ -92,6 +92,20 @@
       "when": 1777832400000,
       "tag": "0012_role_rename_keeper_watcher",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1746316200000,
+      "tag": "0013_rename_homestead_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1746316800000,
+      "tag": "0014_invite_expiry",
+      "breakpoints": true
     }
   ]
 }

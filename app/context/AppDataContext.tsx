@@ -57,12 +57,12 @@ type AppDataCtx = {
   refreshBell: () => void;
 
   // Shifts — keyed by scope string
-  shifts: Record<string, ShiftRow[]>;
-  shiftsLoading: Record<string, boolean>;
-  refreshShifts: (scope: string) => void;
+  whistles: Record<string, ShiftRow[]>;
+  whistlesLoading: Record<string, boolean>;
+  refreshWhistles: (scope: string) => void;
 
   // SSE stream for live village/all-scope shifts
-  enableShiftStream: (on: boolean) => void;
+  enableWhistleStream: (on: boolean) => void;
 
   // Village
   village: VillageMember[];
@@ -95,9 +95,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/lantern/active');
       if (!res.ok) return;
       const data = await res.json();
-      const bells: ActiveBellData[] = data.bells || [];
-      setAllBells(bells);
-      const ringing = bells.find((b) => b.status === 'ringing') ?? null;
+      const lanterns: ActiveBellData[] = data.lanterns || [];
+      setAllBells(lanterns);
+      const ringing = lanterns.find((b) => b.status === 'ringing') ?? null;
       setActiveBell(ringing);
     } catch (err) {
       Sentry.captureException(err, { tags: { source: 'appdata:bell' } });
@@ -109,59 +109,75 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshBell = useCallback(() => { void fetchBell(); }, [fetchBell]);
 
-  // Start bell polling on mount; refresh on window focus
+  // Start bell polling on mount; refresh on window focus; pause when page is hidden.
   useEffect(() => {
     void fetchBell();
     bellTimerRef.current = setInterval(() => { void fetchBell(); }, BELL_POLL_MS);
+
     const onFocus = () => { void fetchBell(); };
     window.addEventListener('focus', onFocus);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        if (bellTimerRef.current) {
+          clearInterval(bellTimerRef.current);
+          bellTimerRef.current = null;
+        }
+      } else {
+        void fetchBell();
+        bellTimerRef.current = setInterval(() => { void fetchBell(); }, BELL_POLL_MS);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
       if (bellTimerRef.current) clearInterval(bellTimerRef.current);
       window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [fetchBell]);
 
   // Shifts state
-  const [shifts, setShifts] = useState<Record<string, ShiftRow[]>>({});
-  const [shiftsLoading, setShiftsLoading] = useState<Record<string, boolean>>({});
+  const [whistles, setWhistles] = useState<Record<string, ShiftRow[]>>({});
+  const [whistlesLoading, setShiftsLoading] = useState<Record<string, boolean>>({});
 
-  const fetchShifts = useCallback(async (scope: string) => {
+  const fetchWhistles = useCallback(async (scope: string) => {
     setShiftsLoading(prev => ({ ...prev, [scope]: true }));
     try {
       const res = await fetch(`/api/whistles?scope=${scope}`);
       if (res.status === 401 || res.status === 409) {
-        setShifts(prev => ({ ...prev, [scope]: [] }));
+        setWhistles(prev => ({ ...prev, [scope]: [] }));
         return;
       }
       if (!res.ok) return;
-      const data = await res.json() as { shifts: ShiftRow[] };
-      setShifts(prev => ({ ...prev, [scope]: data.shifts }));
+      const data = await res.json() as { whistles: ShiftRow[] };
+      setWhistles(prev => ({ ...prev, [scope]: data.whistles }));
     } catch (err) {
-      Sentry.captureException(err, { tags: { source: `appdata:shifts:${scope}` } });
-      console.warn(`[appdata:shifts:${scope}] fetch failed`, err instanceof Error ? err.message : String(err));
+      Sentry.captureException(err, { tags: { source: `appdata:whistles:${scope}` } });
+      console.warn(`[appdata:whistles:${scope}] fetch failed`, err instanceof Error ? err.message : String(err));
     } finally {
       setShiftsLoading(prev => ({ ...prev, [scope]: false }));
     }
   }, []);
 
-  const refreshShifts = useCallback((scope: string) => { void fetchShifts(scope); }, [fetchShifts]);
+  const refreshWhistles = useCallback((scope: string) => { void fetchWhistles(scope); }, [fetchWhistles]);
 
   // Refresh shifts on window focus for the scopes that have been loaded
-  const shiftsRef = useRef(shifts);
-  shiftsRef.current = shifts;
+  const whistlesRef = useRef(shifts);
+  whistlesRef.current = shifts;
   useEffect(() => {
     const onFocus = () => {
-      Object.keys(shiftsRef.current).forEach(scope => { void fetchShifts(scope); });
+      Object.keys(whistlesRef.current).forEach(scope => { void fetchWhistles(scope); });
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [fetchShifts]);
+  }, [fetchWhistles]);
 
   // SSE stream — enabled by screens that need live village-scope shift updates
   const [streamEnabled, setStreamEnabled] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
-  const enableShiftStream = useCallback((on: boolean) => {
+  const enableWhistleStream = useCallback((on: boolean) => {
     setStreamEnabled(on);
   }, []);
 
@@ -185,7 +201,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         try {
           const rows = JSON.parse(evt.data) as ShiftRow[];
           // Update both 'village' and 'all' scopes — stream returns village-scoped data
-          setShifts(prev => ({ ...prev, village: rows, all: rows }));
+          setWhistles(prev => ({ ...prev, village: rows, all: rows }));
         } catch (err) {
           Sentry.captureException(err, { tags: { source: 'appdata:stream:parse' } });
           console.warn('[appdata:stream] parse error', err instanceof Error ? err.message : String(err));
@@ -242,8 +258,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppDataContext.Provider value={{
       activeBell, allBells, bellLoading, refreshBell,
-      shifts, shiftsLoading, refreshShifts,
-      enableShiftStream,
+      shifts, whistlesLoading, refreshWhistles,
+      enableWhistleStream,
       village, villageLoading, refreshVillage,
     }}>
       {children}
