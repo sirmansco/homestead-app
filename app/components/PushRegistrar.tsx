@@ -28,7 +28,7 @@ export function PushRegistrar() {
         // forcing a SW byte-fetch on every page load, which triggered a SW
         // re-install cycle and a visible reload on every PWA open after a deploy.
         const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
-        const lastUpdateKey = 'hs.sw.lastUpdate';
+        const lastUpdateKey = 'covey.sw.lastUpdate';
         const lastUpdate = Number(localStorage.getItem(lastUpdateKey) || '0');
         if (Date.now() - lastUpdate > UPDATE_INTERVAL_MS) {
           try {

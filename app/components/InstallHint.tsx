@@ -23,13 +23,13 @@ export function InstallHint() {
 
   useEffect(() => {
     if (!isIosSafari() || isStandalone()) return;
-    if (localStorage.getItem('hs.installHintDismissed') === '1') return;
+    if (localStorage.getItem('covey.installHintDismissed') === '1' || localStorage.getItem('hs.installHintDismissed') === '1') return;
     const t = setTimeout(() => setVisible(true), 1200);
     return () => clearTimeout(t);
   }, []);
 
   function dismiss() {
-    localStorage.setItem('hs.installHintDismissed', '1');
+    localStorage.setItem('covey.installHintDismissed', '1');
     setVisible(false);
   }
 

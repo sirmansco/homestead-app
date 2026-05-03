@@ -34,11 +34,11 @@ export function AutoUpdate() {
     // ── Mechanism 2: SHA meta-tag fallback ─────────────────────────────────
     const currentSha = document.querySelector<HTMLMetaElement>('meta[name="app-sha"]')?.content;
     if (currentSha && currentSha !== 'dev') {
-      const storedSha = localStorage.getItem('hs.deploy.sha');
+      const storedSha = localStorage.getItem('covey.deploy.sha') || localStorage.getItem('hs.deploy.sha');
       if (!storedSha) {
-        localStorage.setItem('hs.deploy.sha', currentSha);
+        localStorage.setItem('covey.deploy.sha', currentSha);
       } else if (storedSha !== currentSha) {
-        localStorage.setItem('hs.deploy.sha', currentSha);
+        localStorage.setItem('covey.deploy.sha', currentSha);
         window.location.reload();
       }
     }

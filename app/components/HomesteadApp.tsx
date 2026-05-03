@@ -202,7 +202,7 @@ function HomesteadInner() {
   // Seed role from localStorage for allowlisted users so their manual toggle persists.
   const [role, setRole] = useState<Role>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('hs.role') as Role | null;
+      const saved = localStorage.getItem('covey.role') as Role | null;
       if (saved === 'parent' || saved === 'caregiver') return saved;
     }
     return 'parent';
@@ -257,13 +257,13 @@ function HomesteadInner() {
       window.history.replaceState({}, '', clean.pathname + (clean.search || ''));
       return; // don't apply localStorage over the deep-link
     }
-    const savedScreen = localStorage.getItem('hs.screen') as LegacyTabId | null;
+    const savedScreen = localStorage.getItem('covey.screen') as LegacyTabId | null;
     if (savedScreen) setScreen(normalizeTabId(savedScreen));
   }, []);
 
-  useEffect(() => { localStorage.setItem('hs.screen', screen); }, [screen]);
+  useEffect(() => { localStorage.setItem('covey.screen', screen); }, [screen]);
   useEffect(() => {
-    if (canSwitchRole) localStorage.setItem('hs.role', role);
+    if (canSwitchRole) localStorage.setItem('covey.role', role);
   }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
