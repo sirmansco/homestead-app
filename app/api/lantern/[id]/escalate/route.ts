@@ -15,7 +15,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     if (!bellId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
     const { household, user } = await requireHousehold();
-    if (user.role !== 'parent') {
+    if (user.role !== 'keeper') {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 

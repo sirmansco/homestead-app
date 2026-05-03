@@ -41,7 +41,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   useEffect(() => {
     fetch('/api/circle').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.kids) setKids(d.kids);
-      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'caregiver'));
+      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'watcher'));
     }).catch(() => {});
   }, [active?.id]);
 

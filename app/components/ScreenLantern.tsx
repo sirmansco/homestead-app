@@ -124,7 +124,7 @@ function plusHours(h: number) {
 
 type VillageMember = { id: string; name: string; villageGroup: 'covey' | 'field' };
 
-function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregiver' }) {
+function PushPermissionBanner({ role = 'keeper' }: { role?: 'keeper' | 'watcher' }) {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [requesting, setRequesting] = useState(false);
 
@@ -135,10 +135,10 @@ function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregive
 
   if (permission === 'granted' || permission === null) return null;
 
-  const deniedCopy = role === 'caregiver'
+  const deniedCopy = role === 'watcher'
     ? 'Notifications blocked. Enable them in your browser settings so you\'re alerted when a family lights the lantern.'
     : 'Notifications blocked. Enable them in your browser settings so watchers get alerted when you light the Lantern.';
-  const allowCopy = role === 'caregiver'
+  const allowCopy = role === 'watcher'
     ? 'Allow notifications so you\'re alerted the moment a family lights the lantern.'
     : 'Allow notifications so caregivers are alerted instantly.';
 
@@ -582,7 +582,7 @@ function BellIncoming() {
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-          <PushPermissionBanner role="caregiver" />
+          <PushPermissionBanner role="watcher" />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
             <BellGlyph size={48} />
@@ -713,9 +713,9 @@ function BellIncoming() {
   );
 }
 
-export function ScreenLantern({ initialCompose = false, role = 'parent', onBack, onPost }: {
+export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack, onPost }: {
   initialCompose?: boolean;
-  role?: 'parent' | 'caregiver';
+  role?: 'keeper' | 'watcher';
   onBack?: () => void;
   onPost?: () => void;
 }) {
@@ -738,7 +738,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
   // On first render as a keep-alive screen (parent only): use shared activeBell
   // from context rather than a dedicated fetch — context is already polling.
   useEffect(() => {
-    if (role !== 'parent' || initialCompose) return;
+    if (role !== 'keeper' || initialCompose) return;
     if (activeBell && activeBell.status === 'ringing') {
       setRingBellId(activeBell.id);
       setRingReason(activeBell.reason);
@@ -760,7 +760,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
     }
   }, [activeBell, mode]);
 
-  if (role === 'caregiver') return <BellIncoming />;
+  if (role === 'watcher') return <BellIncoming />;
 
   if (mode === 'loading') {
     return (

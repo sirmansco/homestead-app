@@ -8,7 +8,7 @@ import path from 'path';
 // API resolution, dev role switcher) were silently ignored — parents saw CaregiverVillage
 // and caregivers saw the parent circle view.
 //
-// Fix: myRole is a derived const (roleProp ?? 'parent'), not state. No sync needed.
+// Fix: myRole is a derived const (roleProp ?? 'keeper'), not state. No sync needed.
 
 const src = readFileSync(
   path.resolve(__dirname, '../app/components/ScreenCircle.tsx'),
@@ -28,11 +28,11 @@ describe('ScreenCircle — role is derived, not state', () => {
     expect(circleSrc).not.toContain('setMyRole');
   });
 
-  it('defaults to parent when roleProp is absent', () => {
-    expect(circleSrc).toContain("roleProp ?? 'parent'");
+  it('defaults to keeper when roleProp is absent', () => {
+    expect(circleSrc).toContain("roleProp ?? 'keeper'");
   });
 
-  it('CaregiverVillage early-return uses myRole derived from prop', () => {
-    expect(circleSrc).toContain("myRole === 'caregiver'");
+  it('WatcherVillage early-return uses myRole derived from prop', () => {
+    expect(circleSrc).toContain("myRole === 'watcher'");
   });
 });

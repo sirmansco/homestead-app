@@ -22,7 +22,7 @@ type Ctx = {
   all: HouseholdSummary[];
   refresh: () => Promise<void>;
   isDualRole: boolean;
-  rolesByHousehold: Record<string, 'parent' | 'caregiver'>;
+  rolesByHousehold: Record<string, 'keeper' | 'watcher'>;
 };
 
 const HouseholdContext = createContext<Ctx>({
@@ -37,7 +37,7 @@ export function useHousehold() {
 export function HouseholdProvider({ children }: { children: React.ReactNode }) {
   const [all, setAll] = useState<HouseholdSummary[]>([]);
   const [isDualRole, setIsDualRole] = useState(false);
-  const [rolesByHousehold, setRolesByHousehold] = useState<Record<string, 'parent' | 'caregiver'>>({});
+  const [rolesByHousehold, setRolesByHousehold] = useState<Record<string, 'keeper' | 'watcher'>>({});
 
   const refresh = useCallback(async () => {
     try {
@@ -49,7 +49,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         household?: ActiveHouseholdDetails;
         allHouseholds?: HouseholdSummary[];
         isDualRole?: boolean;
-        rolesByHousehold?: Record<string, 'parent' | 'caregiver'>;
+        rolesByHousehold?: Record<string, 'keeper' | 'watcher'>;
       };
       setAll(data.allHouseholds || []);
       setIsDualRole(data.isDualRole ?? false);

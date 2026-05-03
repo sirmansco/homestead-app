@@ -39,12 +39,12 @@ export async function GET() {
           .from(users)
           .where(eq(users.clerkUserId, userId))
       : [];
-    const rolesByHousehold: Record<string, 'parent' | 'caregiver'> = {};
+    const rolesByHousehold: Record<string, 'keeper' | 'watcher'> = {};
     for (const r of myRoleRows) {
       if (hhIds.includes(r.householdId)) rolesByHousehold[r.householdId] = r.role;
     }
     const roles = Object.values(rolesByHousehold);
-    const isDualRole = roles.includes('parent') && roles.includes('caregiver');
+    const isDualRole = roles.includes('keeper') && roles.includes('watcher');
 
     // Now enrich with the active household details (if any). If no org is
     // attached, we still return the membership list so the switcher can render.
