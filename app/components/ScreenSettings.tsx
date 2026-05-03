@@ -69,6 +69,19 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     return Notification.permission as PermState;
   });
 
+  // On mount: if browser says "granted", verify there's an actual SW push
+  // subscription — browser permission alone doesn't mean server registration
+  // succeeded. No subscription → show granted_unregistered so the user can retry.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    navigator.serviceWorker.ready.then(reg =>
+      reg.pushManager.getSubscription().then(sub => {
+        if (!sub) setPermState('granted_unregistered');
+      })
+    ).catch(() => { /* ignore — non-critical */ });
+  }, []);
+
   async function handleEnableNotifications() {
     setPermState('requesting');
     const result = await requestPushPermission();
