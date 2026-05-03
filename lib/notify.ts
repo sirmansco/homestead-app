@@ -301,7 +301,7 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
     await pushToUser(recipientUserId, {
       title: t.request.cancelledTitle,
       body: `"${row.shift.title}" · ${when}`,
-      url: `/?tab=${t.request.whistlesDeepLinkTab}`,
+      url: `/?tab=${t.request.shiftsDeepLinkTab}`,
       tag: `${t.request.cancelTagPrefix}-${shiftId}`,
     });
   } catch (err) {

@@ -162,9 +162,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshWhistles = useCallback((scope: string) => { void fetchWhistles(scope); }, [fetchWhistles]);
 
-  // Refresh shifts on window focus for the scopes that have been loaded
-  const whistlesRef = useRef(shifts);
-  whistlesRef.current = shifts;
+  // Refresh whistles on window focus for the scopes that have been loaded
+  const whistlesRef = useRef(whistles);
+  whistlesRef.current = whistles;
   useEffect(() => {
     const onFocus = () => {
       Object.keys(whistlesRef.current).forEach(scope => { void fetchWhistles(scope); });
@@ -258,7 +258,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppDataContext.Provider value={{
       activeBell, allBells, bellLoading, refreshBell,
-      shifts, whistlesLoading, refreshWhistles,
+      whistles, whistlesLoading, refreshWhistles,
       enableWhistleStream,
       village, villageLoading, refreshVillage,
     }}>
