@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { users, kids, households } from '@/lib/db/schema';
+import { users, chicks, households } from '@/lib/db/schema';
 import { requireHousehold, requireHouseholdAdmin, requireUser } from '@/lib/auth/household';
 import { normaliseStoredName } from '@/lib/format';
 import { authError } from '@/lib/api-error';
@@ -22,13 +22,13 @@ export async function GET(req: NextRequest) {
       const [hhRows, allAdults, allKids] = await Promise.all([
         db.select().from(households).where(inArray(households.id, hhIds)),
         db.select().from(users).where(inArray(users.householdId, hhIds)),
-        db.select().from(kids).where(inArray(kids.householdId, hhIds)),
+        db.select().from(chicks).where(inArray(chicks.householdId, hhIds)),
       ]);
 
       const families = hhRows.map(h => ({
         household: { id: h.id, name: h.name, glyph: h.glyph },
         adults: allAdults.filter(a => a.householdId === h.id).map(a => ({ ...a, name: normaliseStoredName(a.name) })),
-        kids: allKids.filter(k => k.householdId === h.id),
+        chicks: allKids.filter(k => k.householdId === h.id),
       }));
 
       return NextResponse.json({ families });
@@ -37,11 +37,11 @@ export async function GET(req: NextRequest) {
     const { household } = await requireHousehold();
     const [adults, kidsList] = await Promise.all([
       db.select().from(users).where(eq(users.householdId, household.id)),
-      db.select().from(kids).where(eq(kids.householdId, household.id)),
+      db.select().from(chicks).where(eq(chicks.householdId, household.id)),
     ]);
 
     const normalised = adults.map(a => ({ ...a, name: normaliseStoredName(a.name) }));
-    return NextResponse.json({ adults: normalised, kids: kidsList });
+    return NextResponse.json({ adults: normalised, chicks: kidsList });
   } catch (err) {
     return authError(err, 'village');
   }
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     if (body.type === 'kid') {
       const { name, birthday, notes } = body;
       if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
-      const [kid] = await db.insert(kids).values({
+      const [kid] = await db.insert(chicks).values({
         householdId: household.id,
         name: name.trim(),
         birthday: birthday || null,
@@ -95,7 +95,7 @@ export async function DELETE(req: NextRequest) {
     if (!id || !type) return NextResponse.json({ error: 'id and type required' }, { status: 400 });
 
     if (type === 'kid') {
-      await db.delete(kids).where(and(eq(kids.id, id), eq(kids.householdId, household.id)));
+      await db.delete(chicks).where(and(eq(chicks.id, id), eq(chicks.householdId, household.id)));
       return NextResponse.json({ ok: true });
     }
 

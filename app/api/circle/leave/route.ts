@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { and, eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { tombstoneUser } from '@/lib/users/tombstone';
@@ -14,6 +17,17 @@ import { tombstoneUser } from '@/lib/users/tombstone';
 export async function POST() {
   try {
     const { household, user } = await requireHousehold();
+
+    const adminCount = await db.$count(
+      users,
+      and(eq(users.householdId, household.id), eq(users.isAdmin, true)),
+    );
+    if (adminCount === 1 && user.isAdmin) {
+      return NextResponse.json(
+        { error: 'last_admin', message: 'Transfer admin to another member before leaving.' },
+        { status: 409 },
+      );
+    }
 
     const outcome = await tombstoneUser({ userId: user.id, householdId: household.id });
     console.log(JSON.stringify({

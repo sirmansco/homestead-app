@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { shifts } from '@/lib/db/schema';
+import { whistles } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftCancelled } from '@/lib/notify';
@@ -15,7 +15,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     if (!id) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { household, user } = await requireHousehold();
 
-    const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
+    const [shift] = await db.select().from(whistles).where(eq(whistles.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });
     if (shift.householdId !== household.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
@@ -30,9 +30,9 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const claimedByUserId = shift.claimedByUserId;
 
-    const [cancelled] = await db.update(shifts)
+    const [cancelled] = await db.update(whistles)
       .set({ status: 'cancelled' })
-      .where(eq(shifts.id, id))
+      .where(and(eq(whistles.id, id), ne(whistles.status, 'cancelled')))
       .returning();
     if (!cancelled) return NextResponse.json({ error: 'cancel failed' }, { status: 500 });
 
@@ -40,12 +40,12 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       try {
         await notifyShiftCancelled(id, claimedByUserId);
       } catch (err) {
-        console.error('[shifts:cancel:notify]', err);
+        console.error('[whistles:cancel:notify]', err);
       }
     }
 
     return NextResponse.json({ shift: cancelled });
   } catch (err) {
-    return authError(err, 'shifts:cancel', `Could not cancel ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
+    return authError(err, 'whistles:cancel', `Could not cancel ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }

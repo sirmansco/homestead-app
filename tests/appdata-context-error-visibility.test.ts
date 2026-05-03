@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // L29 regression: AppDataContext.tsx had three bare `catch {}` blocks on the
-// bell, shifts, and village polling fetches. Sentry's global handlers do not
+// bell, whistles, and village polling fetches. Sentry's global handlers do not
 // see errors consumed inside try/catch — all three endpoints silently
 // swallowed 5xx, leaving operations blind to client-side fetch failures.
 //
@@ -17,7 +17,7 @@ import { join } from 'path';
 // (back to bare `catch {}`) must turn the corresponding test red.
 //
 // NOTE: the literal `source` tag strings ("appdata:bell", "appdata:village",
-// "appdata:shifts:${scope}") are part of the Sentry dashboard contract.
+// "appdata:whistles:${scope}") are part of the Sentry dashboard contract.
 // Renaming them is a breaking change for any saved Sentry filter/alert that
 // references the tag — not a cosmetic refactor. This test is deliberately
 // over-coupled to the literal so that a rename surfaces here before it
@@ -56,12 +56,12 @@ describe('AppDataContext polling error visibility (L29)', () => {
     ).toBe(true);
   });
 
-  it('captures shifts polling errors to Sentry with source tag appdata:shifts:${scope}', () => {
+  it('captures whistles polling errors to Sentry with source tag appdata:whistles:${scope}', () => {
     // The scope is interpolated, so look for the template literal form.
-    const pattern = /Sentry\.captureException\([^)]*\{\s*tags:\s*\{\s*source:\s*`appdata:shifts:\$\{scope\}`/;
+    const pattern = /Sentry\.captureException\([^)]*\{\s*tags:\s*\{\s*source:\s*`appdata:whistles:\$\{scope\}`/;
     expect(
       pattern.test(src),
-      'Shifts polling catch must call Sentry.captureException(err, { tags: { source: `appdata:shifts:${scope}` } }).'
+      'Shifts polling catch must call Sentry.captureException(err, { tags: { source: `appdata:whistles:${scope}` } }).'
     ).toBe(true);
   });
 
@@ -74,9 +74,9 @@ describe('AppDataContext polling error visibility (L29)', () => {
   });
 
   it('emits a console.warn line per catch site for local debuggability', () => {
-    // Three call sites; tag prefixes [appdata:bell], [appdata:shifts:..., [appdata:circle].
+    // Three call sites; tag prefixes [appdata:bell], [appdata:whistles:..., [appdata:circle].
     expect(/console\.warn\(\s*['"`]\[appdata:bell\]/.test(src)).toBe(true);
-    expect(/console\.warn\(\s*[`'"]\[appdata:shifts:/.test(src)).toBe(true);
+    expect(/console\.warn\(\s*[`'"]\[appdata:whistles:/.test(src)).toBe(true);
     expect(/console\.warn\(\s*['"`]\[appdata:circle\]/.test(src)).toBe(true);
   });
 });

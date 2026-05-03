@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells, bellResponses, users, households } from '@/lib/db/schema';
+import { lanterns, lanternResponses, users, households } from '@/lib/db/schema';
 import { clerkClient } from '@clerk/nextjs/server';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Invalid response' }, { status: 400 });
     }
 
-    const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+    const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
     if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
 
-    // Don't allow responses to bells that are no longer ringing
+    // Don't allow responses to lanterns that are no longer ringing
     if (bell.status !== 'ringing') {
       return NextResponse.json({ error: `${getCopy().urgentSignal.noun} is no longer active` }, { status: 409 });
     }
@@ -66,16 +66,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // Upsert response (one per user per bell)
-    const existing = await db.select().from(bellResponses)
-      .where(and(eq(bellResponses.bellId, bellId), eq(bellResponses.userId, userRow.id)))
+    const existing = await db.select().from(lanternResponses)
+      .where(and(eq(lanternResponses.bellId, bellId), eq(lanternResponses.userId, userRow.id)))
       .limit(1);
 
     if (existing.length > 0) {
-      await db.update(bellResponses)
+      await db.update(lanternResponses)
         .set({ response, respondedAt: new Date() })
-        .where(and(eq(bellResponses.bellId, bellId), eq(bellResponses.userId, userRow.id)));
+        .where(and(eq(lanternResponses.bellId, bellId), eq(lanternResponses.userId, userRow.id)));
     } else {
-      await db.insert(bellResponses).values({
+      await db.insert(lanternResponses).values({
         bellId,
         userId: userRow.id,
         response,
@@ -84,9 +84,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // If on_my_way, mark bell handled
     if (response === 'on_my_way') {
-      await db.update(bells)
+      await db.update(lanterns)
         .set({ status: 'handled', handledByUserId: userRow.id, handledAt: new Date() })
-        .where(eq(bells.id, bellId));
+        .where(eq(lanterns.id, bellId));
     }
 
     // Notify the ringer so they see the response immediately
@@ -109,11 +109,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ));
       if (total > 0) {
         const [{ cannotCount }] = await db.select({ cannotCount: sql<number>`count(*)::int` })
-          .from(bellResponses)
-          .innerJoin(users, eq(bellResponses.userId, users.id))
+          .from(lanternResponses)
+          .innerJoin(users, eq(lanternResponses.userId, users.id))
           .where(and(
-            eq(bellResponses.bellId, bellId),
-            eq(bellResponses.response, 'cannot'),
+            eq(lanternResponses.bellId, bellId),
+            eq(lanternResponses.response, 'cannot'),
             inArray(users.villageGroup, ['covey', 'inner_circle']),
           ));
         if (cannotCount >= total) {

@@ -1,6 +1,6 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { shifts, users, households, bells } from '@/lib/db/schema';
+import { whistles, users, households, lanterns } from '@/lib/db/schema';
 import { pushToUser, pushToUsers, type PushResult } from '@/lib/push';
 import { fmtDateTime, fmtDateShort } from '@/lib/format/time';
 import { getCopy } from '@/lib/copy';
@@ -72,14 +72,14 @@ async function send(to: string[], subject: string, text: string) {
 
 export async function notifyNewShift(shiftId: string, preferredCaregiverId?: string): Promise<NotifyResult> {
   const [row] = await db.select({
-    shift: shifts,
+    shift: whistles,
     household: households,
     creator: users,
   })
-    .from(shifts)
-    .leftJoin(households, eq(shifts.householdId, households.id))
-    .leftJoin(users, eq(shifts.createdByUserId, users.id))
-    .where(eq(shifts.id, shiftId))
+    .from(whistles)
+    .leftJoin(households, eq(whistles.householdId, households.id))
+    .leftJoin(users, eq(whistles.createdByUserId, users.id))
+    .where(eq(whistles.id, shiftId))
     .limit(1);
   if (!row?.shift || !row.household) {
     logSkip('notify_new_shift_skip', { reason: 'shift_or_household_missing', shiftId });
@@ -165,12 +165,12 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
 
 export async function notifyShiftClaimed(shiftId: string) {
   const [row] = await db.select({
-    shift: shifts,
+    shift: whistles,
     household: households,
   })
-    .from(shifts)
-    .leftJoin(households, eq(shifts.householdId, households.id))
-    .where(eq(shifts.id, shiftId))
+    .from(whistles)
+    .leftJoin(households, eq(whistles.householdId, households.id))
+    .where(eq(whistles.id, shiftId))
     .limit(1);
   if (!row?.shift || !row.shift.claimedByUserId) {
     logSkip('notify_shift_claimed_skip', { reason: 'shift_or_claim_missing', shiftId });
@@ -225,12 +225,12 @@ export async function notifyShiftClaimed(shiftId: string) {
 
 export async function notifyShiftReleased(shiftId: string, releasedByUserId: string) {
   const [row] = await db.select({
-    shift: shifts,
+    shift: whistles,
     household: households,
   })
-    .from(shifts)
-    .leftJoin(households, eq(shifts.householdId, households.id))
-    .where(eq(shifts.id, shiftId))
+    .from(whistles)
+    .leftJoin(households, eq(whistles.householdId, households.id))
+    .where(eq(whistles.id, shiftId))
     .limit(1);
   if (!row?.shift) {
     logSkip('notify_shift_released_skip', { reason: 'shift_missing', shiftId });
@@ -272,12 +272,12 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
   // commitment — same mental model as a release, so we reuse notifyShiftReleased
   // as the preference gate.
   const [row] = await db.select({
-    shift: shifts,
+    shift: whistles,
     household: households,
   })
-    .from(shifts)
-    .leftJoin(households, eq(shifts.householdId, households.id))
-    .where(eq(shifts.id, shiftId))
+    .from(whistles)
+    .leftJoin(households, eq(whistles.householdId, households.id))
+    .where(eq(whistles.id, shiftId))
     .limit(1);
   if (!row?.shift) {
     logSkip('notify_shift_cancelled_skip', { reason: 'shift_missing', shiftId });
@@ -301,7 +301,7 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
     await pushToUser(recipientUserId, {
       title: t.request.cancelledTitle,
       body: `"${row.shift.title}" · ${when}`,
-      url: `/?tab=${t.request.shiftsDeepLinkTab}`,
+      url: `/?tab=${t.request.whistlesDeepLinkTab}`,
       tag: `${t.request.cancelTagPrefix}-${shiftId}`,
     });
   } catch (err) {
@@ -325,7 +325,7 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
 
 export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
   const t = getCopy();
-  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
   if (!bell) {
     logSkip('notify_bell_ring_skip', { reason: 'bell_missing', bellId });
     return { kind: 'no_recipients', reason: 'no_caregivers' };
@@ -368,7 +368,7 @@ export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
 
 export async function notifyBellEscalated(bellId: string) {
   const t = getCopy();
-  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
   if (!bell) {
     logSkip('notify_bell_escalated_skip', { reason: 'bell_missing', bellId });
     return;
@@ -407,7 +407,7 @@ export async function notifyBellResponse(
   response: 'on_my_way' | 'in_thirty' | 'cannot',
 ) {
   // Only push — no email for bell responses (time-sensitive, email is too slow)
-  const [bell] = await db.select().from(bells).where(eq(bells.id, bellId)).limit(1);
+  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
   if (!bell) {
     logSkip('notify_bell_response_skip', { reason: 'bell_missing', bellId });
     return;

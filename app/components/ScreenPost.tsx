@@ -34,13 +34,13 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [title, setTitle] = useState('');
   const [forWhom, setForWhom] = useState('');
   const [selectedKidIds, setSelectedKidIds] = useState<string[]>([]);
-  const [kids, setKids] = useState<Kid[]>([]);
+  const [chicks, setChicks] = useState<Kid[]>([]);
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [preferredCaregiverId, setPreferredCaregiverId] = useState<string>('');
 
   useEffect(() => {
     fetch('/api/circle').then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.kids) setKids(d.kids);
+      if (d?.chicks) setChicks(d.chicks);
       if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'watcher'));
     }).catch(() => {});
   }, [active?.id]);
@@ -114,7 +114,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
     try {
       const rateCents = isPaid && rate.trim() ? Math.round(parseFloat(rate) * 100) : null;
       const kidNames = selectedKidIds
-        .map(id => kids.find(k => k.id === id)?.name)
+        .map(id => chicks.find(k => k.id === id)?.name)
         .filter(Boolean)
         .join(' & ');
       const forWhomFinal = [kidNames, forWhom.trim()].filter(Boolean).join(' · ');
@@ -226,9 +226,9 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
 
         <div style={{ marginTop: 14 }}>
           <GLabel>For</GLabel>
-          {kids.length > 0 ? (
+          {chicks.length > 0 ? (
             <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {kids.map(k => {
+              {chicks.map(k => {
                 const on = selectedKidIds.includes(k.id);
                 return (
                   <button

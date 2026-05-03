@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { eq, inArray, and, gt } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells, users, bellResponses } from '@/lib/db/schema';
+import { lanterns, users, lanternResponses } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
 
 // GET /api/lantern/active
-// Returns active bells visible to this user — status 'ringing' or 'handled', endsAt in the future.
-// Sorted so ringing bells appear before handled ones.
-//   - parent: bells from own household
-//   - caregiver/dual-role: bells from any household they belong to as caregiver
+// Returns active lanterns visible to this user — status 'ringing' or 'handled', endsAt in the future.
+// Sorted so ringing lanterns appear before handled ones.
+//   - parent: lanterns from own household
+//   - caregiver/dual-role: lanterns from any household they belong to as caregiver
 export async function GET() {
   try {
     const { userId } = await requireUser();
@@ -22,18 +22,18 @@ export async function GET() {
       id: users.id,
     }).from(users).where(eq(users.clerkUserId, userId));
 
-    if (myRows.length === 0) return NextResponse.json({ bells: [] });
+    if (myRows.length === 0) return NextResponse.json({ lanterns: [] });
 
     const hhIds = myRows.map(r => r.householdId);
 
-    // Fetch ringing and handled bells that haven't expired yet
-    const activeBells = await db.select().from(bells)
+    // Fetch ringing and handled lanterns that haven't expired yet
+    const activeBells = await db.select().from(lanterns)
       .where(and(
-        inArray(bells.householdId, hhIds),
-        inArray(bells.status, ['ringing', 'handled']),
-        gt(bells.endsAt, new Date()),
+        inArray(lanterns.householdId, hhIds),
+        inArray(lanterns.status, ['ringing', 'handled']),
+        gt(lanterns.endsAt, new Date()),
       ))
-      .orderBy(bells.createdAt);
+      .orderBy(lanterns.createdAt);
 
     // Sort: ringing first, then handled
     activeBells.sort((a, b) => {
@@ -44,7 +44,7 @@ export async function GET() {
     // For each bell, attach who has responded
     const bellIds = activeBells.map(b => b.id);
     const responses = bellIds.length
-      ? await db.select().from(bellResponses).where(inArray(bellResponses.bellId, bellIds))
+      ? await db.select().from(lanternResponses).where(inArray(lanternResponses.bellId, bellIds))
       : [];
 
     // Resolve handler + responder display names in one query
@@ -70,7 +70,7 @@ export async function GET() {
       myResponse: responses.find(r => r.bellId === b.id && myUserIds.has(r.userId))?.response ?? null,
     }));
 
-    return NextResponse.json({ bells: result });
+    return NextResponse.json({ lanterns: result });
   } catch (err) {
     return authError(err, 'bell:active', `Could not load active ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }

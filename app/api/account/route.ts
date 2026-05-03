@@ -3,11 +3,12 @@ import { eq, and, gte, inArray, or } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import {
-  users, kids, shifts, bells, pushSubscriptions, familyInvites,
-  caregiverUnavailability, bellResponses,
+  users, chicks, whistles, lanterns, pushSubscriptions, familyInvites,
+  unavailability, lanternResponses,
 } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { notifyShiftCancelled } from '@/lib/notify';
 
 /**
  * GET /api/account — export all data for the current user across all households.
@@ -26,13 +27,13 @@ export async function GET() {
 
     // Use inArray across all user IDs so multi-household users get complete exports
     const [myShifts, myBells, mySubs, myUnavail, myBellResponses] = await Promise.all([
-      db.select().from(shifts).where(
-        or(inArray(shifts.createdByUserId, myUserIds), inArray(shifts.claimedByUserId, myUserIds))
+      db.select().from(whistles).where(
+        or(inArray(whistles.createdByUserId, myUserIds), inArray(whistles.claimedByUserId, myUserIds))
       ),
-      db.select().from(bells).where(inArray(bells.createdByUserId, myUserIds)),
+      db.select().from(lanterns).where(inArray(lanterns.createdByUserId, myUserIds)),
       db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, myUserIds)),
-      db.select().from(caregiverUnavailability).where(inArray(caregiverUnavailability.userId, myUserIds)),
-      db.select().from(bellResponses).where(inArray(bellResponses.userId, myUserIds)),
+      db.select().from(unavailability).where(inArray(unavailability.userId, myUserIds)),
+      db.select().from(lanternResponses).where(inArray(lanternResponses.userId, myUserIds)),
     ]);
 
     return NextResponse.json({
@@ -43,14 +44,14 @@ export async function GET() {
         name: r.name, role: r.role, villageGroup: r.villageGroup,
         photoUrl: r.photoUrl, createdAt: r.createdAt,
       })),
-      shifts: myShifts,
-      bells: myBells,
+      whistles: myShifts,
+      lanterns: myBells,
       pushSubscriptions: mySubs.map(s => ({
         id: s.id, householdId: s.householdId, endpoint: s.endpoint.substring(0, 40) + '...',
         createdAt: s.createdAt,
       })),
       unavailability: myUnavail,
-      bellResponses: myBellResponses,
+      lanternResponses: myBellResponses,
     });
   } catch (err) {
     return authError(err, 'account:GET', 'Could not export your data');
@@ -58,8 +59,8 @@ export async function GET() {
 }
 
 /**
- * DELETE /api/account — fully remove the user: cancel future shifts they created
- * (required because shifts.createdByUserId is onDelete:'restrict'), delete their
+ * DELETE /api/account — fully remove the user: cancel future whistles they created
+ * (required because whistles.createdByUserId is onDelete:'restrict'), delete their
  * DB rows, then delete their Clerk identity so sessions are invalidated.
  *
  * Order is deliberate: Clerk deletion runs LAST. If DB cleanup throws, we don't
@@ -91,8 +92,8 @@ export async function DELETE(req: NextRequest) {
         .where(eq(pushSubscriptions.userId, row.id)).returning({ id: pushSubscriptions.id });
       deletedSubs += subs.length;
 
-      const un = await db.delete(caregiverUnavailability)
-        .where(eq(caregiverUnavailability.userId, row.id)).returning({ id: caregiverUnavailability.id });
+      const un = await db.delete(unavailability)
+        .where(eq(unavailability.userId, row.id)).returning({ id: unavailability.id });
       deletedUnavail += un.length;
 
       const inv = await db.delete(familyInvites)
@@ -100,28 +101,44 @@ export async function DELETE(req: NextRequest) {
         .returning({ id: familyInvites.id });
       deletedInvites += inv.length;
 
-      // Release shifts they claimed — onDelete:'set null' would do this too, but
-      // doing it explicitly keeps the audit trail in bellResponses-style logs clean.
-      await db.update(shifts).set({ claimedByUserId: null })
-        .where(eq(shifts.claimedByUserId, row.id));
+      // Release whistles they claimed — onDelete:'set null' would do this too, but
+      // doing it explicitly keeps the audit trail in lanternResponses-style logs clean.
+      await db.update(whistles).set({ claimedByUserId: null })
+        .where(eq(whistles.claimedByUserId, row.id));
 
-      // Cancel future shifts they created so createdByUserId restrict doesn't block
-      // the user-row delete. Past shifts stay as history; we can't delete them
+      // Cancel future whistles they created so createdByUserId restrict doesn't block
+      // the user-row delete. Past whistles stay as history; we can't delete them
       // without losing other users' participation records, so reassign to a tombstone.
-      const futureCancelled = await db.update(shifts)
+      // Collect claimers before cancelling so we can notify them afterwards.
+      const futureShiftsToCancel = await db.select({ id: whistles.id, claimedByUserId: whistles.claimedByUserId })
+        .from(whistles)
+        .where(and(
+          eq(whistles.createdByUserId, row.id),
+          gte(whistles.startsAt, now),
+        ));
+      const futureCancelled = await db.update(whistles)
         .set({ status: 'cancelled' })
         .where(and(
-          eq(shifts.createdByUserId, row.id),
-          gte(shifts.startsAt, now),
+          eq(whistles.createdByUserId, row.id),
+          gte(whistles.startsAt, now),
         ))
-        .returning({ id: shifts.id });
+        .returning({ id: whistles.id });
       cancelledShifts += futureCancelled.length;
 
-      // Past shifts the user created still reference them via createdByUserId.
+      for (const s of futureShiftsToCancel) {
+        if (!s.claimedByUserId) continue;
+        try {
+          await notifyShiftCancelled(s.id, s.claimedByUserId);
+        } catch (notifyErr) {
+          console.error('[account:DELETE] notifyShiftCancelled failed', s.id, notifyErr);
+        }
+      }
+
+      // Past whistles the user created still reference them via createdByUserId.
       // Rather than deleting those rows (destroying history for other members),
       // we leave the user row in place but strip PII. Sessions die via Clerk delete.
-      const pastMineExist = await db.$count(shifts, eq(shifts.createdByUserId, row.id));
-      const pastBellsExist = await db.$count(bells, eq(bells.createdByUserId, row.id));
+      const pastMineExist = await db.$count(whistles, eq(whistles.createdByUserId, row.id));
+      const pastBellsExist = await db.$count(lanterns, eq(lanterns.createdByUserId, row.id));
 
       if (pastMineExist === 0 && pastBellsExist === 0) {
         await db.delete(users).where(eq(users.id, row.id));

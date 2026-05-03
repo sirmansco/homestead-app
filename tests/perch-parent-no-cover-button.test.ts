@@ -6,12 +6,12 @@ import { join } from 'path';
 // via the guard `role === 'watcher' || !r.createdByMe`. The `!r.createdByMe`
 // escape let a keeper see a Cover button on any shift they didn't personally post
 // (e.g., co-keeper's shift, or any shift where createdByMe was false).
-// A keeper should never see a Cover button on their own household's shifts.
+// A keeper should never see a Cover button on their own household's whistles.
 // Fix: guard is now simply `role === 'watcher'`.
 
 const PERCH = join(__dirname, '..', 'app', 'components', 'ScreenPerch.tsx');
 
-describe('ScreenPerch — keeper never gets a Cover button on own-household shifts', () => {
+describe('ScreenPerch — keeper never gets a Cover button on own-household whistles', () => {
   const src = readFileSync(PERCH, 'utf8');
 
   it('does not pass onClaim via a !createdByMe escape for parents', () => {
@@ -20,7 +20,7 @@ describe('ScreenPerch — keeper never gets a Cover button on own-household shif
     expect(
       offending.test(src),
       'Found the old `role === "watcher" || !r.createdByMe` onClaim guard. ' +
-      'This lets keepers see a Cover button on shifts they did not create. ' +
+      'This lets keepers see a Cover button on whistles they did not create. ' +
       'The guard must be simply `role === "watcher"`.'
     ).toBe(false);
   });
@@ -30,7 +30,7 @@ describe('ScreenPerch — keeper never gets a Cover button on own-household shif
     expect(
       offendingDetail.test(src),
       'Found `!openRow.createdByMe` in canClaim for ShiftDetailSheet. ' +
-      'Parents must not see a Cover button in the detail sheet for own-household shifts.'
+      'Parents must not see a Cover button in the detail sheet for own-household whistles.'
     ).toBe(false);
   });
 

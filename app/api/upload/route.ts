@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, kids } from '@/lib/db/schema';
+import { users, chicks } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { stripExif } from '@/lib/strip-exif';
 import { verifyImageMagicBytes } from '@/lib/upload/sniff';
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
         .set({ photoUrl: url })
         .where(and(eq(users.id, targetId), eq(users.householdId, household.id)));
     } else if (targetType === 'kid') {
-      await db.update(kids)
+      await db.update(chicks)
         .set({ photoUrl: url })
-        .where(and(eq(kids.id, targetId), eq(kids.householdId, household.id)));
+        .where(and(eq(chicks.id, targetId), eq(chicks.householdId, household.id)));
     } else {
       return NextResponse.json({ error: 'type must be user or kid' }, { status: 400 });
     }

@@ -26,8 +26,6 @@ export const users = pgTable('users', {
   role: appRoleEnum('role').notNull().default('keeper'),
   villageGroup: villageGroupEnum('village_group').notNull().default('covey'),
   photoUrl: text('photo_url'),
-  // Notification preferences — defaults to true (opt-out model).
-  // Each column guards one notification type; notify.ts checks before sending.
   notifyShiftPosted: boolean('notify_shift_posted').notNull().default(true),
   notifyShiftClaimed: boolean('notify_shift_claimed').notNull().default(true),
   notifyShiftReleased: boolean('notify_shift_released').notNull().default(true),
@@ -41,7 +39,7 @@ export const users = pgTable('users', {
   calTokenIdx: index('idx_users_cal_token').on(t.calToken).where(sql`cal_token IS NOT NULL`),
 }));
 
-export const kids = pgTable('kids', {
+export const chicks = pgTable('chicks', {
   id: uuid('id').primaryKey().defaultRandom(),
   householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
@@ -51,7 +49,7 @@ export const kids = pgTable('kids', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const shifts = pgTable('shifts', {
+export const whistles = pgTable('whistles', {
   id: uuid('id').primaryKey().defaultRandom(),
   householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
   createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
@@ -71,14 +69,14 @@ export const shifts = pgTable('shifts', {
   recurOccurrences: integer('recur_occurrences'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
-  householdEndsAtStartsAtIdx: index('idx_shifts_household_ends_at_starts_at').on(t.householdId, t.endsAt, t.startsAt),
-  householdStatusEndsAtStartsAtIdx: index('idx_shifts_household_status_ends_at_starts_at').on(t.householdId, t.status, t.endsAt, t.startsAt),
-  claimedByEndsAtIdx: index('idx_shifts_claimed_by_ends_at').on(t.claimedByUserId, t.endsAt),
-  createdByEndsAtIdx: index('idx_shifts_created_by_ends_at').on(t.createdByUserId, t.endsAt),
-  preferredCaregiverStatusEndsAtIdx: index('idx_shifts_preferred_caregiver_status_ends_at').on(t.preferredCaregiverId, t.status, t.endsAt),
+  householdEndsAtStartsAtIdx: index('idx_whistles_household_ends_at_starts_at').on(t.householdId, t.endsAt, t.startsAt),
+  householdStatusEndsAtStartsAtIdx: index('idx_whistles_household_status_ends_at_starts_at').on(t.householdId, t.status, t.endsAt, t.startsAt),
+  claimedByEndsAtIdx: index('idx_whistles_claimed_by_ends_at').on(t.claimedByUserId, t.endsAt),
+  createdByEndsAtIdx: index('idx_whistles_created_by_ends_at').on(t.createdByUserId, t.endsAt),
+  preferredCaregiverStatusEndsAtIdx: index('idx_whistles_preferred_caregiver_status_ends_at').on(t.preferredCaregiverId, t.status, t.endsAt),
 }));
 
-export const bells = pgTable('bells', {
+export const lanterns = pgTable('lanterns', {
   id: uuid('id').primaryKey().defaultRandom(),
   householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
   createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
@@ -92,8 +90,8 @@ export const bells = pgTable('bells', {
   escalatedAt: timestamp('escalated_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
-  statusEscalatedCreatedIdx: index('idx_bells_status_escalated_created').on(t.status, t.escalatedAt, t.createdAt),
-  householdStatusEndsAtIdx: index('idx_bells_household_status_ends_at').on(t.householdId, t.status, t.endsAt),
+  statusEscalatedCreatedIdx: index('idx_lanterns_status_escalated_created').on(t.status, t.escalatedAt, t.createdAt),
+  householdStatusEndsAtIdx: index('idx_lanterns_household_status_ends_at').on(t.householdId, t.status, t.endsAt),
 }));
 
 export const pushSubscriptions = pgTable('push_subscriptions', {
@@ -118,10 +116,11 @@ export const familyInvites = pgTable('family_invites', {
   status: text('status').notNull().default('pending'),
   acceptedHouseholdId: uuid('accepted_household_id').references(() => households.id, { onDelete: 'set null' }),
   acceptedAt: timestamp('accepted_at'),
+  expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const caregiverUnavailability = pgTable('caregiver_unavailability', {
+export const unavailability = pgTable('unavailability', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   startsAt: timestamp('starts_at').notNull(),
@@ -130,14 +129,14 @@ export const caregiverUnavailability = pgTable('caregiver_unavailability', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const bellResponses = pgTable('bell_responses', {
+export const lanternResponses = pgTable('lantern_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
-  bellId: uuid('bell_id').notNull().references(() => bells.id, { onDelete: 'cascade' }),
+  lanternId: uuid('lantern_id').notNull().references(() => lanterns.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   response: bellResponseEnum('response').notNull(),
   respondedAt: timestamp('responded_at').notNull().defaultNow(),
 }, (t) => ({
-  bellIdIdx: index('idx_bell_responses_bell_id').on(t.bellId),
+  lanternIdIdx: index('idx_lantern_responses_lantern_id').on(t.lanternId),
 }));
 
 export const feedback = pgTable('feedback', {

@@ -22,7 +22,7 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/db/schema', () => ({
   users: 'users_table',
-  kids: 'kids_table',
+  chicks: 'kids_table',
 }));
 
 vi.mock('@/lib/auth/household', async () => {
@@ -88,7 +88,7 @@ describe('GET /api/photo/[id] — cross-household access denied', () => {
     // No rows found for this id in household A (belongs to household B)
     mockDbSelect
       .mockReturnValueOnce(dbSelectReturning([]))  // users query → empty
-      .mockReturnValueOnce(dbSelectReturning([])); // kids query → empty
+      .mockReturnValueOnce(dbSelectReturning([])); // chicks query → empty
   });
 
   it('returns 404 when photo id belongs to a different household', async () => {
@@ -108,7 +108,7 @@ describe('GET /api/photo/[id] — authenticated, own household', () => {
   });
 
   it('returns 200 with Cache-Control: private, max-age=3600 for a kid photo (private blob)', async () => {
-    // users → empty, kids → found
+    // users → empty, chicks → found
     mockDbSelect
       .mockReturnValueOnce(dbSelectReturning([]))
       .mockReturnValueOnce(dbSelectReturning([{

@@ -16,7 +16,7 @@
  *   4. Journal `when` timestamps are monotonically increasing in tag order.
  *   5. Every applied migration in __drizzle_migrations matches a journal hash.
  *   6. Live DB has all tables expected by schema.ts (sampled key tables).
- *   7. Live DB users.* and bells.* columns match schema.ts (the spots that
+ *   7. Live DB users.* and lanterns.* columns match schema.ts (the spots that
  *      have bitten us). Add more as schema grows.
  *   8. Every migration tag has a matching meta/<tag>_snapshot.json. Missing
  *      snapshots cause drizzle-kit generate to silently re-emit changes from
@@ -48,11 +48,11 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     'photo_url', 'notify_shift_posted', 'notify_shift_claimed', 'notify_shift_released',
     'notify_bell_ringing', 'notify_bell_response', 'is_admin', 'cal_token', 'created_at',
   ],
-  bells: [
+  lanterns: [
     'id', 'household_id', 'created_by_user_id', 'reason', 'note', 'starts_at', 'ends_at',
     'status', 'handled_by_user_id', 'handled_at', 'escalated_at', 'created_at',
   ],
-  kids: ['id', 'household_id', 'name', 'birthday', 'notes', 'photo_url', 'created_at'],
+  chicks: ['id', 'household_id', 'name', 'birthday', 'notes', 'photo_url', 'created_at'],
   feedback: ['id', 'user_id', 'household_id', 'message', 'kind', 'user_agent', 'app_version', 'created_at'],
   push_subscriptions: ['id', 'user_id', 'household_id', 'endpoint', 'p256dh', 'auth', 'created_at'],
 };

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { shifts, users } from '@/lib/db/schema';
+import { whistles, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftReleased } from '@/lib/notify';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const body = await req.json().catch(() => ({})) as { reason?: string };
     const reason = body.reason?.trim() || null;
 
-    const [shift] = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
+    const [shift] = await db.select().from(whistles).where(eq(whistles.id, id)).limit(1);
     if (!shift) return NextResponse.json({ error: 'not found' }, { status: 404 });
     if (shift.status !== 'claimed' || !shift.claimedByUserId) {
       return NextResponse.json({ error: 'not claimed' }, { status: 409 });
@@ -29,20 +29,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
-    const [released] = await db.update(shifts)
+    const [released] = await db.update(whistles)
       .set({ status: 'open', claimedByUserId: null, claimedAt: null })
-      .where(and(eq(shifts.id, id), eq(shifts.status, 'claimed')))
+      .where(and(eq(whistles.id, id), eq(whistles.status, 'claimed')))
       .returning();
     if (!released) return NextResponse.json({ error: 'race lost' }, { status: 409 });
 
     try {
       await notifyShiftReleased(id, claimer.id);
     } catch (err) {
-      console.error('[shifts:unclaim:notify]', err);
+      console.error('[whistles:unclaim:notify]', err);
     }
 
     return NextResponse.json({ shift: released });
   } catch (err) {
-    return authError(err, 'shifts:unclaim', `Could not unclaim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
+    return authError(err, 'whistles:unclaim', `Could not unclaim ${getCopy().request.newLabel.replace(/^New /, '').toLowerCase()}`);
   }
 }

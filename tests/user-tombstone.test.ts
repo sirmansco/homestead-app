@@ -161,7 +161,7 @@ describe('tombstoneUser — service unit tests', () => {
     expect(vi.mocked(db.delete)).toHaveBeenCalled();
   });
 
-  it('anonymizes when authored shifts exist', async () => {
+  it('anonymizes when authored whistles exist', async () => {
     setupTx();
     vi.mocked(db.select).mockReturnValueOnce(
       makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>,
@@ -172,19 +172,19 @@ describe('tombstoneUser — service unit tests', () => {
     vi.mocked(db.delete).mockReturnValue(
       makeDeleteChain() as unknown as ReturnType<typeof db.delete>,
     );
-    // First $count = shifts (3), second = bells (0)
+    // First $count = whistles (3), second = lanterns (0)
     vi.mocked(db.$count).mockResolvedValueOnce(3).mockResolvedValueOnce(0);
 
     const result = await tombstoneUser({ userId: USER_ID, householdId: HH_A });
     expect(result).toEqual({
       kind: 'anonymized',
-      reason: { authoredShifts: 3, authoredBells: 0 },
+      reason: { authoredWhistles: 3, authoredLanterns: 0 },
     });
     // anonymize calls update on users; we asserted update was called via the chain.
     expect(vi.mocked(db.update)).toHaveBeenCalled();
   });
 
-  it('anonymizes when authored bells exist', async () => {
+  it('anonymizes when authored lanterns exist', async () => {
     setupTx();
     vi.mocked(db.select).mockReturnValueOnce(
       makeSelectChain([targetRow()]) as unknown as ReturnType<typeof db.select>,
@@ -200,7 +200,7 @@ describe('tombstoneUser — service unit tests', () => {
     const result = await tombstoneUser({ userId: USER_ID, householdId: HH_A });
     expect(result).toEqual({
       kind: 'anonymized',
-      reason: { authoredShifts: 0, authoredBells: 2 },
+      reason: { authoredWhistles: 0, authoredLanterns: 2 },
     });
   });
 
@@ -212,7 +212,7 @@ describe('tombstoneUser — service unit tests', () => {
     vi.mocked(db.update).mockReturnValue(
       makeUpdateChain() as unknown as ReturnType<typeof db.update>,
     );
-    // counts: pre-check both 0, recount (after FK error) shifts=1 bells=0
+    // counts: pre-check both 0, recount (after FK error) whistles=1 lanterns=0
     vi.mocked(db.$count)
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
@@ -231,7 +231,7 @@ describe('tombstoneUser — service unit tests', () => {
     const result = await tombstoneUser({ userId: USER_ID, householdId: HH_A });
     expect(result).toEqual({
       kind: 'anonymized',
-      reason: { authoredShifts: 1, authoredBells: 0 },
+      reason: { authoredWhistles: 1, authoredLanterns: 0 },
     });
   });
 });
@@ -490,7 +490,7 @@ describe('DELETE /api/household/members/[id] — tombstone + Clerk drop + Hard R
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, clerkDropped: true });
     // Service must have written the anonymize update (PII strip on users row).
-    // db.update called: pre-cleanup null-claimed (1) + cancel-future-shifts (1) + anonymize users (1) = 3.
+    // db.update called: pre-cleanup null-claimed (1) + cancel-future-whistles (1) + anonymize users (1) = 3.
     expect(updateMock).toHaveBeenCalledTimes(3);
     // Clerk drop runs against the original (cached) clerkUserId, not the anonymized rewrite.
     expect(deleteOrganizationMembership).toHaveBeenCalledWith({

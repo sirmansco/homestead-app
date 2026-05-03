@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { get } from '@vercel/blob';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, kids } from '@/lib/db/schema';
+import { users, chicks } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { authError, apiError } from '@/lib/api-error';
 
 // Authenticated proxy for household photos.
-// Resolves the photo URL from `users` or `kids` row, verifies household
+// Resolves the photo URL from `users` or `chicks` row, verifies household
 // ownership, then streams the blob bytes to the caller.
 //
 // Handles both old public blobs (access: 'public') and new private blobs
@@ -31,7 +31,7 @@ export async function GET(
   }
 
   try {
-    // Look up photo URL in users first, then kids — both scoped to the caller's household
+    // Look up photo URL in users first, then chicks — both scoped to the caller's household
     let photoUrl: string | null = null;
 
     const [userRow] = await db.select({ photoUrl: users.photoUrl })
@@ -42,9 +42,9 @@ export async function GET(
     if (userRow) {
       photoUrl = userRow.photoUrl;
     } else {
-      const [kidRow] = await db.select({ photoUrl: kids.photoUrl })
-        .from(kids)
-        .where(and(eq(kids.id, id), eq(kids.householdId, household.id)))
+      const [kidRow] = await db.select({ photoUrl: chicks.photoUrl })
+        .from(chicks)
+        .where(and(eq(chicks.id, id), eq(chicks.householdId, household.id)))
         .limit(1);
       if (kidRow) {
         photoUrl = kidRow.photoUrl;

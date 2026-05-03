@@ -4,7 +4,7 @@ import { join } from 'path';
 
 // L12 regression: scripts/doctor.ts must cover push_subscriptions and
 // include unique constraint checks. Without this, duplicate push subscription
-// rows (which fan-out bells N× per user per device) would not be caught.
+// rows (which fan-out lanterns N× per user per device) would not be caught.
 
 const DOCTOR_SRC = readFileSync(join(__dirname, '..', 'scripts', 'doctor.ts'), 'utf8');
 

@@ -18,6 +18,13 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
+  clerkClient: vi.fn().mockResolvedValue({
+    users: {
+      getUser: vi.fn().mockResolvedValue({
+        primaryEmailAddress: { emailAddress: 'alice@example.com' },
+      }),
+    },
+  }),
 }));
 
 vi.mock('@/lib/auth/household', () => ({
@@ -114,7 +121,12 @@ describe('POST /api/circle/invite-family/accept — authenticated consume', () =
 
   it('consumes the invite token when authenticated', async () => {
     vi.mocked(requireUser).mockResolvedValue({ userId: 'clerk-1' });
-    vi.mocked(db.select).mockReturnValue(makeSelectChain([{ ...pendingInvite, acceptedHouseholdId: null }]) as ReturnType<typeof db.select>);
+    let selectCall = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCall++;
+      if (selectCall === 1) return makeSelectChain([{ ...pendingInvite, fromUserId: 'user-1', acceptedHouseholdId: null }]) as ReturnType<typeof db.select>;
+      return makeSelectChain([{ householdId: 'hh-1' }]) as ReturnType<typeof db.select>;
+    });
     const updateChain = makeUpdateChain([{ ...pendingInvite, status: 'accepted' }]);
     vi.mocked(db.update).mockReturnValue(updateChain as ReturnType<typeof db.update>);
 

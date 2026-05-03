@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql, and, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { households, users, shifts, bells, pushSubscriptions } from '@/lib/db/schema';
+import { households, users, whistles, lanterns, pushSubscriptions } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { authError } from '@/lib/api-error';
@@ -31,14 +31,14 @@ export async function GET() {
 
       const [userCount, shiftCount, bellCount, pushCount] = await Promise.all([
         db.select({ count: sql<number>`count(*)::int` }).from(users),
-        db.select({ count: sql<number>`count(*)::int` }).from(shifts),
-        db.select({ count: sql<number>`count(*)::int` }).from(bells),
+        db.select({ count: sql<number>`count(*)::int` }).from(whistles),
+        db.select({ count: sql<number>`count(*)::int` }).from(lanterns),
         db.select({ count: sql<number>`count(*)::int` }).from(pushSubscriptions),
       ]);
       rowCounts = {
         users: userCount[0]?.count ?? 0,
-        shifts: shiftCount[0]?.count ?? 0,
-        bells: bellCount[0]?.count ?? 0,
+        whistles: shiftCount[0]?.count ?? 0,
+        lanterns: bellCount[0]?.count ?? 0,
         push_subscriptions: pushCount[0]?.count ?? 0,
       };
     } catch {

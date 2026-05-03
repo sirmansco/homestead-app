@@ -603,7 +603,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
 }) {
   const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
-  const { activeBell, village, shifts: contextShifts, refreshShifts, refreshBell, enableShiftStream } = useAppData();
+  const { activeBell, village, whistles: contextShifts, refreshWhistles, refreshBell, enableWhistleStream } = useAppData();
   const scope = (isDualRole || multiHousehold || role === 'watcher') ? 'all' : 'household';
   // When the SSE stream is active it writes to shifts['all']. For single-household
   // parents (scope='household'), we read from 'all' and filter client-side so they
@@ -636,22 +636,22 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
   // Trigger initial shift load. Always load 'all' so the SSE stream has an initial
   // dataset regardless of role; also load the role-specific scope for non-stream paths.
   useEffect(() => {
-    refreshShifts('all');
-    if (scope !== 'all') refreshShifts(scope);
+    refreshWhistles('all');
+    if (scope !== 'all') refreshWhistles(scope);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, active?.id]);
 
   // Enable the SSE stream while this screen is mounted so shifts update live
   useEffect(() => {
-    enableShiftStream(true);
-    return () => enableShiftStream(false);
-  }, [enableShiftStream]);
+    enableWhistleStream(true);
+    return () => enableWhistleStream(false);
+  }, [enableWhistleStream]);
 
   // load() is now only called post-mutation to re-sync context state
   const load = useCallback(() => {
-    refreshShifts(scope);
+    refreshWhistles(scope);
     refreshBell();
-  }, [scope, refreshShifts, refreshBell]);
+  }, [scope, refreshWhistles, refreshBell]);
 
   const loadUnavail = useCallback(async () => {
     if (role !== 'watcher' && !isDualRole) return;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
 import { db } from '@/lib/db';
-import { shifts, users, households } from '@/lib/db/schema';
+import { whistles, users, households } from '@/lib/db/schema';
 import { getCopy } from '@/lib/copy';
 
 function escapeIcs(s: string) {
@@ -45,7 +45,7 @@ function buildIcs(events: { uid: string; summary: string; description: string; l
 }
 
 // GET /api/whistles/ical?token=<calToken>
-// Returns ICS feed for the user's claimed shifts (caregiver) or posted shifts (parent).
+// Returns ICS feed for the user's claimed whistles (caregiver) or posted whistles (parent).
 // Also accepts GET /api/whistles/ical (authenticated via Clerk session) — generates+saves token, redirects to token URL.
 export async function GET(req: NextRequest) {
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
@@ -81,17 +81,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${APP_URL}/api/whistles/ical?token=${user.calToken}`);
   }
 
-  // Fetch relevant shifts
-  let userShifts: typeof shifts.$inferSelect[] = [];
+  // Fetch relevant whistles
+  let userShifts: typeof whistles.$inferSelect[] = [];
 
   if (user.role === 'watcher') {
-    userShifts = await db.select().from(shifts).where(
-      and(eq(shifts.claimedByUserId, user.id), inArray(shifts.status, ['claimed', 'done']))
+    userShifts = await db.select().from(whistles).where(
+      and(eq(whistles.claimedByUserId, user.id), inArray(whistles.status, ['claimed', 'done']))
     );
   } else {
-    // Parent sees their posted shifts
-    userShifts = await db.select().from(shifts).where(
-      and(eq(shifts.createdByUserId, user.id), inArray(shifts.status, ['open', 'claimed', 'done']))
+    // Parent sees their posted whistles
+    userShifts = await db.select().from(whistles).where(
+      and(eq(whistles.createdByUserId, user.id), inArray(whistles.status, ['open', 'claimed', 'done']))
     );
   }
 

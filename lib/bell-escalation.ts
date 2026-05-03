@@ -1,6 +1,6 @@
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { bells } from '@/lib/db/schema';
+import { lanterns } from '@/lib/db/schema';
 import { notifyBellEscalated } from '@/lib/notify';
 
 /**
@@ -8,16 +8,18 @@ import { notifyBellEscalated } from '@/lib/notify';
  * uses AND escalated_at IS NULL as an atomic guard against double-escalation.
  */
 export async function escalateBell(bellId: string): Promise<void> {
-  const [current] = await db.select({ escalatedAt: bells.escalatedAt })
-    .from(bells).where(eq(bells.id, bellId)).limit(1);
+  const [current] = await db.select({ escalatedAt: lanterns.escalatedAt })
+    .from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
   if (!current || current.escalatedAt !== null) return;
 
-  const updated = await db.update(bells)
+  const updated = await db.update(lanterns)
     .set({ escalatedAt: new Date() })
-    .where(and(eq(bells.id, bellId), isNull(bells.escalatedAt)))
-    .returning({ id: bells.id });
+    .where(and(eq(lanterns.id, bellId), isNull(lanterns.escalatedAt)))
+    .returning({ id: lanterns.id });
   // If another process won the race, the update returns 0 rows — stop here
   if (updated.length === 0) return;
+
+  console.log(JSON.stringify({ event: 'bell_escalated', bellId, at: new Date().toISOString() }));
 
   // Recipient resolution + preference filter live in notify.ts.
   try {

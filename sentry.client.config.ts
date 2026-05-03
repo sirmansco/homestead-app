@@ -8,3 +8,7 @@ Sentry.init({
   // Only send errors in production to avoid noise during dev
   enabled: process.env.NODE_ENV === 'production',
 });
+
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  console.warn('[sentry] NEXT_PUBLIC_SENTRY_DSN not set — client-side errors will not be reported');
+}

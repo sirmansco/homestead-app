@@ -44,8 +44,8 @@ describe('SSE stream route', () => {
 });
 
 describe('AppDataContext SSE wiring', () => {
-  it('exports enableShiftStream from context type', () => {
-    expect(contextSrc).toContain('enableShiftStream: (on: boolean) => void');
+  it('exports enableWhistleStream from context type', () => {
+    expect(contextSrc).toContain('enableWhistleStream: (on: boolean) => void');
   });
 
   it('opens EventSource to /api/whistles/stream', () => {
@@ -74,16 +74,16 @@ describe('AppDataContext SSE wiring', () => {
 
 describe('ScreenPerch stream integration', () => {
   it('enables stream on mount and disables on unmount', () => {
-    expect(almanacSrc).toContain('enableShiftStream(true)');
-    expect(almanacSrc).toContain('enableShiftStream(false)');
+    expect(almanacSrc).toContain('enableWhistleStream(true)');
+    expect(almanacSrc).toContain('enableWhistleStream(false)');
   });
 
-  it('reads from shifts[all] and filters by household for single-household parents', () => {
+  it('reads from whistles[all] and filters by household for single-household parents', () => {
     expect(almanacSrc).toContain("scope === 'household' && streamAll !== null");
     expect(almanacSrc).toContain('r.shift.householdId === active?.id');
   });
 
   it('always loads all scope on mount so stream has initial data', () => {
-    expect(almanacSrc).toContain("refreshShifts('all')");
+    expect(almanacSrc).toContain("refreshWhistles('all')");
   });
 });
