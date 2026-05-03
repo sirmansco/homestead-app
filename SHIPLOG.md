@@ -16,6 +16,43 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-03 · #77 · fix: export filename uses getCopy().brand.name
+**Branch:** `feature/fix-export-filename` → main (`1997154`)
+**Plan:** N/A — 2-line copy fix from naming audit
+**What shipped:** `ScreenSettings` data-export download filename no longer hardcoded to `covey-export-<ts>.json`; now uses `getCopy().brand.name.toLowerCase()` so the filename tracks the active brand string automatically.
+**Verification:** Naming audit + Vercel CI green.
+**Follow-ups:** None.
+
+### 2026-05-03 · #76 · chore: delete ScreenTimeOff — dead component
+**Branch:** `feature/delete-screen-time-off` → main (`c11ec18`)
+**Plan:** N/A — deletion confirmed by zero-importer grep
+**What shipped:** `ScreenTimeOff.tsx` (150 lines) deleted. Zero importers confirmed via grep; component was never wired into HomesteadApp or any navigation path.
+**Verification:** Vercel CI green (build proves no dangling imports).
+**Follow-ups:** None.
+
+### 2026-05-03 · #75 · fix(ux-d): push label + brand name in rename sheet
+**Branch:** `feature/ux-d-push-label-brand-name` → main (`f166f06`)
+**Plan:** N/A — two targeted should-fix items
+**What shipped:** (1) `ScreenSettings`: on mount, if browser permission is `granted` but no active SW push subscription exists, `permState` is set to `granted_unregistered` — user sees retry prompt instead of "Push notifications enabled." (2) `ScreenCircle` rename sheet heading: hardcoded `Rename Covey` replaced with `Rename {getCopy().brand.name}`.
+**Verification:** Vercel CI green.
+**Follow-ups:** None.
+
+### 2026-05-03 · #74 · feat: remove caregiver Perch tab
+**Branch:** `feature/caregiver-tab-collapse` → main (`fde7272`)
+**Plan:** [docs/plans/tab-id-rename.md](docs/plans/tab-id-rename.md)
+**What shipped:** Caregivers now have 3 tabs: Whistles | Lantern | Circle. Perch tab removed from caregiver tab bar. `handleRoleChange` routes caregivers to `whistles` on role switch; `perch→whistles` activeTab fallback covers legacy localStorage/deep links. Branch rebased via fresh cherry-pick after #73 squash-merge created a conflict.
+**Verification:** Vercel CI green.
+**Follow-ups:** None.
+
+### 2026-05-03 · #73 · feat: tab ID rename almanac→perch, shifts→whistles
+**Branch:** `feature/tab-id-rename` → main (`e75539c`)
+**Plan:** [docs/plans/tab-id-rename.md](docs/plans/tab-id-rename.md)
+**What shipped:** Renames `TabId` values throughout: `'almanac'→'perch'`, `'shifts'→'whistles'`. Touches `TabId` type, `LegacyTabId`, `normalizeTabId` legacy guards, `TAB_SCREENS`, `HomesteadApp.tsx`, `shared.tsx` Icons + `GTabBar`, copy deep-link values, and test mocks.
+**Verification:** Vercel CI green.
+**Follow-ups:** #74 (caregiver tab collapse, dependent on this landing first).
+
+---
+
 ### 2026-05-02 · #57 · B7 — DB indexing pass: L20/L21/L22 hot-path indexes
 **Branch:** `fix/b7-db-indexes` → main (`6c6ba81`)
 **Plan:** [docs/plans/launch-audit-fix-batch-07-db-indexes.md](docs/plans/launch-audit-fix-batch-07-db-indexes.md)
