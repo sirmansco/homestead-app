@@ -1,5 +1,5 @@
 {
-  "name": "homestead-app",
+  "name": "covey-app",
   "version": "0.6.0",
   "private": true,
   "engines": {
@@ -7,7 +7,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "mkdir -p $HOME/.homestead-next && ln -sf \"$(pwd)/node_modules\" $HOME/.homestead-next/node_modules; next dev",
+    "dev": "mkdir -p $HOME/.covey-next && ln -sf \"$(pwd)/node_modules\" $HOME/.covey-next/node_modules; next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

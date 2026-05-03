@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const root = path.resolve(__dirname, '..');
 const SHARED = path.join(root, 'app/components/shared.tsx');
-const HOMESTEAD_APP = path.join(root, 'app/components/CoveyApp.tsx');
+const COVEY_APP = path.join(root, 'app/components/CoveyApp.tsx');
 const LAYOUT = path.join(root, 'app/layout.tsx');
 
 describe('bottom tab bar safe-area positioning', () => {
@@ -17,7 +17,7 @@ describe('bottom tab bar safe-area positioning', () => {
   });
 
   it('mobile shell does not add a second bottom offset beneath the fixed GTabBar', () => {
-    const src = readFileSync(HOMESTEAD_APP, 'utf-8');
+    const src = readFileSync(COVEY_APP, 'utf-8');
 
     expect(src).toMatch(/position:\s*'fixed',\s*inset:\s*0/);
     expect(src).toContain('<GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />');

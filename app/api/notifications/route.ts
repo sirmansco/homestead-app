@@ -15,7 +15,7 @@ const PREF_KEYS = [
 
 type PrefKey = typeof PREF_KEYS[number];
 
-// Notification preferences are per-household (spec docs/specs/homestead.md:50,
+// Notification preferences are per-household (spec docs/specs/covey.md:50,
 // 95, 169, 218 — "notification prefs are per-household"). Synthesis L5: bind
 // reads and writes to (clerkUserId, householdId), not the bulk Clerk identity.
 export async function GET() {
