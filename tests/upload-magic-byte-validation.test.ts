@@ -130,7 +130,7 @@ vi.mock('@/lib/ratelimit', () => ({
   rateLimitResponse: vi.fn().mockReturnValue(null),
 }));
 
-const mockPut = vi.fn().mockResolvedValue({ url: 'https://blob.vercel-storage.com/private/homestead/hh-1/user-u-1.jpg' });
+const mockPut = vi.fn().mockResolvedValue({ url: 'https://blob.vercel-storage.com/private/covey/hh-1/user-u-1.jpg' });
 vi.mock('@vercel/blob', () => ({ put: mockPut }));
 
 const mockDbUpdate = vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) });
@@ -164,7 +164,7 @@ async function callUploadRoute(fd: FormData) {
 describe('POST /api/upload — magic-byte gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPut.mockResolvedValue({ url: 'https://blob.vercel-storage.com/private/homestead/hh-1/user-u-1.jpg' });
+    mockPut.mockResolvedValue({ url: 'https://blob.vercel-storage.com/private/covey/hh-1/user-u-1.jpg' });
     mockDbUpdate.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) });
   });
 
