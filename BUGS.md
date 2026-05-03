@@ -1,6 +1,6 @@
 ## Active
 
-- [ ] **BUG-D — iOS PWA push subscription silently fails on first install.** Root cause: `PushRegistrar` calls `pushManager.subscribe()` immediately after `navigator.serviceWorker.ready` resolves, but on iOS the SW activation and push registration aren't guaranteed to be synchronized at that point — `subscribe()` throws and the catch block swallows it. The Settings toggle retry path (`requestPushPermission`) has the same race. Result: user sees "notifications enabled" but no subscription exists server-side, so no pushes are delivered. Fix: wrap subscribe in a retry loop with exponential backoff (3 attempts, 500ms/1500ms/3000ms delays) inside both `PushRegistrar` and `requestPushPermission`.
+- [x] **BUG-D — iOS PWA push subscription silently fails on first install / after key rotation.** Two root causes: (1) iOS SW activation/push registration timing race — fixed with retry loop (exponential backoff, 3 attempts). (2) iOS WebKit stale-subscription bug: `getSubscription()` returns a subscription whose keys serialize as `null` after push credential rotation; forwarding null keys causes `POST /api/push/subscribe` to 400. Fix: `hasValidKeys()` guard in `subscribeWithRetry` — unsubscribes and resubscribes fresh when null keys detected; belt-and-suspenders null-check in `requestPushPermission` before POSTing; improved error logging includes response body. verified-by: `tests/push-registrar-retry.test.ts` (6 tests, including null-keys regression).
 
 ## Fixed
 
