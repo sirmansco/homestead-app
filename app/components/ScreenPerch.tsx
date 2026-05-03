@@ -869,7 +869,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   : 'Open · needs someone'}
               onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && (role === 'caregiver' || !r.createdByMe) ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -890,7 +890,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   : 'Open · needs someone'}
               onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && (role === 'caregiver' || !r.createdByMe) ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -931,7 +931,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   : 'Open · needs someone'}
                       onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
                       cancelling={cancellingId === r.shift.id}
-                      onClaim={r.shift.status === 'open' && (role === 'caregiver' || !r.createdByMe) ? claimShift : undefined}
+                      onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
                       claiming={claimingId === r.shift.id}
                       showHousehold={multiHousehold}
                       onOpen={setOpenRow}
@@ -956,7 +956,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   : 'Open · needs someone'}
               onCancel={role === 'parent' && r.createdByMe ? cancelShift : undefined}
               cancelling={cancellingId === r.shift.id}
-              onClaim={r.shift.status === 'open' && (role === 'caregiver' || !r.createdByMe) ? claimShift : undefined}
+              onClaim={r.shift.status === 'open' && role === 'caregiver' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
@@ -1111,7 +1111,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
             setOpenRow(null);
           }}
           claiming={claimingId === openRow.shift.id}
-          canClaim={openRow.shift.status === 'open' && (role === 'caregiver' || !openRow.createdByMe)}
+          canClaim={openRow.shift.status === 'open' && role === 'caregiver'}
         />
       )}
     </div>
