@@ -79,7 +79,7 @@ function Rung({ ring, label, status, time, people }: {
   people: { name: string; state: string; sub: string; highlight?: boolean }[];
 }) {
   const ringStyle = {
-    rung:    { bg: RED,     ink: 'var(--bg)', label: 'Ringing' },
+    rung:    { bg: RED,     ink: 'var(--bg)', label: 'Lit' },
     queued:  { bg: G.paper, ink: G.ink,     label: 'Queued' },
     pending: { bg: G.paper, ink: G.muted,   label: 'If needed' },
   }[status];
@@ -137,7 +137,7 @@ function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregive
 
   const deniedCopy = role === 'caregiver'
     ? 'Notifications blocked. Enable them in your browser settings so you\'re alerted when a family lights the lantern.'
-    : 'Notifications blocked. Enable them in your browser settings so caregivers get alerted when you ring.';
+    : 'Notifications blocked. Enable them in your browser settings so watchers get alerted when you light the Lantern.';
   const allowCopy = role === 'caregiver'
     ? 'Allow notifications so you\'re alerted the moment a family lights the lantern.'
     : 'Allow notifications so caregivers are alerted instantly.';
@@ -317,7 +317,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           marginTop: 22, padding: 14, borderRadius: 8,
           border: `1px dashed ${RED}`, background: G.claySoft,
         }}>
-          <GLabel color={RED}>How it&apos;ll ring</GLabel>
+          <GLabel color={RED}>How it&apos;ll reach them</GLabel>
           <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
@@ -341,7 +341,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           textTransform: 'uppercase', cursor: why === null || submitting ? 'default' : 'pointer',
           boxShadow: why === null || submitting ? 'none' : `0 4px 0 ${RED_DARK}`,
           transition: 'background 0.15s, color 0.15s',
-        }}>{submitting ? 'Ringing…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
+        }}>{submitting ? 'Lighting…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
 
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           Not urgent?{' '}
