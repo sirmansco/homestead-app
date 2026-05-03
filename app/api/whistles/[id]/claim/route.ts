@@ -46,13 +46,13 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
         householdId: household.id,
         email,
         name,
-        role: 'caregiver',
+        role: 'watcher',
         villageGroup: 'field',
       }).returning();
     }
 
-    // Caregivers only — parents cannot claim shifts even in their own household.
-    if (claimer.role !== 'caregiver') {
+    // Watchers only — keepers cannot claim shifts even in their own household.
+    if (claimer.role !== 'watcher') {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 

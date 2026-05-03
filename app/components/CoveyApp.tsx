@@ -27,7 +27,7 @@ const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
 
 type TabId = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern' | 'settings' | 'diagnostics';
 type LegacyTabId = TabId | 'village' | 'bell' | 'almanac' | 'shifts';
-type Role = 'parent' | 'caregiver';
+type Role = 'keeper' | 'watcher';
 
 function normalizeTabId(id: LegacyTabId): TabId {
   if (id === 'village') return 'circle';
@@ -95,7 +95,7 @@ function RoleSwitcherDesktop({ role, onChange }: { role: Role; onChange: (r: Rol
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 6 }}>Role</div>
       <div style={{ display: 'flex', gap: 4 }}>
-        {(['parent', 'caregiver'] as Role[]).map(r => (
+        {(['keeper', 'watcher'] as Role[]).map(r => (
           <button key={r} onClick={() => onChange(r)} style={{
             flex: 1, padding: '8px 6px', borderRadius: 6,
             background: role === r ? 'var(--bg)' : 'transparent',
@@ -129,7 +129,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
           opacity: 0.7,
         }}
       >
-        Dev · {role === 'parent' ? 'P' : 'C'}
+        Dev · {role === 'keeper' ? 'K' : 'W'}
       </button>
       {open && (
         <div
@@ -148,7 +148,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 16 }}>
               Demo only — try both perspectives.
             </div>
-            {(['parent', 'caregiver'] as Role[]).map(r => (
+            {(['keeper', 'watcher'] as Role[]).map(r => (
               <button key={r} onClick={() => { onChange(r); setOpen(false); }} style={{
                 display: 'block', width: '100%', marginBottom: 8,
                 padding: '14px 16px', textAlign: 'left',
@@ -165,7 +165,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
                   fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
                   color: role === r ? G.muted : G.muted, marginTop: 2,
                 }}>
-                  {r === 'parent' ? `Post needs · manage ${getCopy().circle.title.toLowerCase()}` : `Cover ${getCopy().request.tabLabel.toLowerCase()} · answer ${getCopy().urgentSignal.noun.toLowerCase()}s`}
+                  {r === 'keeper' ? `Post needs · manage ${getCopy().circle.title.toLowerCase()}` : `Cover ${getCopy().request.tabLabel.toLowerCase()} · answer ${getCopy().urgentSignal.noun.toLowerCase()}s`}
                 </div>
               </button>
             ))}
@@ -203,9 +203,9 @@ function CoveyInner() {
   const [role, setRole] = useState<Role>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('hs.role') as Role | null;
-      if (saved === 'parent' || saved === 'caregiver') return saved;
+      if (saved === 'keeper' || saved === 'watcher') return saved;
     }
-    return 'parent';
+    return 'keeper';
   });
 
   // When the active household changes (Karson switches between families),
@@ -277,19 +277,19 @@ function CoveyInner() {
   const clockTime = useLiveClock();
 
   // Which tab pill to highlight.
-  // For caregivers: lantern tab exists, so highlight it. For parents: lantern maps to perch.
+  // For watchers: lantern tab exists, so highlight it. For keepers: lantern maps to perch.
   // Settings maps to circle for both roles.
   type NavTab = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
   const activeTab: NavTab =
-    screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'perch') :
-    screen === 'perch' && role === 'caregiver' ? 'whistles' :
+    screen === 'lantern' ? (role === 'watcher' ? 'lantern' : 'perch') :
+    screen === 'perch' && role === 'watcher' ? 'whistles' :
     (screen === 'settings' || screen === 'diagnostics') ? 'circle' :
     screen as NavTab;
 
   useEffect(() => {
     const parentMap:    TabId[] = ['perch',    'post',    'circle'];
     const caregiverMap: TabId[] = ['whistles', 'lantern', 'circle'];
-    const map = role === 'caregiver' ? caregiverMap : parentMap;
+    const map = role === 'watcher' ? caregiverMap : parentMap;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
       if (n >= 1 && n <= map.length) navigate(map[n - 1]);
@@ -307,7 +307,7 @@ function CoveyInner() {
 
   const handleRoleChange = useCallback((r: Role) => {
     setRole(r);
-    setScreen(r === 'caregiver' ? 'whistles' : 'perch');
+    setScreen(r === 'watcher' ? 'whistles' : 'perch');
   }, []);
 
   // Keep-alive screen layout: all tab-bar screens mounted simultaneously,
@@ -396,7 +396,7 @@ function CoveyInner() {
         }}>{getCopy().brand.name}</div>
         {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
-        {(role === 'parent'
+        {(role === 'keeper'
           ? [['1', getCopy().schedule.title], ['2', 'Post'], ['3', getCopy().circle.title]]
           : [['1', 'Open'], ['2', 'Schedule'], ['3', getCopy().urgentSignal.noun], ['4', getCopy().circle.title]]
         ).map(([k, l]) => (

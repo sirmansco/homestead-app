@@ -60,7 +60,7 @@ function row(overrides: Partial<{
   clerkUserId: string;
   name: string;
   isAdmin: boolean;
-  role: 'parent' | 'caregiver';
+  role: 'keeper' | 'watcher';
 }> = {}) {
   return {
     id: overrides.id ?? ADMIN_ID,
@@ -68,7 +68,7 @@ function row(overrides: Partial<{
     householdId: HH_ID,
     email: 'u@example.com',
     name: overrides.name ?? 'User',
-    role: overrides.role ?? ('parent' as const),
+    role: overrides.role ?? ('keeper' as const),
     villageGroup: 'covey' as const,
     isAdmin: overrides.isAdmin ?? false,
   };
@@ -173,7 +173,7 @@ describe('requireHouseholdAdmin (gate logic — real implementation)', () => {
 
   it('admin caller → returns ctx', async () => {
     const actual = await vi.importActual<typeof import('@/lib/auth/household')>('@/lib/auth/household');
-    stageRealHouseholdResolution(row({ id: ADMIN_ID, isAdmin: true, role: 'parent' }));
+    stageRealHouseholdResolution(row({ id: ADMIN_ID, isAdmin: true, role: 'keeper' }));
     const ctx = await actual.requireHouseholdAdmin();
     expect(ctx.user.id).toBe(ADMIN_ID);
     expect(ctx.user.isAdmin).toBe(true);
@@ -181,13 +181,13 @@ describe('requireHouseholdAdmin (gate logic — real implementation)', () => {
 
   it('parent without isAdmin → throws NotAdminError', async () => {
     const actual = await vi.importActual<typeof import('@/lib/auth/household')>('@/lib/auth/household');
-    stageRealHouseholdResolution(row({ id: PARENT_NON_ADMIN_ID, isAdmin: false, role: 'parent' }));
+    stageRealHouseholdResolution(row({ id: PARENT_NON_ADMIN_ID, isAdmin: false, role: 'keeper' }));
     await expect(actual.requireHouseholdAdmin()).rejects.toBeInstanceOf(NotAdminError);
   });
 
   it('caregiver → throws NotAdminError', async () => {
     const actual = await vi.importActual<typeof import('@/lib/auth/household')>('@/lib/auth/household');
-    stageRealHouseholdResolution(row({ id: 'user-cg', isAdmin: false, role: 'caregiver' }));
+    stageRealHouseholdResolution(row({ id: 'user-cg', isAdmin: false, role: 'watcher' }));
     await expect(actual.requireHouseholdAdmin()).rejects.toBeInstanceOf(NotAdminError);
   });
 
@@ -218,7 +218,7 @@ describe('PATCH /api/household — admin authority matrix', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('admin → 200', async () => {
-    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'parent' }));
+    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'keeper' }));
     vi.mocked(db.update).mockReturnValue(makeUpdateChain([
       { ...HOUSEHOLD, name: 'Renamed' },
     ]) as unknown as ReturnType<typeof db.update>);
@@ -255,12 +255,12 @@ describe('PATCH /api/household/members/[id] — admin authority matrix', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('admin → 200', async () => {
-    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'parent' }));
+    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'keeper' }));
     vi.mocked(db.update).mockReturnValue(makeUpdateChain([
-      { id: TARGET_MEMBER_ID, role: 'caregiver', villageGroup: 'field' },
+      { id: TARGET_MEMBER_ID, role: 'watcher', villageGroup: 'field' },
     ]) as unknown as ReturnType<typeof db.update>);
     const res = await memberPATCH(
-      jsonReq({ role: 'caregiver' }),
+      jsonReq({ role: 'watcher' }),
       ctxWithId(TARGET_MEMBER_ID),
     );
     expect(res.status).toBe(200);
@@ -271,7 +271,7 @@ describe('PATCH /api/household/members/[id] — admin authority matrix', () => {
   it('parent without isAdmin → 403 no_access', async () => {
     mockAdminGateRejects(new NotAdminError());
     const res = await memberPATCH(
-      jsonReq({ role: 'caregiver' }),
+      jsonReq({ role: 'watcher' }),
       ctxWithId(TARGET_MEMBER_ID),
     );
     expect(res.status).toBe(403);
@@ -281,7 +281,7 @@ describe('PATCH /api/household/members/[id] — admin authority matrix', () => {
   it('unauthenticated → 401 not_signed_in', async () => {
     mockAdminGateRejects(new Error('Not signed in'));
     const res = await memberPATCH(
-      jsonReq({ role: 'caregiver' }),
+      jsonReq({ role: 'watcher' }),
       ctxWithId(TARGET_MEMBER_ID),
     );
     expect(res.status).toBe(401);
@@ -291,7 +291,7 @@ describe('PATCH /api/household/members/[id] — admin authority matrix', () => {
   it('non-member → 409 no_household', async () => {
     mockAdminGateRejects(new Error('No active household'));
     const res = await memberPATCH(
-      jsonReq({ role: 'caregiver' }),
+      jsonReq({ role: 'watcher' }),
       ctxWithId(TARGET_MEMBER_ID),
     );
     expect(res.status).toBe(409);
@@ -303,7 +303,7 @@ describe('DELETE /api/household/members/[id] — admin authority matrix', () => 
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('admin → 200', async () => {
-    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'parent' }));
+    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'keeper' }));
     vi.mocked(db.select).mockReturnValue(makeSelectChain([
       { id: TARGET_MEMBER_ID, householdId: HH_ID, clerkUserId: 'clerk_target' },
     ]) as unknown as ReturnType<typeof db.select>);
@@ -384,7 +384,7 @@ describe('PATCH /api/household/admin (admin transfer) — gate matrix', () => {
   });
 
   it('admin → 200 (transfer succeeds via existing tx path)', async () => {
-    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'parent' }));
+    mockAdminGateOk(row({ id: ADMIN_ID, isAdmin: true, role: 'keeper' }));
     vi.mocked(db.transaction).mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
       const tx = makeTxRunner({
         selects: [

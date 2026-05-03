@@ -23,8 +23,8 @@ describe('rebrand copy — no hardcoded brand strings where copy system should b
 
   it('ScreenLantern PushPermissionBanner accepts a role prop', () => {
     const src = readFileSync(join(root, 'app/components/ScreenLantern.tsx'), 'utf8');
-    expect(src).toContain('role?: \'parent\' | \'caregiver\'');
-    // Caregiver call site passes role="caregiver"
-    expect(src).toContain('PushPermissionBanner role="caregiver"');
+    expect(src).toContain('role?: \'keeper\' | \'watcher\'');
+    // Watcher call site passes role="watcher"
+    expect(src).toContain('PushPermissionBanner role="watcher"');
   });
 });

@@ -93,12 +93,12 @@ export async function GET(req: NextRequest) {
       );
     } else if (scope === 'all') {
       // Unified view across all households:
-      // - As parent: shifts in households where user has role=parent (created by anyone in that hh)
-      // - As caregiver: open shifts in households where user has role=caregiver
+      // - As keeper: shifts in households where user has role=keeper (created by anyone in that hh)
+      // - As watcher: open shifts in households where user has role=watcher
       // - Always: shifts the user personally claimed (regardless of role)
       if (!hhIds.length) return NextResponse.json({ shifts: [], meClerkUserId: userId });
-      const parentHhIds = myUserRows.filter(u => u.role === 'parent').map(u => u.householdId);
-      const caregiverHhIds = myUserRows.filter(u => u.role === 'caregiver').map(u => u.householdId);
+      const parentHhIds = myUserRows.filter(u => u.role === 'keeper').map(u => u.householdId);
+      const caregiverHhIds = myUserRows.filter(u => u.role === 'watcher').map(u => u.householdId);
       const clauses = [];
       if (parentHhIds.length) clauses.push(inArray(shifts.householdId, parentHhIds));
       if (caregiverHhIds.length) clauses.push(and(inArray(shifts.householdId, caregiverHhIds), eq(shifts.status, 'open')));
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { household, user } = await requireHousehold();
-    if (user.role !== 'parent') {
+    if (user.role !== 'keeper') {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 

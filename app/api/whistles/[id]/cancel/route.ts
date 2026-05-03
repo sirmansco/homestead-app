@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     if (shift.householdId !== household.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
-    if (user.role !== 'parent' && shift.createdByUserId !== user.id) {
+    if (user.role !== 'keeper' && shift.createdByUserId !== user.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 

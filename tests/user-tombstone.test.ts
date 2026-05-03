@@ -51,7 +51,7 @@ function targetRow(overrides: Partial<{ id: string; clerkUserId: string; househo
     householdId: overrides.householdId ?? HH_A,
     email: 'u@example.com',
     name: 'Target',
-    role: 'caregiver' as const,
+    role: 'watcher' as const,
     villageGroup: 'covey' as const,
     isAdmin: false,
   };
@@ -64,7 +64,7 @@ function adminRow() {
     householdId: HH_A,
     email: 'a@example.com',
     name: 'Admin',
-    role: 'parent' as const,
+    role: 'keeper' as const,
     villageGroup: 'covey' as const,
     isAdmin: true,
   };

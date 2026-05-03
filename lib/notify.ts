@@ -91,10 +91,10 @@ export async function notifyNewShift(shiftId: string, preferredCaregiverId?: str
   if (preferredCaregiverId) {
     recipients = await db.select().from(users).where(eq(users.id, preferredCaregiverId));
   } else {
-    // Parents never receive shift-posted alerts; co-parent suppression is automatic
+    // Keepers never receive shift-posted alerts; co-keeper suppression is automatic
     recipients = await db.select().from(users).where(and(
       eq(users.householdId, row.shift.householdId),
-      eq(users.role, 'caregiver'),
+      eq(users.role, 'watcher'),
     ));
   }
 
@@ -343,7 +343,7 @@ export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
     .from(users)
     .where(and(
       eq(users.householdId, bell.householdId),
-      eq(users.role, 'caregiver'),
+      eq(users.role, 'watcher'),
       inArray(users.villageGroup, ['covey', 'inner_circle']),
       eq(users.notifyBellRinging, true),
     ));
@@ -380,7 +380,7 @@ export async function notifyBellEscalated(bellId: string) {
     .from(users)
     .where(and(
       eq(users.householdId, bell.householdId),
-      eq(users.role, 'caregiver'),
+      eq(users.role, 'watcher'),
       inArray(users.villageGroup, ['field', 'sitter']),
       eq(users.notifyBellRinging, true),
     ));
@@ -421,9 +421,9 @@ export async function notifyBellResponse(
 
   const name = responder.name || 'Someone';
 
-  // Find the parents who own this household; filter by their notifyBellResponse pref
+  // Find the keepers who own this household; filter by their notifyBellResponse pref
   const parents = await db.select().from(users).where(
-    and(eq(users.householdId, bell.householdId), eq(users.role, 'parent'))
+    and(eq(users.householdId, bell.householdId), eq(users.role, 'keeper'))
   );
 
   const optedParents = parents.filter(p => p.notifyBellResponse !== false);

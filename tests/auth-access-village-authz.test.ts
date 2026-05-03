@@ -65,7 +65,7 @@ function row(overrides: Partial<{
   clerkUserId: string;
   householdId: string;
   isAdmin: boolean;
-  role: 'parent' | 'caregiver';
+  role: 'keeper' | 'watcher';
   notifyShiftPosted: boolean;
   notifyBellRinging: boolean;
 }> = {}) {
@@ -75,7 +75,7 @@ function row(overrides: Partial<{
     householdId: overrides.householdId ?? HH_A,
     email: 'u@example.com',
     name: 'User',
-    role: overrides.role ?? ('parent' as const),
+    role: overrides.role ?? ('keeper' as const),
     villageGroup: 'covey' as const,
     isAdmin: overrides.isAdmin ?? false,
     notifyShiftPosted: overrides.notifyShiftPosted ?? true,
@@ -226,7 +226,7 @@ describe('POST /api/circle/leave — self-removal (no admin required)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('caregiver self-leave → 200 without admin gate', async () => {
-    mockHouseholdOk(row({ id: CAREGIVER_ID, isAdmin: false, role: 'caregiver' }));
+    mockHouseholdOk(row({ id: CAREGIVER_ID, isAdmin: false, role: 'watcher' }));
     // Post-B3, leave routes through tombstoneUser (db.transaction). Stub the tx
     // to invoke the callback with the same shared db mock.
     vi.mocked(db.transaction).mockImplementation(async (cb) => {
@@ -287,7 +287,7 @@ describe('POST /api/circle/invite — admin gate + allowlist (L3)', () => {
     mockAdminGateOk(row({ isAdmin: true }));
     const { createOrganizationInvitation } = mockClerkInvite();
     const res = await invitePOST(jsonReq({
-      name: 'Alice', email: 'a@b.co', role: 'caregiver', villageGroup: 'covey', mode: 'email',
+      name: 'Alice', email: 'a@b.co', role: 'watcher', villageGroup: 'covey', mode: 'email',
     }));
     expect(res.status).toBe(200);
     expect(createOrganizationInvitation).toHaveBeenCalledOnce();
@@ -297,7 +297,7 @@ describe('POST /api/circle/invite — admin gate + allowlist (L3)', () => {
     mockAdminGateRejects(new NotAdminError());
     const { createOrganizationInvitation, createInvitation } = mockClerkInvite();
     const res = await invitePOST(jsonReq({
-      name: 'Alice', email: 'a@b.co', role: 'caregiver', villageGroup: 'covey', mode: 'email',
+      name: 'Alice', email: 'a@b.co', role: 'watcher', villageGroup: 'covey', mode: 'email',
     }));
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'no_access' });
@@ -320,7 +320,7 @@ describe('POST /api/circle/invite — admin gate + allowlist (L3)', () => {
     mockAdminGateOk(row({ isAdmin: true }));
     const { createOrganizationInvitation } = mockClerkInvite();
     const res = await invitePOST(jsonReq({
-      name: 'Alice', email: 'a@b.co', role: 'caregiver', villageGroup: 'inner_circle', mode: 'email',
+      name: 'Alice', email: 'a@b.co', role: 'watcher', villageGroup: 'inner_circle', mode: 'email',
     }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe('invalid villageGroup');

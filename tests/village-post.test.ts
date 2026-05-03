@@ -68,7 +68,7 @@ const HOUSEHOLD_ROW = { id: HH_ID, clerkOrgId: CLERK_ORG_ID, name: 'Smith Family
 const USER_ROW = {
   id: USER_ID, clerkUserId: CLERK_USER_ID, householdId: HH_ID,
   email: 'alice@example.com', name: 'Alice Smith',
-  role: 'parent', villageGroup: 'covey',
+  role: 'keeper', villageGroup: 'covey',
   // B2 (synthesis L2): village POST/DELETE are admin-only. Existing tests
   // exercise an admin caller so the fixture row carries isAdmin=true; the
   // 4xx-shape assertions below test the route's own validation, not the gate.
@@ -202,7 +202,7 @@ describe('POST /api/circle', () => {
 
   it('inserts an adult placeholder and returns the row', async () => {
     wireHousehold();
-    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'caregiver', villageGroup: 'covey' };
+    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'watcher', villageGroup: 'covey' };
     vi.mocked(db.insert).mockReturnValue(makeInsertStub([adult]));
 
     const res = await POST(makeReq({ type: 'adult', name: 'Bob', email: 'bob@example.com' }));

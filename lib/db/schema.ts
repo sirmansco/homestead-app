@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid, pgEnum, date, unique, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-export const appRoleEnum = pgEnum('app_role', ['parent', 'caregiver']);
+export const appRoleEnum = pgEnum('app_role', ['keeper', 'watcher']);
 export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'cancelled']);
 export const bellResponseEnum = pgEnum('bell_response', ['on_my_way', 'in_thirty', 'cannot']);
 export const villageGroupEnum = pgEnum('village_group', ['inner_circle', 'sitter', 'covey', 'field']);
@@ -23,7 +23,7 @@ export const users = pgTable('users', {
   householdId: uuid('household_id').notNull().references(() => households.id, { onDelete: 'cascade' }),
   email: text('email').notNull(),
   name: text('name').notNull(),
-  role: appRoleEnum('role').notNull().default('parent'),
+  role: appRoleEnum('role').notNull().default('keeper'),
   villageGroup: villageGroupEnum('village_group').notNull().default('covey'),
   photoUrl: text('photo_url'),
   // Notification preferences — defaults to true (opt-out model).

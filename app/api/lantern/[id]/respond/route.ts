@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         householdId: bell.householdId,
         email,
         name,
-        role: 'caregiver',
+        role: 'watcher',
         villageGroup: normalizeVillageGroup(meta.villageGroup || 'field'),
       }).returning();
     }
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .from(users)
         .where(and(
           eq(users.householdId, bell.householdId),
-          eq(users.role, 'caregiver'),
+          eq(users.role, 'watcher'),
           inArray(users.villageGroup, ['covey', 'inner_circle']),
         ));
       if (total > 0) {

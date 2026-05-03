@@ -139,7 +139,7 @@ describe('GET /api/lantern/active', () => {
     // Call order: (1) users, (2) bells, (3) bellResponses.
     // No handler-users call — handledByUserId is null so handlerIds is empty.
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'parent' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([bell]))
       .mockReturnValueOnce(makeSelectStub([]));
 
@@ -157,7 +157,7 @@ describe('GET /api/lantern/active', () => {
 
     // Call order: (1) users, (2) bells, (3) bellResponses, (4) handler-users.
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'parent' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([bell]))
       .mockReturnValueOnce(makeSelectStub([]))
       .mockReturnValueOnce(makeSelectStub([{ id: CAREGIVER_USER_ID, name: CAREGIVER_NAME }]));
@@ -174,7 +174,7 @@ describe('GET /api/lantern/active', () => {
     // DB simulates the status IN ('ringing','handled') filter — cancelled bell not returned.
     // Empty bells path: (1) users, (2) bells. bellResponses + handler-users skipped (bellIds empty).
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'parent' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([]));
 
     const res = await GET();
@@ -186,7 +186,7 @@ describe('GET /api/lantern/active', () => {
     // DB simulates the gt(bells.endsAt, now()) filter — expired bell not returned.
     // Empty bells path: (1) users, (2) bells.
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'parent' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([]));
 
     const res = await GET();
@@ -201,7 +201,7 @@ describe('GET /api/lantern/active', () => {
     // DB returns handled first (simulating createdAt DESC order); route sort must flip them.
     // Call order: (1) users, (2) bells, (3) bellResponses, (4) handler-users.
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'parent' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: PARENT_USER_ID, householdId: HOUSEHOLD_ID, role: 'keeper' }]))
       .mockReturnValueOnce(makeSelectStub([handled, ringing]))
       .mockReturnValueOnce(makeSelectStub([]))
       .mockReturnValueOnce(makeSelectStub([{ id: CAREGIVER_USER_ID, name: CAREGIVER_NAME }]));
@@ -219,8 +219,8 @@ describe('GET /api/lantern/active', () => {
   // and queries across all users rows for this clerkUserId.
   it('returns bells across all households for a multi-household caregiver', async () => {
     const HH2 = 'hh-002';
-    const CAREGIVER_ROW_HH1 = { id: 'user-cg-hh1', householdId: HOUSEHOLD_ID, role: 'caregiver' };
-    const CAREGIVER_ROW_HH2 = { id: 'user-cg-hh2', householdId: HH2, role: 'caregiver' };
+    const CAREGIVER_ROW_HH1 = { id: 'user-cg-hh1', householdId: HOUSEHOLD_ID, role: 'watcher' };
+    const CAREGIVER_ROW_HH2 = { id: 'user-cg-hh2', householdId: HH2, role: 'watcher' };
     const bellHH1 = makeBell({ id: 'bell-hh1', householdId: HOUSEHOLD_ID, handledByUserId: null });
     const bellHH2 = makeBell({ id: 'bell-hh2', householdId: HH2, handledByUserId: null });
 

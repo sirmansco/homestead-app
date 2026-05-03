@@ -6,7 +6,7 @@ import { authError } from '@/lib/api-error';
 // Allowlists are enforced before any Clerk metadata write so caller-supplied
 // values cannot bleed back through requireHousehold()'s first-user provisioning
 // (lib/auth/household.ts:43-58). Synthesis L3.
-const ALLOWED_ROLES = ['parent', 'caregiver'] as const;
+const ALLOWED_ROLES = ['keeper', 'watcher'] as const;
 const ALLOWED_VILLAGE_GROUPS = ['covey', 'field'] as const;
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const { name, email, role, villageGroup, mode } = body as {
       name?: string;
       email?: string;
-      role?: 'parent' | 'caregiver';
+      role?: 'keeper' | 'watcher';
       villageGroup?: 'covey' | 'field';
       mode?: 'email' | 'link';
     };

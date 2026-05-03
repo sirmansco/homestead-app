@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
   // Fetch relevant shifts
   let userShifts: typeof shifts.$inferSelect[] = [];
 
-  if (user.role === 'caregiver') {
+  if (user.role === 'watcher') {
     userShifts = await db.select().from(shifts).where(
       and(eq(shifts.claimedByUserId, user.id), inArray(shifts.status, ['claimed', 'done']))
     );

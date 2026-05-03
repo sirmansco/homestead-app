@@ -26,18 +26,18 @@ describe('Diagnostics reports lantern recipients matching notify.ts (BUG-B)', ()
   });
 
   it("uses the same eligibility filters as notify.ts:notifyBellRing", () => {
-    // notifyBellRing filters by: role='caregiver', villageGroup IN ['covey','inner_circle']
+    // notifyBellRing filters by: role='watcher', villageGroup IN ['covey','inner_circle']
     // (transitional read-compat shim added in B4), notifyBellRinging=true.
     // The diagnostic must mirror this exactly so its verdict matches what a real
     // push attempt would see.
-    expect(/eq\(users\.role,\s*'caregiver'\)/.test(diagSrc)).toBe(true);
+    expect(/eq\(users\.role,\s*'watcher'\)/.test(diagSrc)).toBe(true);
     // B4 shim: inArray replaces eq for village_group to include legacy inner_circle rows
     expect(/inArray\(users\.villageGroup,\s*\[['"]covey['"],\s*['"]inner_circle['"]\]\)/.test(diagSrc)).toBe(true);
     expect(/eq\(users\.notifyBellRinging,\s*true\)/.test(diagSrc)).toBe(true);
 
-    // Cross-check: notifyBellRing must also still use the same shim — if it drifts,
+    // Cross-check: notifyBellRing must also still use the same filter — if it drifts,
     // the diagnostic's verdict becomes a lie.
-    expect(/eq\(users\.role,\s*'caregiver'\)/.test(notifySrc)).toBe(true);
+    expect(/eq\(users\.role,\s*'watcher'\)/.test(notifySrc)).toBe(true);
     expect(/inArray\(users\.villageGroup,\s*\[['"]covey['"],\s*['"]inner_circle['"]\]\)/.test(notifySrc)).toBe(true);
     expect(/eq\(users\.notifyBellRinging,\s*true\)/.test(notifySrc)).toBe(true);
   });

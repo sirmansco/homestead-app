@@ -91,8 +91,8 @@ describe('POST /api/whistles/[id]/claim — role gate (L6)', () => {
       selectCall++;
       if (selectCall === 1) return makeChain([shift]) as ReturnType<typeof db.select>;
       if (selectCall === 2) return makeChain([household]) as ReturnType<typeof db.select>;
-      // User row: role = 'parent'
-      return makeChain([{ id: PARENT_ID, clerkUserId: 'clerk-parent', householdId: HOUSEHOLD_ID, role: 'parent', villageGroup: 'covey' }]) as ReturnType<typeof db.select>;
+      // User row: role = 'keeper'
+      return makeChain([{ id: PARENT_ID, clerkUserId: 'clerk-parent', householdId: HOUSEHOLD_ID, role: 'keeper', villageGroup: 'covey' }]) as ReturnType<typeof db.select>;
     });
 
     const { POST } = await import('@/app/api/whistles/[id]/claim/route');
@@ -110,7 +110,7 @@ describe('POST /api/whistles/[id]/claim — role gate (L6)', () => {
       selectCall++;
       if (selectCall === 1) return makeChain([shift]) as ReturnType<typeof db.select>;
       if (selectCall === 2) return makeChain([household]) as ReturnType<typeof db.select>;
-      return makeChain([{ id: CAREGIVER_ID, clerkUserId: 'clerk-cg', householdId: HOUSEHOLD_ID, role: 'caregiver', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
+      return makeChain([{ id: CAREGIVER_ID, clerkUserId: 'clerk-cg', householdId: HOUSEHOLD_ID, role: 'watcher', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
     });
 
     const updateChain = makeChain([{ ...shift, status: 'claimed', claimedByUserId: CAREGIVER_ID }]);
@@ -133,7 +133,7 @@ describe('POST /api/whistles/[id]/claim — role gate (L6)', () => {
       if (selectCall === 1) return makeChain([targetedShift]) as ReturnType<typeof db.select>;
       if (selectCall === 2) return makeChain([household]) as ReturnType<typeof db.select>;
       // Different caregiver
-      return makeChain([{ id: OTHER_CAREGIVER_ID, clerkUserId: 'clerk-other-cg', householdId: HOUSEHOLD_ID, role: 'caregiver', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
+      return makeChain([{ id: OTHER_CAREGIVER_ID, clerkUserId: 'clerk-other-cg', householdId: HOUSEHOLD_ID, role: 'watcher', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
     });
 
     const { POST } = await import('@/app/api/whistles/[id]/claim/route');
@@ -153,7 +153,7 @@ describe('POST /api/whistles/[id]/claim — role gate (L6)', () => {
       selectCall++;
       if (selectCall === 1) return makeChain([targetedShift]) as ReturnType<typeof db.select>;
       if (selectCall === 2) return makeChain([household]) as ReturnType<typeof db.select>;
-      return makeChain([{ id: CAREGIVER_ID, clerkUserId: 'clerk-cg', householdId: HOUSEHOLD_ID, role: 'caregiver', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
+      return makeChain([{ id: CAREGIVER_ID, clerkUserId: 'clerk-cg', householdId: HOUSEHOLD_ID, role: 'watcher', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
     });
 
     const updateChain = makeChain([{ ...targetedShift, status: 'claimed', claimedByUserId: CAREGIVER_ID }]);

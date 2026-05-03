@@ -204,10 +204,10 @@ export function GButton({ children, variant = 'primary', onClick, disabled, styl
 // ── GTabBar ───────────────────────────────────────────────────────────────
 type TabId = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
 
-export function GTabBar({ active = 'perch', onNavigate, role = 'parent', bellCount = 0 }: {
+export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCount = 0 }: {
   active?: TabId;
   onNavigate?: (id: TabId) => void;
-  role?: 'parent' | 'caregiver';
+  role?: 'keeper' | 'watcher';
   bellCount?: number;
 }) {
   type Tab = { id: TabId; label: string; icon: (c: string) => React.ReactNode; badge?: number };
@@ -222,7 +222,7 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'parent', bellCou
     { id: 'lantern',  label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
     { id: 'circle',   label: getCopy().circle.caregiverTitle, icon: Icons.village },
   ];
-  const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
+  const tabs = role === 'watcher' ? caregiverTabs : parentTabs;
 
   return (
     <div className="safe-area-pb" style={{

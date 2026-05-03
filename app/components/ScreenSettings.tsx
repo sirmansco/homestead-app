@@ -15,12 +15,12 @@ type NotifPrefs = {
   notifyBellResponse: boolean;
 };
 
-const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | 'caregiver' | 'both' }[] = [
-  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'caregiver' },
-  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by caregiver`, forRole: 'parent' },
-  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'parent' },
-  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
-  { key: 'notifyBellResponse', label: `Caregiver responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'parent' },
+const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'keeper' | 'watcher' | 'both' }[] = [
+  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'watcher' },
+  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by watcher`, forRole: 'keeper' },
+  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'keeper' },
+  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
+  { key: 'notifyBellResponse', label: `Watcher responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
 ];
 
 type Theme = 'system' | 'light' | 'dark';
@@ -41,7 +41,7 @@ function applyTheme(t: Theme) {
   } catch { /* ignore private-mode errors */ }
 }
 
-export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: () => void; role?: 'parent' | 'caregiver'; onOpenDiagnostics?: () => void }) {
+export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: () => void; role?: 'keeper' | 'watcher'; onOpenDiagnostics?: () => void }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
