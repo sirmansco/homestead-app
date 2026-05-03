@@ -48,14 +48,25 @@ export type PushResult = {
 };
 
 type WebPushDisposition =
-  | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' }
-  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' | 'jwt_error' }
+  | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' | 'jwt_error' }
+  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' }
   | { kind: 'unknown'; reason: string };
 
 // Apple push (web.push.apple.com) returns HTTP 403 with body {"reason":"BadJwtToken"}
-// or {"reason":"ExpiredJwtToken"} when the VAPID JWT is malformed — the subscription
-// itself is still valid. Only FCM/Mozilla 403 means the endpoint is permanently invalid.
-// Pruning on Apple JWT errors silently deletes valid subscriptions.
+// or {"reason":"ExpiredJwtToken"} when the VAPID JWT is signed against a key the
+// subscription wasn't created with. After a VAPID key rotation, every existing
+// Apple subscription returns this until the client resubscribes against the new
+// public key.
+//
+// We prune on BadJwtToken/ExpiredJwtToken because:
+//   1. ensureVapid() already validated our keys parse cleanly server-side, so the
+//      JWT we send IS well-formed — Apple only rejects it for key mismatch.
+//   2. The client (PushRegistrar) auto-resubscribes against the current public
+//      key on next PWA open, so a pruned sub is replaced within minutes.
+//   3. Retrying forever wastes resources and never recovers — at 10K+ users with
+//      stale subs after rotation, retry-loops would melt the lambda budget.
+//
+// Only FCM/Mozilla 403 means the endpoint is permanently invalid (auth failure).
 function classifyWebPushError(err: unknown): WebPushDisposition {
   const wpe = err as WebPushError;
   const code = wpe?.statusCode;
@@ -64,7 +75,8 @@ function classifyWebPushError(err: unknown): WebPushDisposition {
   if (code === 403) {
     const body = typeof wpe?.body === 'string' ? wpe.body : JSON.stringify(wpe?.body ?? '');
     if (body.includes('BadJwtToken') || body.includes('ExpiredJwtToken')) {
-      return { kind: 'retry', reason: 'jwt_error' };
+      // Key-rotation orphan — drop it, registrar will recreate on next PWA open.
+      return { kind: 'prune', reason: 'jwt_error' };
     }
     return { kind: 'prune', reason: 'auth_403' };
   }
