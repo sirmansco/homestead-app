@@ -90,3 +90,9 @@ body {
   font-family: Inter, -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Safe-area cascade: constant() for iOS <11.2, env() overrides for ≥11.2 */
+.safe-area-pb {
+  padding-bottom: constant(safe-area-inset-bottom, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
