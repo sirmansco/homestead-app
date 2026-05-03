@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const root = path.resolve(__dirname, '..');
 const SHARED = path.join(root, 'app/components/shared.tsx');
-const HOMESTEAD_APP = path.join(root, 'app/components/HomesteadApp.tsx');
+const HOMESTEAD_APP = path.join(root, 'app/components/CoveyApp.tsx');
 const LAYOUT = path.join(root, 'app/layout.tsx');
 
 describe('bottom tab bar safe-area positioning', () => {

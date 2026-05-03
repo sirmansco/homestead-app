@@ -181,7 +181,7 @@ export function CoveyApp() {
   return (
     <HouseholdProvider>
       <AppDataProvider>
-        <HomesteadInner />
+        <CoveyInner />
       </AppDataProvider>
     </HouseholdProvider>
   );
@@ -190,7 +190,7 @@ export function CoveyApp() {
 // Tab screens that stay mounted permanently for zero-cost switching
 const TAB_SCREENS: TabId[] = ['perch', 'whistles', 'lantern', 'circle'];
 
-function HomesteadInner() {
+function CoveyInner() {
   const { user } = useUser();
   const { isDualRole, active, rolesByHousehold } = useHousehold();
   const { activeBell, refreshBell } = useAppData();
