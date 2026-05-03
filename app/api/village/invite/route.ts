@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (mode === 'link') {
       const ticket = await client.invitations.createInvitation({
-        emailAddress: email?.trim() || `invite+${crypto.randomUUID()}@homestead.local`,
+        emailAddress: email?.trim() || `invite+${crypto.randomUUID()}@covey.local`,
         publicMetadata: {
           name: name?.trim(),
           appRole: role,

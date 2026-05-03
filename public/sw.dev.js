@@ -37,7 +37,7 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     icon: '/icon-192',
     badge: '/icon-192',
-    tag: payload.tag || 'homestead',
+    tag: payload.tag || 'covey',
     data: { url: payload.url || '/' },
     requireInteraction: payload.urgent === true,
   };
