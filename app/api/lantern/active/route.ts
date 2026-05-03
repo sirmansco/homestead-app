@@ -44,7 +44,7 @@ export async function GET() {
     // For each bell, attach who has responded
     const bellIds = activeBells.map(b => b.id);
     const responses = bellIds.length
-      ? await db.select().from(lanternResponses).where(inArray(lanternResponses.bellId, bellIds))
+      ? await db.select().from(lanternResponses).where(inArray(lanternResponses.lanternId, bellIds))
       : [];
 
     // Resolve handler + responder display names in one query
@@ -65,9 +65,9 @@ export async function GET() {
       ...b,
       handledByName: b.handledByUserId ? (nameMap.get(b.handledByUserId) ?? null) : null,
       responses: responses
-        .filter(r => r.bellId === b.id)
+        .filter(r => r.lanternId === b.id)
         .map(r => ({ ...r, name: nameMap.get(r.userId) ?? null })),
-      myResponse: responses.find(r => r.bellId === b.id && myUserIds.has(r.userId))?.response ?? null,
+      myResponse: responses.find(r => r.lanternId === b.id && myUserIds.has(r.userId))?.response ?? null,
     }));
 
     return NextResponse.json({ lanterns: result });

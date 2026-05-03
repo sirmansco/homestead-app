@@ -67,16 +67,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Upsert response (one per user per bell)
     const existing = await db.select().from(lanternResponses)
-      .where(and(eq(lanternResponses.bellId, bellId), eq(lanternResponses.userId, userRow.id)))
+      .where(and(eq(lanternResponses.lanternId, bellId), eq(lanternResponses.userId, userRow.id)))
       .limit(1);
 
     if (existing.length > 0) {
       await db.update(lanternResponses)
         .set({ response, respondedAt: new Date() })
-        .where(and(eq(lanternResponses.bellId, bellId), eq(lanternResponses.userId, userRow.id)));
+        .where(and(eq(lanternResponses.lanternId, bellId), eq(lanternResponses.userId, userRow.id)));
     } else {
       await db.insert(lanternResponses).values({
-        bellId,
+        lanternId: bellId,
         userId: userRow.id,
         response,
       });
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           .from(lanternResponses)
           .innerJoin(users, eq(lanternResponses.userId, users.id))
           .where(and(
-            eq(lanternResponses.bellId, bellId),
+            eq(lanternResponses.lanternId, bellId),
             eq(lanternResponses.response, 'cannot'),
             inArray(users.villageGroup, ['covey', 'inner_circle']),
           ));
