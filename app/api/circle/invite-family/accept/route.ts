@@ -6,7 +6,7 @@ import { apiError } from '@/lib/api-error';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 
-// GET /api/village/invite-family/accept?token=... — side-effect-free token preview.
+// GET /api/circle/invite-family/accept?token=... — side-effect-free token preview.
 // Returns invite metadata for the accept page without mutating state.
 // Callers must POST to consume the token (requires auth).
 export async function GET(req: NextRequest) {
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/village/invite-family/accept — consume a pending invite token.
+// POST /api/circle/invite-family/accept — consume a pending invite token.
 // Requires the caller to be signed in. Atomically marks the token as accepted
 // and binds the signed-in Clerk user to the invite's parentEmail.
 // The GET preview must be called first to validate the token before posting.

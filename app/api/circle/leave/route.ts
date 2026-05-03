@@ -3,7 +3,7 @@ import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { tombstoneUser } from '@/lib/users/tombstone';
 
-// POST /api/village/leave
+// POST /api/circle/leave
 // Caregiver self-removal from the active household. Admin authority is NOT
 // required — this is the *self* mutation path; admin-gated village DELETE is
 // for *other-row* mutations (B2 / synthesis L2).

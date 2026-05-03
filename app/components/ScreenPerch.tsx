@@ -709,7 +709,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const cancelShift = useCallback(async (id: string) => {
     setCancellingId(id);
     try {
-      const res = await fetch(`/api/shifts/${id}/cancel`, { method: 'POST' });
+      const res = await fetch(`/api/whistles/${id}/cancel`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'cancel failed');
@@ -725,7 +725,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
   const claimShift = useCallback(async (id: string) => {
     setClaimingId(id);
     try {
-      const res = await fetch(`/api/shifts/${id}/claim`, { method: 'POST' });
+      const res = await fetch(`/api/whistles/${id}/claim`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'claim failed');
@@ -813,7 +813,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
         {/* Active lantern card — visible to caregivers and parents.
-            Cancel action is parent-only (PATCH /api/bell/:id is gated server-side). */}
+            Cancel action is parent-only (PATCH /api/lantern/:id is gated server-side). */}
         {activeBell && (
           <LanternCard
             bell={activeBell}
@@ -822,7 +822,7 @@ export function ScreenPerch({ role = 'parent', isDualRole = false, onRing, onVie
               if (cancellingBell) return;
               setCancellingBell(true);
               try {
-                const res = await fetch(`/api/bell/${activeBell.id}`, {
+                const res = await fetch(`/api/lantern/${activeBell.id}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ status: 'cancelled' }),

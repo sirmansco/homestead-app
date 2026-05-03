@@ -7,7 +7,7 @@ import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
 import { requireUUID } from '@/lib/validate/uuid';
 
-// PATCH /api/bell/[id] — { status: 'handled' | 'cancelled' }
+// PATCH /api/lantern/[id] — { status: 'handled' | 'cancelled' }
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { household, user } = await requireHousehold();

@@ -52,7 +52,7 @@ vi.mock('@/lib/api-error', () => ({
 
 // ── Imports after mocks ───────────────────────────────────────────────────────
 
-import { POST } from '@/app/api/village/route';
+import { POST } from '@/app/api/circle/route';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
@@ -107,7 +107,7 @@ function makeInsertStub(returning: unknown[] = []) {
 }
 
 function makeReq(body: unknown) {
-  return new NextRequest('http://localhost/api/village', {
+  return new NextRequest('http://localhost/api/circle', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -121,7 +121,7 @@ function wireHousehold() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('POST /api/village', () => {
+describe('POST /api/circle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 

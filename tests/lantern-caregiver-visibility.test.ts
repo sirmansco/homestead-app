@@ -5,7 +5,7 @@ import { join } from 'path';
 // BUG-A regression: the active-lantern card on ScreenPerch was previously
 // gated by `role === 'parent' && activeBell`, so caregivers never saw an
 // active Bell on the Almanac/"Open Whistles" tab. The cancel action remains
-// parent-only (server PATCH /api/bell/:id is gated server-side), but the card
+// parent-only (server PATCH /api/lantern/:id is gated server-side), but the card
 // itself must render for any role when activeBell is non-null.
 //
 // We verify this at the source level (no RTL set up in this project — see

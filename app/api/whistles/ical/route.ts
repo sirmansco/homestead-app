@@ -44,9 +44,9 @@ function buildIcs(events: { uid: string; summary: string; description: string; l
   return lines.join('\r\n') + '\r\n';
 }
 
-// GET /api/shifts/ical?token=<calToken>
+// GET /api/whistles/ical?token=<calToken>
 // Returns ICS feed for the user's claimed shifts (caregiver) or posted shifts (parent).
-// Also accepts GET /api/shifts/ical (authenticated via Clerk session) — generates+saves token, redirects to token URL.
+// Also accepts GET /api/whistles/ical (authenticated via Clerk session) — generates+saves token, redirects to token URL.
 export async function GET(req: NextRequest) {
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
   const token = req.nextUrl.searchParams.get('token');
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Redirect to token URL so the user can copy a stable subscribe link
-    return NextResponse.redirect(`${APP_URL}/api/shifts/ical?token=${user.calToken}`);
+    return NextResponse.redirect(`${APP_URL}/api/whistles/ical?token=${user.calToken}`);
   }
 
   // Fetch relevant shifts

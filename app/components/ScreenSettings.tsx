@@ -190,7 +190,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     try {
       // Session-authenticated call — server generates token and redirects to token URL.
       // We follow the redirect and capture the final URL rather than the ICS body.
-      const res = await fetch('/api/shifts/ical', { redirect: 'follow' });
+      const res = await fetch('/api/whistles/ical', { redirect: 'follow' });
       if (!res.ok) throw new Error(`${res.status}`);
       setCalFeedUrl(res.url);
       setCalFeedState('idle');

@@ -65,18 +65,18 @@ describe('AppDataContext polling error visibility (L29)', () => {
     ).toBe(true);
   });
 
-  it('captures village polling errors to Sentry with source tag appdata:village', () => {
-    const pattern = /Sentry\.captureException\([^)]*\{\s*tags:\s*\{\s*source:\s*['"]appdata:village['"]/;
+  it('captures circle polling errors to Sentry with source tag appdata:circle', () => {
+    const pattern = /Sentry\.captureException\([^)]*\{\s*tags:\s*\{\s*source:\s*['"]appdata:circle['"]/;
     expect(
       pattern.test(src),
-      'Village polling catch must call Sentry.captureException(err, { tags: { source: "appdata:village" } }).'
+      'Circle polling catch must call Sentry.captureException(err, { tags: { source: "appdata:circle" } }).'
     ).toBe(true);
   });
 
   it('emits a console.warn line per catch site for local debuggability', () => {
-    // Three call sites; tag prefixes [appdata:bell], [appdata:shifts:..., [appdata:village].
+    // Three call sites; tag prefixes [appdata:bell], [appdata:shifts:..., [appdata:circle].
     expect(/console\.warn\(\s*['"`]\[appdata:bell\]/.test(src)).toBe(true);
     expect(/console\.warn\(\s*[`'"]\[appdata:shifts:/.test(src)).toBe(true);
-    expect(/console\.warn\(\s*['"`]\[appdata:village\]/.test(src)).toBe(true);
+    expect(/console\.warn\(\s*['"`]\[appdata:circle\]/.test(src)).toBe(true);
   });
 });

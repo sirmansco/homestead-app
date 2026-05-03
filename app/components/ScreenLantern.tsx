@@ -210,7 +210,7 @@ function BellCompose({ onRing, onBack, onPost }: {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/bell', {
+      const res = await fetch('/api/lantern', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -399,7 +399,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
     setMarking(true);
     setBellError(null);
     try {
-      const res = await fetch(`/api/bell/${bellId}`, {
+      const res = await fetch(`/api/lantern/${bellId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'handled' }),
@@ -419,7 +419,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
     setBellError(null);
     if (bellId) {
       try {
-        const res = await fetch(`/api/bell/${bellId}`, {
+        const res = await fetch(`/api/lantern/${bellId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
@@ -544,7 +544,7 @@ function BellIncoming() {
     setResponding(bellId + response);
     setRespondError(null);
     try {
-      const res = await fetch(`/api/bell/${bellId}/respond`, {
+      const res = await fetch(`/api/lantern/${bellId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ response }),

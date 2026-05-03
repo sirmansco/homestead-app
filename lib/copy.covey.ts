@@ -94,11 +94,6 @@ export const coveyCopy: AppCopy = {
     contact: 'hello@sirmans.co',
     notify: 'notify@sirmans.co',
   },
-  api: {
-    urgentSignal: '/api/lantern',
-    request: '/api/whistles',
-    circle: '/api/circle',
-  },
   guide: {
     whatIsTitle: 'What is Covey?',
     whatIsBody1: 'Covey is a private coordination app for families who rely on a small, trusted circle — grandparents, close friends, the neighbor with the spare key — to keep life running. It\'s not a marketplace. Everyone here already knows each other.',

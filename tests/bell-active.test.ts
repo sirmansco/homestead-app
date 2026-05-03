@@ -60,7 +60,7 @@ vi.mock('@/lib/api-error', () => ({
 }));
 
 // ── Import after mocks are wired ─────────────────────────────────────────────
-import { GET } from '@/app/api/bell/active/route';
+import { GET } from '@/app/api/lantern/active/route';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
@@ -112,7 +112,7 @@ function makeSelectStub(rows: unknown[]) {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe('GET /api/bell/active', () => {
+describe('GET /api/lantern/active', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(auth).mockResolvedValue({ userId: CLERK_ID } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
@@ -215,7 +215,7 @@ describe('GET /api/bell/active', () => {
   });
 
   // Regression: caregiver belonging to multiple households must see bells from all of them,
-  // not just the active-org household. /api/bell/active uses requireUser() (not requireHousehold())
+  // not just the active-org household. /api/lantern/active uses requireUser() (not requireHousehold())
   // and queries across all users rows for this clerkUserId.
   it('returns bells across all households for a multi-household caregiver', async () => {
     const HH2 = 'hh-002';

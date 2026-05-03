@@ -45,9 +45,9 @@ import {
 } from '@/lib/auth/household';
 import { db } from '@/lib/db';
 import { clerkClient } from '@clerk/nextjs/server';
-import { POST as villagePOST, DELETE as villageDELETE } from '@/app/api/village/route';
-import { POST as villageLeavePOST } from '@/app/api/village/leave/route';
-import { POST as invitePOST } from '@/app/api/village/invite/route';
+import { POST as villagePOST, DELETE as villageDELETE } from '@/app/api/circle/route';
+import { POST as villageLeavePOST } from '@/app/api/circle/leave/route';
+import { POST as invitePOST } from '@/app/api/circle/invite/route';
 import { GET as notificationsGET, PATCH as notificationsPATCH } from '@/app/api/notifications/route';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ function urlReq(url: string) {
 
 // ── Village POST/DELETE — admin-only matrix ──────────────────────────────────
 
-describe('POST /api/village — admin authority matrix (L2)', () => {
+describe('POST /api/circle — admin authority matrix (L2)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('admin → 200 (kid create)', async () => {
@@ -202,19 +202,19 @@ describe('POST /api/village — admin authority matrix (L2)', () => {
   });
 });
 
-describe('DELETE /api/village — admin authority matrix (L2)', () => {
+describe('DELETE /api/circle — admin authority matrix (L2)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('admin → 200', async () => {
     mockAdminGateOk(row({ isAdmin: true }));
     vi.mocked(db.delete).mockReturnValue(makeDeleteChain() as unknown as ReturnType<typeof db.delete>);
-    const res = await villageDELETE(urlReq('http://localhost/api/village?id=kid-x&type=kid'));
+    const res = await villageDELETE(urlReq('http://localhost/api/circle?id=kid-x&type=kid'));
     expect(res.status).toBe(200);
   });
 
   it('non-admin → 403 no_access; gate fires before db.delete', async () => {
     mockAdminGateRejects(new NotAdminError());
-    const res = await villageDELETE(urlReq('http://localhost/api/village?id=kid-x&type=kid'));
+    const res = await villageDELETE(urlReq('http://localhost/api/circle?id=kid-x&type=kid'));
     expect(res.status).toBe(403);
     expect(vi.mocked(db.delete)).not.toHaveBeenCalled();
   });
@@ -222,7 +222,7 @@ describe('DELETE /api/village — admin authority matrix (L2)', () => {
 
 // ── Village leave — caregiver self-removal works without admin ───────────────
 
-describe('POST /api/village/leave — self-removal (no admin required)', () => {
+describe('POST /api/circle/leave — self-removal (no admin required)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('caregiver self-leave → 200 without admin gate', async () => {
@@ -270,7 +270,7 @@ describe('POST /api/village/leave — self-removal (no admin required)', () => {
 
 // ── Village invite — admin gate + role/villageGroup allowlist (L3) ───────────
 
-describe('POST /api/village/invite — admin gate + allowlist (L3)', () => {
+describe('POST /api/circle/invite — admin gate + allowlist (L3)', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   function mockClerkInvite() {

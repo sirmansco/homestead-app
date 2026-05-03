@@ -318,7 +318,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const sendInvite = async (mode: 'email' | 'link') => {
     setBusy(true); setError(null); setLinkUrl(null);
     try {
-      const endpoint = caregiverMode ? '/api/village/invite-family' : '/api/village/invite';
+      const endpoint = caregiverMode ? '/api/circle/invite-family' : '/api/circle/invite';
       const payload = caregiverMode
         ? { parentName: name, parentEmail: email, villageGroup, mode }
         : { name, email, role, villageGroup, mode };
@@ -345,7 +345,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const addKid = async () => {
     setBusy(true); setError(null);
     try {
-      const res = await fetch('/api/village', {
+      const res = await fetch('/api/circle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'kid', name, birthday: birthday || null }),
@@ -634,7 +634,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const load = useCallback(async () => {
     try {
       const [villageRes, householdRes] = await Promise.all([
-        fetch('/api/village?scope=all'),
+        fetch('/api/circle?scope=all'),
         fetch('/api/household'),
       ]);
       if (!villageRes.ok) {
@@ -728,7 +728,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 family={f}
                 myUserId={myRow?.id}
                 onLeave={myRow ? async () => {
-                  await fetch('/api/village/leave', { method: 'POST' });
+                  await fetch('/api/circle/leave', { method: 'POST' });
                   await load();
                 } : undefined}
               />
@@ -769,7 +769,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [villageRes, meRes] = await Promise.all([
-        fetch('/api/village', { signal }),
+        fetch('/api/circle', { signal }),
         fetch('/api/household', { signal }),
       ]);
       if (!villageRes.ok) {
@@ -858,7 +858,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   }, [load]);
   const removeKid = useCallback(async (id: string) => {
     setKids(prev => prev.filter(k => k.id !== id));
-    await fetch(`/api/village?type=kid&id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/circle?type=kid&id=${id}`, { method: 'DELETE' });
     load();
   }, [load]);
 

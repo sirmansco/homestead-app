@@ -24,7 +24,7 @@ vi.mock('next/server', () => ({
 
 // ── Import after mocks are wired ─────────────────────────────────────────────
 
-import { GET } from '@/app/api/bell/cron/route';
+import { GET } from '@/app/api/lantern/cron/route';
 import { db } from '@/lib/db';
 import { escalateBell } from '@/lib/bell-escalation';
 
@@ -89,7 +89,7 @@ afterEach(() => {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe('GET /api/bell/cron — auth', () => {
+describe('GET /api/lantern/cron — auth', () => {
   it('returns 401 when Authorization header is missing', async () => {
     const res = await GET(makeRequest(null));
     expect(res.status).toBe(401);
@@ -116,7 +116,7 @@ describe('GET /api/bell/cron — auth', () => {
   });
 });
 
-describe('GET /api/bell/cron — LIMIT enforcement', () => {
+describe('GET /api/lantern/cron — LIMIT enforcement', () => {
   it('applies .limit(50) at the SELECT layer and processes the bounded batch', async () => {
     // Two halves to this regression test:
     //  1. The route MUST call .limit(50) on the chain — without this, a
@@ -161,7 +161,7 @@ describe('GET /api/bell/cron — LIMIT enforcement', () => {
   });
 });
 
-describe('GET /api/bell/cron — concurrency cap', () => {
+describe('GET /api/lantern/cron — concurrency cap', () => {
   it('never has more than CONCURRENCY (10) workers in flight at once', async () => {
     // The assertions here are bounds, not exact values — `≤10` and `>1`. CI
     // scheduler jitter cannot violate a bound, so this test is structurally
@@ -189,7 +189,7 @@ describe('GET /api/bell/cron — concurrency cap', () => {
   });
 });
 
-describe('GET /api/bell/cron — per-bell failure isolation', () => {
+describe('GET /api/lantern/cron — per-bell failure isolation', () => {
   it('reports failed count without poisoning successful workers', async () => {
     const bells = Array.from({ length: 5 }, (_, i) => makeBell(`bell-${i}`));
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(bells));
@@ -211,7 +211,7 @@ describe('GET /api/bell/cron — per-bell failure isolation', () => {
   });
 });
 
-describe('GET /api/bell/cron — empty due-set', () => {
+describe('GET /api/lantern/cron — empty due-set', () => {
   it('returns 200 with zero counters and never calls escalateBell', async () => {
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub([]));
 

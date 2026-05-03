@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const streamRoute = readFileSync(join(__dirname, '../app/api/shifts/stream/route.ts'), 'utf-8');
+const streamRoute = readFileSync(join(__dirname, '../app/api/whistles/stream/route.ts'), 'utf-8');
 const contextSrc = readFileSync(join(__dirname, '../app/context/AppDataContext.tsx'), 'utf-8');
 const almanacSrc = readFileSync(join(__dirname, '../app/components/ScreenPerch.tsx'), 'utf-8');
 
@@ -48,8 +48,8 @@ describe('AppDataContext SSE wiring', () => {
     expect(contextSrc).toContain('enableShiftStream: (on: boolean) => void');
   });
 
-  it('opens EventSource to /api/shifts/stream', () => {
-    expect(contextSrc).toContain("new EventSource('/api/shifts/stream')");
+  it('opens EventSource to /api/whistles/stream', () => {
+    expect(contextSrc).toContain("new EventSource('/api/whistles/stream')");
   });
 
   it('updates both village and all scopes on stream message', () => {

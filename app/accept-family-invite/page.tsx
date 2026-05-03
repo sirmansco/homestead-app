@@ -41,7 +41,7 @@ function InviteContent() {
   useEffect(() => {
     if (!token) { setTimeout(() => setState('invalid'), 0); return; }
 
-    fetch(`/api/village/invite-family/accept?token=${encodeURIComponent(token)}`)
+    fetch(`/api/circle/invite-family/accept?token=${encodeURIComponent(token)}`)
       .then(res => res.json())
       .then(data => {
         if (data.ok) {

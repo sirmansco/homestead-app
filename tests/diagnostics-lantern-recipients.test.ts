@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // BUG-B regression: when Matthew lit the lantern on prod, no push fired.
-// Logs showed zero `push_batch` lines and zero `/api/bell` POSTs across 7 days,
+// Logs showed zero `push_batch` lines and zero `/api/lantern` POSTs across 7 days,
 // not because delivery was broken but because notify.ts:notifyBellRing returns
 // early at innerCircle.length === 0 without calling pushToUsers — and that
 // early return emits no log line, leaving "did push attempt anything?" invisible.

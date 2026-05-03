@@ -51,7 +51,7 @@ const makeChain = (rows: unknown[]) => {
 };
 
 const makeRequest = (shiftId: string) =>
-  new NextRequest(`http://localhost/api/shifts/${shiftId}/claim`, { method: 'POST' });
+  new NextRequest(`http://localhost/api/whistles/${shiftId}/claim`, { method: 'POST' });
 
 const mockClerk = {
   users: {
@@ -82,7 +82,7 @@ const shift = {
 
 const household = { id: HOUSEHOLD_ID, clerkOrgId: 'org-1', name: 'Test' };
 
-describe('POST /api/shifts/[id]/claim — role gate (L6)', () => {
+describe('POST /api/whistles/[id]/claim — role gate (L6)', () => {
   it('returns 403 when caller is a parent (not caregiver)', async () => {
     vi.mocked(requireUser).mockResolvedValue({ userId: 'clerk-parent' });
 
@@ -95,7 +95,7 @@ describe('POST /api/shifts/[id]/claim — role gate (L6)', () => {
       return makeChain([{ id: PARENT_ID, clerkUserId: 'clerk-parent', householdId: HOUSEHOLD_ID, role: 'parent', villageGroup: 'covey' }]) as ReturnType<typeof db.select>;
     });
 
-    const { POST } = await import('@/app/api/shifts/[id]/claim/route');
+    const { POST } = await import('@/app/api/whistles/[id]/claim/route');
     const res = await POST(makeRequest(SHIFT_ID), { params: Promise.resolve({ id: SHIFT_ID }) });
 
     expect(res.status).toBe(403);
@@ -116,7 +116,7 @@ describe('POST /api/shifts/[id]/claim — role gate (L6)', () => {
     const updateChain = makeChain([{ ...shift, status: 'claimed', claimedByUserId: CAREGIVER_ID }]);
     vi.mocked(db.update).mockReturnValue(updateChain as ReturnType<typeof db.update>);
 
-    const { POST } = await import('@/app/api/shifts/[id]/claim/route');
+    const { POST } = await import('@/app/api/whistles/[id]/claim/route');
     const res = await POST(makeRequest(SHIFT_ID), { params: Promise.resolve({ id: SHIFT_ID }) });
 
     expect(res.status).toBe(200);
@@ -136,7 +136,7 @@ describe('POST /api/shifts/[id]/claim — role gate (L6)', () => {
       return makeChain([{ id: OTHER_CAREGIVER_ID, clerkUserId: 'clerk-other-cg', householdId: HOUSEHOLD_ID, role: 'caregiver', villageGroup: 'field' }]) as ReturnType<typeof db.select>;
     });
 
-    const { POST } = await import('@/app/api/shifts/[id]/claim/route');
+    const { POST } = await import('@/app/api/whistles/[id]/claim/route');
     const res = await POST(makeRequest(SHIFT_ID), { params: Promise.resolve({ id: SHIFT_ID }) });
 
     expect(res.status).toBe(403);
@@ -159,7 +159,7 @@ describe('POST /api/shifts/[id]/claim — role gate (L6)', () => {
     const updateChain = makeChain([{ ...targetedShift, status: 'claimed', claimedByUserId: CAREGIVER_ID }]);
     vi.mocked(db.update).mockReturnValue(updateChain as ReturnType<typeof db.update>);
 
-    const { POST } = await import('@/app/api/shifts/[id]/claim/route');
+    const { POST } = await import('@/app/api/whistles/[id]/claim/route');
     const res = await POST(makeRequest(SHIFT_ID), { params: Promise.resolve({ id: SHIFT_ID }) });
 
     expect(res.status).toBe(200);

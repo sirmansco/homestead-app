@@ -6,7 +6,7 @@ import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { getCopy } from '@/lib/copy';
 
-// GET /api/bell/active
+// GET /api/lantern/active
 // Returns active bells visible to this user — status 'ringing' or 'handled', endsAt in the future.
 // Sorted so ringing bells appear before handled ones.
 //   - parent: bells from own household
