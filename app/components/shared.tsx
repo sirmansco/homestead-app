@@ -122,7 +122,7 @@ export const Icons = {
         stroke={c} strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   ),
-  shifts: (c: string) => (
+  whistles: (c: string) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <rect x="4" y="4" width="16" height="16" rx="2" stroke={c} strokeWidth="1.5" />
       <path d="M8 9h8M8 12.5h8M8 16h5" stroke={c} strokeWidth="1.5" strokeLinecap="round" />
@@ -133,7 +133,7 @@ export const Icons = {
       <path d="M12 5v14M5 12h14" stroke={c} strokeWidth="2" strokeLinecap="round" />
     </svg>
   ),
-  almanac: (c: string) => (
+  perch: (c: string) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M5 4.5h11a2.5 2.5 0 012.5 2.5v12.5H7.5A2.5 2.5 0 015 17V4.5z"
         stroke={c} strokeWidth="1.5" strokeLinejoin="round" />
@@ -202,9 +202,9 @@ export function GButton({ children, variant = 'primary', onClick, disabled, styl
 }
 
 // ── GTabBar ───────────────────────────────────────────────────────────────
-type TabId = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern';
+type TabId = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
 
-export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellCount = 0 }: {
+export function GTabBar({ active = 'perch', onNavigate, role = 'parent', bellCount = 0 }: {
   active?: TabId;
   onNavigate?: (id: TabId) => void;
   role?: 'parent' | 'caregiver';
@@ -213,15 +213,15 @@ export function GTabBar({ active = 'almanac', onNavigate, role = 'parent', bellC
   type Tab = { id: TabId; label: string; icon: (c: string) => React.ReactNode; badge?: number };
 
   const parentTabs: Tab[] = [
-    { id: 'almanac', label: getCopy().schedule.title, icon: Icons.almanac },
+    { id: 'perch',   label: getCopy().schedule.title, icon: Icons.perch },
     { id: 'post',    label: 'Whistle', icon: Icons.post },
     { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
-    { id: 'almanac', label: getCopy().schedule.caregiverTitle, icon: Icons.almanac },
-    { id: 'shifts',  label: getCopy().request.tabLabel, icon: Icons.shifts },
-    { id: 'lantern', label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
-    { id: 'circle',  label: getCopy().circle.caregiverTitle, icon: Icons.village },
+    { id: 'perch',    label: getCopy().schedule.caregiverTitle, icon: Icons.perch },
+    { id: 'whistles', label: getCopy().request.tabLabel, icon: Icons.whistles },
+    { id: 'lantern',  label: getCopy().urgentSignal.tabLabel, icon: Icons.lantern, badge: bellCount > 0 ? bellCount : undefined },
+    { id: 'circle',   label: getCopy().circle.caregiverTitle, icon: Icons.village },
   ];
   const tabs = role === 'caregiver' ? caregiverTabs : parentTabs;
 
