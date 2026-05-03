@@ -61,10 +61,159 @@ Chrome doesn't. Our auto-mount registrar in the `useEffect` runs without any use
 
 ### Implication for the resume plan
 
-The current PR #86 auto-heal logic is correct on Chrome/Android but insufficient on iOS Safari. Step 2's `/push-debug` page is still the right first move (gives us the actual DOMException string to confirm), but we should also be prepared to ship one of two follow-up fixes:
+The current PR #86 auto-heal logic is correct on Chrome/Android but insufficient on iOS Safari. The cheap-fix patches won't satisfy enterprise reliability — they'd just postpone the next incident.
 
-- **Cheap fix:** rewrite `subscribeWithRetry` so the unsubscribe-then-subscribe sequence runs synchronously without an `await` between them inside a button click handler. This addresses Findings 1 and 2 in one go.
-- **Robust fix:** add a "force re-register" button on the lantern page that wraps the entire heal flow in an explicit user-gesture context. Tells the user "tap here if notifications stop working." Addresses all three findings.
+## Enterprise-grade design (the real fix)
+
+The system must be:
+- **Self-healing without user action** wherever the platform allows
+- **User-recoverable in one tap** wherever the platform requires a gesture (iOS)
+- **Observable end-to-end** so any operator can diagnose any user's push state in under 60 seconds
+- **Alerting** so we discover broken push *before* a user reports it
+- **Resilient to env-var corruption** so the next bad-key paste doesn't take down delivery
+- **Graceful in degradation** — when push fails, fall back to email/SMS/in-app banner without losing the message
+- **Documented** in a runbook an on-call engineer can execute cold
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        CLIENT (PushRegistrar)                        │
+│                                                                      │
+│  ┌───────────────────┐         ┌──────────────────────────────┐    │
+│  │ Auto-heal effect  │         │ User-gesture re-register     │    │
+│  │ (Chrome/Android)  │         │ button (iOS, all platforms)  │    │
+│  │ • byte-compare    │         │ • synchronous unsubscribe→   │    │
+│  │ • drop+resubscribe│         │   subscribe in click handler │    │
+│  │ • no await between│         │ • surfaces DOMException to UI│    │
+│  └────────┬──────────┘         └──────────────┬───────────────┘    │
+│           │                                   │                     │
+│           └───────────┬───────────────────────┘                     │
+│                       │                                             │
+│                       ▼                                             │
+│           ┌─────────────────────────┐                              │
+│           │ /api/push/health (POST) │  always — even on failure    │
+│           │ captures state snapshot │  even on permission=denied   │
+│           └────────────┬────────────┘                              │
+└────────────────────────┼────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          SERVER                                      │
+│                                                                      │
+│  push_health table (per-user, last 5 attempts)                      │
+│       │                                                              │
+│       ├─→ /api/diagnostics (operator view, gated to DEV_EMAILS)     │
+│       │                                                              │
+│       ├─→ /api/push/health/:userId (admin view of any user)         │
+│       │                                                              │
+│       └─→ Sentry breadcrumb on any error.name                       │
+│                                                                      │
+│  push_subscriptions                                                  │
+│       │                                                              │
+│       ├─→ ensureVapid() validates keys with try/catch — never throws│
+│       │   (degrade to email fallback, log, alert)                   │
+│       │                                                              │
+│       ├─→ classifyWebPushError() prunes BadJwt/Expired/410/404      │
+│       │                                                              │
+│       └─→ on prune: emit `push_pruned` event for downstream          │
+│                                                                      │
+│  notifyBellRing()                                                    │
+│       │                                                              │
+│       ├─→ try push (existing path)                                  │
+│       │                                                              │
+│       └─→ if delivered === 0 AND eligible > 0:                      │
+│           • email fallback via Resend                               │
+│           • in-app notification banner on next app open             │
+│           • emit `push_undelivered` Sentry alert                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+#### 1. Client: dual-path registrar
+**File:** `app/components/PushRegistrar.tsx`
+
+- **Effect path** (current behaviour, hardened): byte-compares applicationServerKey, auto-heals on mismatch. Sends `pushHealth` POST regardless of outcome — including the silent `Notification.permission !== 'granted'` early-return case (instrument *before* the bail).
+- **Button path** (new): export a `ForceReregisterButton` component used on the lantern page and in settings. Wraps `unsubscribe() → subscribe()` in a single synchronous chain inside the click handler, no awaits between them. iOS Safari's user-gesture context survives. Surfaces any DOMException to the UI so the user sees what happened.
+
+#### 2. Health telemetry endpoint
+**File:** `app/api/push/health/route.ts` (new)
+
+POST accepts: `{permission, hasRegistration, hasSubscription, applicationServerKeyHash, clientVapidFingerprint, lastErrorName, lastErrorMessage, userAgent, isStandalone, appSha}`. Auth-gated via `requireUser`. Inserts into `push_health`, prunes older than last 5 per user. Truncates error messages to 500 chars.
+
+#### 3. push_health table
+**File:** `lib/db/schema.ts` + drizzle migration
+
+Schema per the diagnostic agent's spec — append-only with last-N-per-user retention, indexed on (user_id, created_at desc). Privacy: hash applicationServerKey rather than store raw bytes; store fingerprint of NEXT_PUBLIC_VAPID_PUBLIC_KEY (`first8..last8:length`), not full key.
+
+#### 4. Operator diagnostics surface
+**Files:** `app/api/diagnostics/route.ts` extended; new `app/(authed)/admin/push-health/page.tsx`
+
+- `/api/diagnostics` extended to include `pushHealth` block — most recent record for each household member of the caller.
+- `/admin/push-health` admin-only page (gated to `DEV_EMAILS`) showing a table of all users with their most recent health snapshot, color-coded by status (green = sub registered & matches current key, yellow = permission default, red = error).
+
+#### 5. Server: defensive ensureVapid
+**File:** `lib/push.ts`
+
+Currently `setVapidDetails` throws synchronously inside `ensureVapid()` on bad keys, killing the entire lambda invocation. Wrap in try/catch — on failure, emit Sentry alert `vapid_init_failed` and return false. The route returns `vapid_misconfigured` instead of 500. Push falls back to email/in-app paths.
+
+#### 6. Email fallback for undelivered pushes
+**File:** `lib/notify.ts`
+
+If `notifyBellRing()` results in `delivered === 0 && eligibleInnerCircle.length > 0`, fall through to email via existing Resend integration. The lantern message is delivered; the user just gets it via email instead of push. Emit `push_undelivered` Sentry breadcrumb with the recipient list and reason.
+
+#### 7. In-app banner on next session
+**File:** new `app/components/UndeliveredLanternBanner.tsx`
+
+When a recipient opens the PWA, check for unhandled lanterns from the last 6 hours that targeted them. If any, show a banner. This catches the case where push failed AND email was delayed AND the user happens to open the app — they still see the urgent signal.
+
+#### 8. Alerting
+**File:** `lib/push.ts`, `lib/notify.ts`
+
+Three Sentry alerts (paged on first instance, not just logged):
+- `vapid_init_failed` — keys won't parse, push entirely down
+- `push_undelivered_to_eligible` — push attempted but 0 delivered to ≥1 eligible recipient
+- `push_health_consistent_failures` — same user has 3+ failed `/api/push/health` records in a row
+
+#### 9. Runbook
+**File:** `docs/runbooks/push-notifications.md` (new)
+
+Operator-facing doc covering: how to read `/admin/push-health`, how to force-rotate VAPID keys via Vercel CLI safely (the exact `vercel env rm` + `add` sequence used today), how to interpret each `lastErrorName` in the health table, how to manually trigger a sub cleanup, escalation path when alerts fire.
+
+#### 10. Regression tests
+- Existing tests stay (PRs #85, #86)
+- New: `tests/push-health-instrumentation.test.ts` — registrar always POSTs to `/api/push/health` regardless of outcome
+- New: `tests/notify-email-fallback.test.ts` — when `pushToUsers` returns `delivered:0`, email path fires
+- New: `tests/ensure-vapid-resilience.test.ts` — malformed VAPID env doesn't throw; returns `vapid_misconfigured`
+- New: integration test simulating VAPID rotation → confirms auto-heal fires AND health endpoint records it
+- Pressure test in CI: a "lantern delivery contract" test that simulates 100 subs across iOS/Android/Chrome shapes and verifies the prune+heal+fallback chain converges to 100% notification delivery (push or email)
+
+### Sequencing (ship in this order)
+
+1. **Phase 0 — telemetry first** (1 day): `/api/push/health` endpoint + table + registrar instrumentation. Ship before any other change so we can measure baseline failure rate. Operator visibility before any "fix."
+2. **Phase 1 — diagnose Meredith** (1 hour): with telemetry live, her PWA reinstall produces a `push_health` row. Read it, confirm which of the seven suspects fires, ship the targeted fix.
+3. **Phase 2 — iOS button-path heal** (half day): `ForceReregisterButton` on lantern page + settings, with synchronous unsubscribe-subscribe chain. Tested on real iOS device (TestFlight or live).
+4. **Phase 3 — server resilience** (half day): defensive `ensureVapid`, email fallback, in-app banner.
+5. **Phase 4 — operator surface** (half day): `/admin/push-health` page, runbook, three Sentry alerts.
+6. **Phase 5 — pressure tests** (half day): contract test in CI, simulated rotation drill.
+
+Total: ~3 days of focused work. Each phase ships independently behind no flag — incremental hardening.
+
+### What this buys us at 10K users
+
+- **MTTR for any user's broken push: 60 seconds** (operator opens `/admin/push-health/:user`, reads error, follows runbook).
+- **Zero "tell users to uninstall" instructions** — the iOS button-path heal makes recovery a single in-app tap.
+- **Push-down incidents are visible immediately** via Sentry alerts, not via user complaints.
+- **Notifications never silently drop** — every lantern that's eligible for delivery either pushes, emails, or banners.
+- **VAPID rotation becomes routine** — the runbook codifies today's `vercel env rm/add` sequence, and the system self-heals after rotation.
+
+### Anti-goals (what we are NOT doing)
+
+- Building a custom push relay or replacing `web-push`. Off the shelf is fine.
+- Migrating to native iOS app for push. PWA push is sufficient with the above hardening.
+- Per-user retry queues. Apple/FCM already retry; layering our own creates double-delivery risk.
+- "Reinstall the PWA" as a documented user instruction. That's a regression.
 
 ## Resume plan (when ready to pick this back up)
 
