@@ -152,29 +152,34 @@ describe('L17 push error classification', () => {
     expect(result.errors[0]).toMatch(/server_5xx/);
   });
 
-  // Apple push returns 403 + {"reason":"BadJwtToken"} when the VAPID JWT is malformed.
-  // The subscription is still valid — must NOT be pruned (regression: was deleting valid subs).
-  it('403 + BadJwtToken body → retry (jwt_error), row NOT pruned', async () => {
+  // Apple push returns 403 + {"reason":"BadJwtToken"} when the JWT is signed against
+  // a key the subscription wasn't created with — i.e. after a VAPID key rotation.
+  // We prune the stale sub; the client (PushRegistrar) auto-resubscribes against the
+  // current public key on next PWA open, so a pruned sub is replaced within minutes.
+  // Earlier behavior (retry-don't-prune) was correct WHEN the server occasionally sent
+  // malformed JWTs, but ensureVapid() now validates keys before signing — every
+  // BadJwtToken now means key-mismatch, which is permanent until resubscription.
+  it('403 + BadJwtToken body → prune (key rotation orphan)', async () => {
     mockSendNotification.mockRejectedValueOnce(makeWpe(403, '{"reason":"BadJwtToken"}'));
     const result = await pushToUser('user-1', PAYLOAD);
-    expect(result.failed).toBe(1);
-    expect(result.stale).toBe(0);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(result.stale).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(mockDelete).toHaveBeenCalled();
     expect(result.errors[0]).toMatch(/jwt_error/);
     const log = lastPushBatchLog();
-    expect(log?.dispositions.retry).toBe(1);
-    expect(log?.dispositions.prune).toBe(0);
+    expect(log?.dispositions.prune).toBe(1);
+    expect(log?.dispositions.retry).toBe(0);
   });
 
-  it('403 + ExpiredJwtToken body → retry (jwt_error), row NOT pruned', async () => {
+  it('403 + ExpiredJwtToken body → prune (key rotation orphan)', async () => {
     mockSendNotification.mockRejectedValueOnce(makeWpe(403, '{"reason":"ExpiredJwtToken"}'));
     const result = await pushToUser('user-1', PAYLOAD);
-    expect(result.failed).toBe(1);
-    expect(result.stale).toBe(0);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(result.stale).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(mockDelete).toHaveBeenCalled();
     const log = lastPushBatchLog();
-    expect(log?.dispositions.retry).toBe(1);
-    expect(log?.dispositions.prune).toBe(0);
+    expect(log?.dispositions.prune).toBe(1);
+    expect(log?.dispositions.retry).toBe(0);
   });
 
   it('418 → unknown: failed++, row NOT pruned, error tagged http_418', async () => {
