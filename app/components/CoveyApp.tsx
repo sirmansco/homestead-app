@@ -4,8 +4,8 @@ import { useUser } from '@clerk/nextjs';
 import { G, SCRIM } from './tokens';
 import { GTabBar } from './shared';
 import { ScreenPost } from './ScreenPost';
-import { ScreenShifts } from './ScreenShifts';
-import { ScreenAlmanac } from './ScreenAlmanac';
+import { ScreenWhistles } from './ScreenWhistles';
+import { ScreenPerch } from './ScreenPerch';
 import { ScreenLantern } from './ScreenLantern';
 import { ScreenCircle } from './ScreenCircle';
 import { ScreenSettings } from './ScreenSettings';
@@ -15,6 +15,9 @@ import { AppDataProvider, useAppData } from '@/app/context/AppDataContext';
 import { InstallHint } from './InstallHint';
 import { getCopy } from '@/lib/copy';
 
+// Espresso brown used for the desktop phone-frame chrome and Dynamic Island notch.
+const FRAME_BG = '#1a120b';
+
 // Role switcher — enabled for emails in NEXT_PUBLIC_DEV_EMAILS (comma-separated).
 // Changes only client-side UI; server APIs still enforce real role via DB.
 const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
@@ -22,13 +25,15 @@ const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);
 
-type TabId = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern' | 'settings' | 'diagnostics';
-type LegacyTabId = TabId | 'village' | 'bell';
-type Role = 'parent' | 'caregiver';
+type TabId = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern' | 'settings' | 'diagnostics';
+type LegacyTabId = TabId | 'village' | 'bell' | 'almanac' | 'shifts';
+type Role = 'keeper' | 'watcher';
 
 function normalizeTabId(id: LegacyTabId): TabId {
   if (id === 'village') return 'circle';
   if (id === 'bell') return 'lantern';
+  if (id === 'almanac') return 'perch';
+  if (id === 'shifts') return 'whistles';
   return id;
 }
 
@@ -90,7 +95,7 @@ function RoleSwitcherDesktop({ role, onChange }: { role: Role; onChange: (r: Rol
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 6 }}>Role</div>
       <div style={{ display: 'flex', gap: 4 }}>
-        {(['parent', 'caregiver'] as Role[]).map(r => (
+        {(['keeper', 'watcher'] as Role[]).map(r => (
           <button key={r} onClick={() => onChange(r)} style={{
             flex: 1, padding: '8px 6px', borderRadius: 6,
             background: role === r ? 'var(--bg)' : 'transparent',
@@ -124,7 +129,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
           opacity: 0.7,
         }}
       >
-        Dev · {role === 'parent' ? 'P' : 'C'}
+        Dev · {role === 'keeper' ? 'K' : 'W'}
       </button>
       {open && (
         <div
@@ -143,7 +148,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginBottom: 16 }}>
               Demo only — try both perspectives.
             </div>
-            {(['parent', 'caregiver'] as Role[]).map(r => (
+            {(['keeper', 'watcher'] as Role[]).map(r => (
               <button key={r} onClick={() => { onChange(r); setOpen(false); }} style={{
                 display: 'block', width: '100%', marginBottom: 8,
                 padding: '14px 16px', textAlign: 'left',
@@ -160,7 +165,7 @@ function RoleSwitcherMobile({ role, onChange }: { role: Role; onChange: (r: Role
                   fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
                   color: role === r ? G.muted : G.muted, marginTop: 2,
                 }}>
-                  {r === 'parent' ? `Post needs · manage ${getCopy().circle.title.toLowerCase()}` : `Cover ${getCopy().request.tabLabel.toLowerCase()} · answer ${getCopy().urgentSignal.noun.toLowerCase()}s`}
+                  {r === 'keeper' ? `Post needs · manage ${getCopy().circle.title.toLowerCase()}` : `Cover ${getCopy().request.tabLabel.toLowerCase()} · answer ${getCopy().urgentSignal.noun.toLowerCase()}s`}
                 </div>
               </button>
             ))}
@@ -183,7 +188,7 @@ export function CoveyApp() {
 }
 
 // Tab screens that stay mounted permanently for zero-cost switching
-const TAB_SCREENS: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
+const TAB_SCREENS: TabId[] = ['perch', 'whistles', 'lantern', 'circle'];
 
 function CoveyInner() {
   const { user } = useUser();
@@ -198,9 +203,9 @@ function CoveyInner() {
   const [role, setRole] = useState<Role>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('hs.role') as Role | null;
-      if (saved === 'parent' || saved === 'caregiver') return saved;
+      if (saved === 'keeper' || saved === 'watcher') return saved;
     }
-    return 'parent';
+    return 'keeper';
   });
 
   // When the active household changes (Karson switches between families),
@@ -214,7 +219,7 @@ function CoveyInner() {
     if (r) setTimeout(() => setRole(r), 0);
   }, [active?.id, rolesByHousehold, canSwitchRole]);
 
-  const [screen, setScreen] = useState<TabId>('almanac');
+  const [screen, setScreen] = useState<TabId>('perch');
   const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const isMobile = useIsMobile();
@@ -242,7 +247,7 @@ function CoveyInner() {
     // This runs on app open so tapping a notification lands on the right screen.
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') as LegacyTabId | null;
-    const validTabs: LegacyTabId[] = ['almanac', 'post', 'circle', 'village', 'shifts', 'lantern', 'bell', 'settings', 'diagnostics'];
+    const validTabs: LegacyTabId[] = ['perch', 'post', 'circle', 'village', 'whistles', 'lantern', 'bell', 'almanac', 'shifts', 'settings', 'diagnostics'];
     if (tabParam && validTabs.includes(tabParam)) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setScreen(normalizeTabId(tabParam));
@@ -266,24 +271,25 @@ function CoveyInner() {
     if (id === 'lantern') setBellCompose(false);
     setScreen(id);
     // Force-refresh bell state immediately so badge and lantern screen are in sync
-    if (id === 'lantern' || id === 'almanac') refreshBell();
+    if (id === 'lantern' || id === 'perch') refreshBell();
   }, [refreshBell]);
 
   const clockTime = useLiveClock();
 
   // Which tab pill to highlight.
-  // For caregivers: bell tab exists, so highlight it. For parents: bell maps to almanac.
-  // Settings maps to village for both roles.
-  type NavTab = 'almanac' | 'post' | 'circle' | 'shifts' | 'lantern';
+  // For watchers: lantern tab exists, so highlight it. For keepers: lantern maps to perch.
+  // Settings maps to circle for both roles.
+  type NavTab = 'perch' | 'post' | 'circle' | 'whistles' | 'lantern';
   const activeTab: NavTab =
-    screen === 'lantern' ? (role === 'caregiver' ? 'lantern' : 'almanac') :
+    screen === 'lantern' ? (role === 'watcher' ? 'lantern' : 'perch') :
+    screen === 'perch' && role === 'watcher' ? 'whistles' :
     (screen === 'settings' || screen === 'diagnostics') ? 'circle' :
     screen as NavTab;
 
   useEffect(() => {
-    const parentMap:    TabId[] = ['almanac', 'post',   'circle'];
-    const caregiverMap: TabId[] = ['almanac', 'shifts', 'lantern', 'circle'];
-    const map = role === 'caregiver' ? caregiverMap : parentMap;
+    const parentMap:    TabId[] = ['perch',    'post',    'circle'];
+    const caregiverMap: TabId[] = ['whistles', 'lantern', 'circle'];
+    const map = role === 'watcher' ? caregiverMap : parentMap;
     const handler = (e: KeyboardEvent) => {
       const n = parseInt(e.key);
       if (n >= 1 && n <= map.length) navigate(map[n - 1]);
@@ -296,12 +302,12 @@ function CoveyInner() {
 
   const handlePost = useCallback((msg?: string) => {
     setToast({ msg: msg || `Posted to ${getCopy().circle.title}`, key: Date.now() });
-    setScreen('almanac');
+    setScreen('perch');
   }, []);
 
   const handleRoleChange = useCallback((r: Role) => {
     setRole(r);
-    setScreen('almanac');
+    setScreen(r === 'watcher' ? 'whistles' : 'perch');
   }, []);
 
   // Keep-alive screen layout: all tab-bar screens mounted simultaneously,
@@ -313,8 +319,8 @@ function CoveyInner() {
           position: 'absolute', inset: 0,
           display: screen === id ? 'block' : 'none',
         }}>
-          {id === 'almanac' && (
-            <ScreenAlmanac
+          {id === 'perch' && (
+            <ScreenPerch
               role={role} isDualRole={isDualRole}
               onRing={handleRing}
               onViewBell={() => navigate('lantern')}
@@ -322,12 +328,12 @@ function CoveyInner() {
               onVillage={() => setScreen('circle')}
             />
           )}
-          {id === 'shifts' && <ScreenShifts onViewLantern={() => navigate('lantern')} />}
+          {id === 'whistles' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
           {id === 'lantern' && (
             <ScreenLantern
               initialCompose={bellCompose}
               role={role}
-              onBack={() => setScreen('almanac')}
+              onBack={() => setScreen('perch')}
               onPost={() => setScreen('post')}
             />
           )}
@@ -337,7 +343,7 @@ function CoveyInner() {
       {/* Modal/nav screens — rendered on demand */}
       {screen === 'post' && (
         <div style={{ position: 'absolute', inset: 0 }}>
-          <ScreenPost onCancel={() => setScreen('almanac')} onPost={handlePost} onRing={handleRing} />
+          <ScreenPost onCancel={() => setScreen('perch')} onPost={handlePost} onRing={handleRing} />
         </div>
       )}
       {screen === 'settings' && (
@@ -381,7 +387,7 @@ function CoveyInner() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#1a120b', gap: 32, padding: '24px 16px', flexWrap: 'wrap',
+      background: FRAME_BG, gap: 32, padding: '24px 16px', flexWrap: 'wrap',
     }}>
       <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{
@@ -390,7 +396,7 @@ function CoveyInner() {
         }}>{getCopy().brand.name}</div>
         {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
-        {(role === 'parent'
+        {(role === 'keeper'
           ? [['1', getCopy().schedule.title], ['2', 'Post'], ['3', getCopy().circle.title]]
           : [['1', 'Open'], ['2', 'Schedule'], ['3', getCopy().urgentSignal.noun], ['4', getCopy().circle.title]]
         ).map(([k, l]) => (
@@ -415,7 +421,7 @@ function CoveyInner() {
       }}>
         <div style={{
           position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
-          width: 112, height: 33, borderRadius: 22, background: '#1a120b', zIndex: 55,
+          width: 112, height: 33, borderRadius: 22, background: FRAME_BG, zIndex: 55,
         }} />
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,

@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import path from 'path';
 
-// Source-grep: confirm rate-limit wiring in village/invite-family/route.ts.
+// Source-grep: confirm rate-limit wiring in circle/invite-family/route.ts.
 
 const src = readFileSync(
-  path.join(process.cwd(), 'app/api/village/invite-family/route.ts'),
+  path.join(process.cwd(), 'app/api/circle/invite-family/route.ts'),
   'utf8',
 );
 
-describe('village/invite-family/route.ts — L25: rate limit', () => {
+describe('circle/invite-family/route.ts — L25: rate limit', () => {
   it('imports rateLimit and rateLimitResponse', () => {
     expect(src).toMatch(/rateLimit.*rateLimitResponse|rateLimitResponse.*rateLimit/);
   });

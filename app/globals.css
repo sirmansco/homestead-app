@@ -77,9 +77,22 @@
 /* Prevent Safari auto-zoom on focus (requires font-size >= 16px) */
 input, textarea, select { font-size: max(16px, 1rem); }
 
+html {
+  min-height: -webkit-fill-available;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
+  min-height: -webkit-fill-available;
+  min-height: 100%;
   background: var(--bg);
   font-family: Inter, -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Safe-area bottom padding: hardcoded 34px for home-indicator iPhones */
+.safe-area-pb {
+  padding-bottom: constant(safe-area-inset-bottom, 34px);
+  padding-bottom: env(safe-area-inset-bottom, 34px);
 }

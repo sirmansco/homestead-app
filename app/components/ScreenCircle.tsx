@@ -18,7 +18,7 @@ async function uploadPhoto(file: File, targetType: 'user' | 'kid', targetId: str
 }
 
 type VillageGroup = 'covey' | 'field';
-type AppRole = 'parent' | 'caregiver';
+type AppRole = 'keeper' | 'watcher';
 
 type Adult = {
   id: string;
@@ -94,6 +94,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   const [localPhoto, setLocalPhoto] = useState<string | null>(initialPhoto);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -169,7 +170,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
             )}
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 10, color: G.muted, marginTop: 1 }}>
-            {role === 'parent' ? getCopy().roles.keeper.singular.toLowerCase() : role === 'caregiver' ? getCopy().roles.watcher.singular.toLowerCase() : role}
+            {role === 'keeper' ? getCopy().roles.keeper.singular.toLowerCase() : role === 'watcher' ? getCopy().roles.watcher.singular.toLowerCase() : role}
           </div>
         </div>
         {((villageGroup && onChangeGroup) || (onToggleRole && appRole) || onDelete) && (
@@ -192,25 +193,27 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
               </button>
             )}
             {onToggleRole && appRole && (
-              <button onClick={onToggleRole} title={`Switch to ${appRole === 'parent' ? getCopy().roles.watcher.singular : getCopy().roles.keeper.singular}`} style={{
-                background: appRole === 'parent' ? G.green : 'transparent',
-                color: appRole === 'parent' ? G.bg : G.ink,
+              <button onClick={onToggleRole} title={`Switch to ${appRole === 'keeper' ? getCopy().roles.watcher.singular : getCopy().roles.keeper.singular}`} style={{
+                background: appRole === 'keeper' ? G.green : 'transparent',
+                color: appRole === 'keeper' ? G.bg : G.ink,
                 border: `1px solid ${G.green}`, borderRadius: 100,
                 padding: '3px 7px', cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
                 textTransform: 'uppercase',
-              }}>{appRole === 'parent' ? getCopy().roles.keeper.singular : getCopy().roles.watcher.singular}</button>
+              }}>{appRole === 'keeper' ? getCopy().roles.keeper.singular : getCopy().roles.watcher.singular}</button>
             )}
             {onDelete && (
               confirmingDelete ? (
                 <>
                   <button
-                    onClick={() => { setConfirmingDelete(false); onDelete(); }}
+                    disabled={deleting}
+                    onClick={() => { setConfirmingDelete(false); setDeleting(true); onDelete(); }}
                     style={{
                       padding: '3px 8px', background: G.green, color: G.bg,
                       border: 'none', borderRadius: 100,
                       fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1,
-                      textTransform: 'uppercase', cursor: 'pointer',
+                      textTransform: 'uppercase', cursor: deleting ? 'wait' : 'pointer',
+                      opacity: deleting ? 0.6 : 1,
                     }}>Remove</button>
                   <button
                     onClick={() => setConfirmingDelete(false)}
@@ -248,7 +251,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: G.bg, width: '100%', maxWidth: 480,
-            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
             borderTop: `1px solid ${G.hairline}`,
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
@@ -305,7 +308,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const [kind, setKind] = useState<'adult' | 'kid'>(caregiverMode ? 'adult' : 'adult');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<AppRole>('caregiver');
+  const [role, setRole] = useState<AppRole>('watcher');
   const [villageGroup, setVillageGroup] = useState<VillageGroup>('covey');
   const [birthday, setBirthday] = useState('');
   const [busy, setBusy] = useState(false);
@@ -315,7 +318,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const sendInvite = async (mode: 'email' | 'link') => {
     setBusy(true); setError(null); setLinkUrl(null);
     try {
-      const endpoint = caregiverMode ? '/api/village/invite-family' : '/api/village/invite';
+      const endpoint = caregiverMode ? '/api/circle/invite-family' : '/api/circle/invite';
       const payload = caregiverMode
         ? { parentName: name, parentEmail: email, villageGroup, mode }
         : { name, email, role, villageGroup, mode };
@@ -342,7 +345,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
   const addKid = async () => {
     setBusy(true); setError(null);
     try {
-      const res = await fetch('/api/village', {
+      const res = await fetch('/api/circle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'kid', name, birthday: birthday || null }),
@@ -374,7 +377,7 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: G.bg, width: '100%', maxWidth: 480,
-        borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+        borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
         borderTop: `1px solid ${G.hairline}`, maxHeight: '85vh', overflowY: 'auto',
       }}>
         <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
@@ -427,8 +430,8 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
                 <label>
                   <div style={labelStyle}>Role</div>
                   <select value={role} onChange={e => setRole(e.target.value as AppRole)} style={inputStyle}>
-                    <option value="parent">{getCopy().roles.keeper.singular}</option>
-                    <option value="caregiver">{getCopy().roles.watcher.singular}</option>
+                    <option value="keeper">{getCopy().roles.keeper.singular}</option>
+                    <option value="watcher">{getCopy().roles.watcher.singular}</option>
                   </select>
                 </label>
                 <label>
@@ -529,8 +532,8 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
 }) {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const parents = family.adults.filter(a => a.role === 'parent');
-  const caregivers = family.adults.filter(a => a.role === 'caregiver');
+  const parents = family.adults.filter(a => a.role === 'keeper');
+  const caregivers = family.adults.filter(a => a.role === 'watcher');
   return (
     <div style={{
       background: G.paper, border: `1px solid ${G.hairline2}`,
@@ -631,7 +634,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const load = useCallback(async () => {
     try {
       const [villageRes, householdRes] = await Promise.all([
-        fetch('/api/village?scope=all'),
+        fetch('/api/circle?scope=all'),
         fetch('/api/household'),
       ]);
       if (!villageRes.ok) {
@@ -725,7 +728,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 family={f}
                 myUserId={myRow?.id}
                 onLeave={myRow ? async () => {
-                  await fetch('/api/village/leave', { method: 'POST' });
+                  await fetch('/api/circle/leave', { method: 'POST' });
                   await load();
                 } : undefined}
               />
@@ -753,20 +756,20 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
 
 // ── Parent view ───────────────────────────────────────────────────────────
 
-export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'parent' | 'caregiver'; onOpenSettings?: () => void }) {
+export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keeper' | 'watcher'; onOpenSettings?: () => void }) {
   const { refresh: refreshHousehold } = useHousehold();
   const [adults, setAdults] = useState<Adult[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
-  const [myRole, setMyRole] = useState<AppRole>(roleProp ?? 'caregiver');
+  const myRole: AppRole = roleProp ?? 'keeper';
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [villageRes, meRes] = await Promise.all([
-        fetch('/api/village', { signal }),
+        fetch('/api/circle', { signal }),
         fetch('/api/household', { signal }),
       ]);
       if (!villageRes.ok) {
@@ -779,8 +782,6 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
       }
       if (meRes.ok) {
         const me = await meRes.json();
-        // Only use API role if no prop was passed (don't override dev switcher)
-        if (me.user?.role && !roleProp) setMyRole(me.user.role);
         if (me.user?.id) setMyUserId(me.user.id);
       }
     } catch (err) {
@@ -857,7 +858,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
   }, [load]);
   const removeKid = useCallback(async (id: string) => {
     setKids(prev => prev.filter(k => k.id !== id));
-    await fetch(`/api/village?type=kid&id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/circle?type=kid&id=${id}`, { method: 'DELETE' });
     load();
   }, [load]);
 
@@ -865,7 +866,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  if (!loading && myRole === 'caregiver') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
+  if (!loading && myRole === 'watcher') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
 
   const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
   const total = adults.length + kids.length;
@@ -876,7 +877,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         leftAction={<HouseholdSwitcher />}
         rightAction={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {myRole === 'parent' && (
+            {myRole === 'keeper' && (
               <button onClick={() => { setNewName(''); setRenaming(true); }} style={{
                 background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
                 fontFamily: G.sans, fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase',
@@ -944,7 +945,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
               Invite family and {getCopy().roles.watcher.plural.toLowerCase()} who help with the {getCopy().circle.kidLabel.toLowerCase()}s.
             </div>
-            {myRole === 'parent' && (
+            {myRole === 'keeper' && (
               <button onClick={() => setShowInvite(true)} style={btnStyle}>Invite or add</button>
             )}
           </div>
@@ -977,7 +978,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {members.map(m => {
                           const isMe = myUserId === m.id;
-                          const canManage = myRole === 'parent' && !isMe;
+                          const canManage = myRole === 'keeper' && !isMe;
                           return (
                             <MemberCard
                               key={m.id}
@@ -985,7 +986,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
                               role={m.role}
                               isMe={isMe}
                               appRole={canManage ? m.role : undefined}
-                              onToggleRole={canManage ? () => changeRole(m.id, m.role === 'parent' ? 'caregiver' : 'parent') : undefined}
+                              onToggleRole={canManage ? () => changeRole(m.id, m.role === 'keeper' ? 'watcher' : 'keeper') : undefined}
                               villageGroup={canManage ? m.villageGroup : undefined}
                               onChangeGroup={canManage ? (vg) => changeGroup(m.id, vg) : undefined}
                               onDelete={canManage ? () => removeAdult(m.id) : undefined}
@@ -1011,7 +1012,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
                     key={k.id}
                     name={k.name}
                     role={k.birthday ? `born ${k.birthday}` : 'child'}
-                    onDelete={myRole === 'parent' ? () => removeKid(k.id) : undefined}
+                    onDelete={myRole === 'keeper' ? () => removeKid(k.id) : undefined}
                     photoUrl={k.photoUrl}
                     targetType="kid"
                     targetId={k.id}
@@ -1028,7 +1029,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
               <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 17, color: G.ink, lineHeight: 1.3 }}>
                 &ldquo;{getCopy().circle.quote}&rdquo;
               </div>
-              {myRole === 'parent' && (
+              {myRole === 'keeper' && (
                 <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>
                   Invite or add
                 </button>
@@ -1047,12 +1048,12 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'paren
         }} onClick={() => setRenaming(false)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: G.bg, width: '100%', maxWidth: 480,
-            borderRadius: '18px 18px 0 0', padding: '20px 24px 32px',
+            borderRadius: '18px 18px 0 0', padding: '20px 24px calc(32px + env(safe-area-inset-bottom, 0px))',
             borderTop: `1px solid ${G.ink}`,
           }}>
             <div style={{ width: 36, height: 4, background: G.hairline2, borderRadius: 4, margin: '0 auto 16px' }} />
             <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink, marginBottom: 14 }}>
-              Rename Covey
+              Rename {getCopy().brand.name}
             </div>
             <input
               value={newName}

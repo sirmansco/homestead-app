@@ -107,7 +107,7 @@ export async function GET() {
           // Remove after B4 backfill confirms zero inner_circle rows.
           const innerCircle = await db.select({ id: users.id }).from(users).where(and(
             eq(users.householdId, household.id),
-            eq(users.role, 'caregiver'),
+            eq(users.role, 'watcher'),
             inArray(users.villageGroup, ['covey', 'inner_circle']),
             eq(users.notifyBellRinging, true),
           ));

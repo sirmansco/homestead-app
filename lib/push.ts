@@ -6,25 +6,22 @@ import { pushSubscriptions, users } from '@/lib/db/schema';
 // Lazy VAPID init — called at runtime, not module evaluation.
 // Calling setVapidDetails at the top level causes build failures because
 // VAPID env vars are not available during Next.js "Collecting page data".
-let vapidInitialised = false;
-let vapidMissing: string[] | null = null;
-
-function ensureVapid() {
-  if (vapidInitialised || vapidMissing) return;
+// Note: deliberately NOT cached — setVapidDetails is cheap and caching
+// caused warm lambdas to keep a stale VAPID_SUBJECT after env-var changes.
+function ensureVapid(): boolean {
   const missing = (
     ['VAPID_SUBJECT', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const
   ).filter(k => !process.env[k]);
   if (missing.length > 0) {
-    vapidMissing = missing;
     console.error(`[push:vapid] missing env vars: ${missing.join(', ')} — push delivery disabled`);
-    return;
+    return false;
   }
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT!,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );
-  vapidInitialised = true;
+  return true;
 }
 
 type PushPayload = {
@@ -45,15 +42,25 @@ export type PushResult = {
 
 type WebPushDisposition =
   | { kind: 'prune'; reason: 'gone_404' | 'gone_410' | 'auth_403' | 'payload_413' }
-  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' }
+  | { kind: 'retry'; reason: 'ratelimit_429' | 'server_5xx' | 'jwt_error' }
   | { kind: 'unknown'; reason: string };
 
+// Apple push (web.push.apple.com) returns HTTP 403 with body {"reason":"BadJwtToken"}
+// or {"reason":"ExpiredJwtToken"} when the VAPID JWT is malformed — the subscription
+// itself is still valid. Only FCM/Mozilla 403 means the endpoint is permanently invalid.
+// Pruning on Apple JWT errors silently deletes valid subscriptions.
 function classifyWebPushError(err: unknown): WebPushDisposition {
   const wpe = err as WebPushError;
   const code = wpe?.statusCode;
   if (code === 404) return { kind: 'prune', reason: 'gone_404' };
   if (code === 410) return { kind: 'prune', reason: 'gone_410' };
-  if (code === 403) return { kind: 'prune', reason: 'auth_403' };
+  if (code === 403) {
+    const body = typeof wpe?.body === 'string' ? wpe.body : JSON.stringify(wpe?.body ?? '');
+    if (body.includes('BadJwtToken') || body.includes('ExpiredJwtToken')) {
+      return { kind: 'retry', reason: 'jwt_error' };
+    }
+    return { kind: 'prune', reason: 'auth_403' };
+  }
   if (code === 413) return { kind: 'prune', reason: 'payload_413' };
   if (code === 429) return { kind: 'retry', reason: 'ratelimit_429' };
   if (typeof code === 'number' && code >= 500 && code < 600) return { kind: 'retry', reason: 'server_5xx' };
@@ -70,8 +77,7 @@ async function sendBatch(
   payload: PushPayload,
   context: string,
 ): Promise<PushResult> {
-  ensureVapid();
-  if (vapidMissing) {
+  if (!ensureVapid()) {
     return { attempted: subs.length, delivered: 0, stale: 0, failed: subs.length, errors: [], reason: 'vapid_not_configured' };
   }
   const result: PushResult = { attempted: subs.length, delivered: 0, stale: 0, failed: 0, errors: [] };

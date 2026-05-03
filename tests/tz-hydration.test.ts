@@ -35,7 +35,7 @@ describe('localDateKey', () => {
 
 describe('fmtWhen grouping stability', () => {
   it('same shift key is produced regardless of when fmtWhen is called within a calendar day', () => {
-    // The group key in ScreenShifts.tsx uses startsAt.slice(0, 10) — pure ISO date.
+    // The group key in ScreenWhistles.tsx uses startsAt.slice(0, 10) — pure ISO date.
     // Verify it matches localDateKey output so groups don't split across a midnight call.
     const iso = '2026-05-02T15:00:00.000Z';
     const sliceKey = iso.slice(0, 10); // '2026-05-02'

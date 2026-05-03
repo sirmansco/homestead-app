@@ -38,7 +38,7 @@ const USER_ROW = {
   householdId: HH_ID,
   email: 'alice@example.com',
   name: 'Alice Smith',
-  role: 'parent',
+  role: 'keeper',
   villageGroup: 'covey',
 };
 

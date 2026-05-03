@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
-// L1 regression: GET /api/village/invite-family/accept must not mutate state.
+// L1 regression: GET /api/circle/invite-family/accept must not mutate state.
 // The old code called db.update(familyInvites).set({ status: 'accepted' }) inside
 // the GET handler — any anonymous requester (crawler, link preview bot, duplicate
 // browser load) would consume the token and leave the real user with a "used" error.
@@ -57,12 +57,12 @@ const pendingInvite = {
   fromName: 'Bob',
 };
 
-describe('GET /api/village/invite-family/accept — side-effect-free', () => {
+describe('GET /api/circle/invite-family/accept — side-effect-free', () => {
   it('returns invite metadata without calling db.update', async () => {
     vi.mocked(db.select).mockReturnValue(makeSelectChain([pendingInvite]) as ReturnType<typeof db.select>);
 
-    const { GET } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept?token=abc123');
+    const { GET } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept?token=abc123');
     const res = await GET(req);
     const body = await res.json();
 
@@ -76,8 +76,8 @@ describe('GET /api/village/invite-family/accept — side-effect-free', () => {
   it('returns 410 for used invite without calling db.update', async () => {
     vi.mocked(db.select).mockReturnValue(makeSelectChain([{ ...pendingInvite, status: 'accepted' }]) as ReturnType<typeof db.select>);
 
-    const { GET } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept?token=used');
+    const { GET } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept?token=used');
     const res = await GET(req);
 
     expect(res.status).toBe(410);
@@ -87,8 +87,8 @@ describe('GET /api/village/invite-family/accept — side-effect-free', () => {
   it('returns 404 for unknown token without calling db.update', async () => {
     vi.mocked(db.select).mockReturnValue(makeSelectChain([]) as ReturnType<typeof db.select>);
 
-    const { GET } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept?token=unknown');
+    const { GET } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept?token=unknown');
     const res = await GET(req);
 
     expect(res.status).toBe(404);
@@ -96,12 +96,12 @@ describe('GET /api/village/invite-family/accept — side-effect-free', () => {
   });
 });
 
-describe('POST /api/village/invite-family/accept — authenticated consume', () => {
+describe('POST /api/circle/invite-family/accept — authenticated consume', () => {
   it('requires auth — returns 401/403 if not signed in', async () => {
     vi.mocked(requireUser).mockRejectedValue(new Error('Not signed in'));
 
-    const { POST } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept', {
+    const { POST } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept', {
       method: 'POST',
       body: JSON.stringify({ token: 'abc123' }),
       headers: { 'Content-Type': 'application/json' },
@@ -118,8 +118,8 @@ describe('POST /api/village/invite-family/accept — authenticated consume', () 
     const updateChain = makeUpdateChain([{ ...pendingInvite, status: 'accepted' }]);
     vi.mocked(db.update).mockReturnValue(updateChain as ReturnType<typeof db.update>);
 
-    const { POST } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept', {
+    const { POST } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept', {
       method: 'POST',
       body: JSON.stringify({ token: 'abc123' }),
       headers: { 'Content-Type': 'application/json' },
@@ -136,8 +136,8 @@ describe('POST /api/village/invite-family/accept — authenticated consume', () 
     vi.mocked(requireUser).mockResolvedValue({ userId: 'clerk-1' });
     vi.mocked(db.select).mockReturnValue(makeSelectChain([{ ...pendingInvite, status: 'accepted' }]) as ReturnType<typeof db.select>);
 
-    const { POST } = await import('@/app/api/village/invite-family/accept/route');
-    const req = new NextRequest('http://localhost/api/village/invite-family/accept', {
+    const { POST } = await import('@/app/api/circle/invite-family/accept/route');
+    const req = new NextRequest('http://localhost/api/circle/invite-family/accept', {
       method: 'POST',
       body: JSON.stringify({ token: 'abc123' }),
       headers: { 'Content-Type': 'application/json' },

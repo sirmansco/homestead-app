@@ -15,12 +15,12 @@ type NotifPrefs = {
   notifyBellResponse: boolean;
 };
 
-const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'parent' | 'caregiver' | 'both' }[] = [
-  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'caregiver' },
-  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by caregiver`, forRole: 'parent' },
-  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'parent' },
-  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'caregiver' },
-  { key: 'notifyBellResponse', label: `Caregiver responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'parent' },
+const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'keeper' | 'watcher' | 'both' }[] = [
+  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'watcher' },
+  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by watcher`, forRole: 'keeper' },
+  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'keeper' },
+  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
+  { key: 'notifyBellResponse', label: `Watcher responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
 ];
 
 type Theme = 'system' | 'light' | 'dark';
@@ -41,12 +41,12 @@ function applyTheme(t: Theme) {
   } catch { /* ignore private-mode errors */ }
 }
 
-export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: () => void; role?: 'parent' | 'caregiver'; onOpenDiagnostics?: () => void }) {
+export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: () => void; role?: 'keeper' | 'watcher'; onOpenDiagnostics?: () => void }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [deletingState, setDeletingState] = useState<'idle' | 'confirming' | 'deleting' | 'done' | 'error'>('idle');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
-  const [exportFilename, setExportFilename] = useState<string>('covey-export.json');
+  const [exportFilename, setExportFilename] = useState<string>(`${getCopy().brand.name.toLowerCase()}-export.json`);
   const [exportingState, setExportingState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -68,6 +68,19 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
     return Notification.permission as PermState;
   });
+
+  // On mount: if browser says "granted", verify there's an actual SW push
+  // subscription — browser permission alone doesn't mean server registration
+  // succeeded. No subscription → show granted_unregistered so the user can retry.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    navigator.serviceWorker.ready.then(reg =>
+      reg.pushManager.getSubscription().then(sub => {
+        if (!sub) setPermState('granted_unregistered');
+      })
+    ).catch(() => { /* ignore — non-critical */ });
+  }, []);
 
   async function handleEnableNotifications() {
     setPermState('requesting');
@@ -143,7 +156,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       setExportUrl(url);
-      setExportFilename(`covey-export-${Date.now()}.json`);
+      setExportFilename(`${getCopy().brand.name.toLowerCase()}-export-${Date.now()}.json`);
       setExportingState('idle');
     } catch (e) {
       setExportingState('error');
@@ -177,7 +190,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     try {
       // Session-authenticated call — server generates token and redirects to token URL.
       // We follow the redirect and capture the final URL rather than the ICS body.
-      const res = await fetch('/api/shifts/ical', { redirect: 'follow' });
+      const res = await fetch('/api/whistles/ical', { redirect: 'follow' });
       if (!res.ok) throw new Error(`${res.status}`);
       setCalFeedUrl(res.url);
       setCalFeedState('idle');
@@ -600,6 +613,22 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
               )}
             </div>
           )}
+        </div>
+
+        {/* Sign out */}
+        <div style={{ marginBottom: 28 }}>
+          <GLabel>Account</GLabel>
+          <button
+            onClick={() => signOut({ redirectUrl: '/' })}
+            style={{
+              marginTop: 10, padding: '10px 16px', borderRadius: 8,
+              background: 'transparent', color: G.ink, border: `1px solid ${G.hairline2}`,
+              fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.3,
+              textTransform: 'uppercase', cursor: 'pointer',
+            }}
+          >
+            Sign out
+          </button>
         </div>
 
         {/* Danger zone */}

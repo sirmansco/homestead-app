@@ -45,8 +45,8 @@ export const homesteadCopy: AppCopy = {
     releasedTitle: (name: string) => `↩️ ${name} released your shift`,
     releasedBody: (title: string, when: string) => `"${title}" · ${when} — now open again`,
     cancelledTitle: '❌ Shift cancelled',
-    deepLinkTab: 'almanac',
-    shiftsDeepLinkTab: 'shifts',
+    deepLinkTab: 'perch',
+    shiftsDeepLinkTab: 'whistles',
     tagPrefix: 'shift',
     claimedTagPrefix: 'claimed',
     releasedTagPrefix: 'released',
@@ -91,11 +91,6 @@ export const homesteadCopy: AppCopy = {
   emails: {
     contact: 'hello@homestead.app',
     notify: 'notify@homestead.app',
-  },
-  api: {
-    urgentSignal: '/api/bell',
-    request: '/api/shifts',
-    circle: '/api/village',
   },
   guide: {
     whatIsTitle: 'What is Homestead?',

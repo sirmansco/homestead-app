@@ -58,7 +58,7 @@ describe('GET /api/unavailability — household-scoped', () => {
       userId: 'clerk-1',
       orgId: ORG1,
       household: { id: HH1, clerkOrgId: ORG1, name: 'H1' },
-      user: USER_HH1 as typeof USER_HH1 & { role: 'parent' | 'caregiver'; villageGroup: 'covey' | 'field' | 'inner_circle' | 'sitter'; email: string; name: string; notifyShiftPosted: boolean; notifyShiftClaimed: boolean; notifyShiftReleased: boolean; notifyBellRinging: boolean; notifyBellResponse: boolean; isAdmin: boolean; calToken: string | null; photoUrl: string | null; createdAt: Date },
+      user: USER_HH1 as typeof USER_HH1 & { role: 'keeper' | 'watcher'; villageGroup: 'covey' | 'field' | 'inner_circle' | 'sitter'; email: string; name: string; notifyShiftPosted: boolean; notifyShiftClaimed: boolean; notifyShiftReleased: boolean; notifyBellRinging: boolean; notifyBellResponse: boolean; isAdmin: boolean; calToken: string | null; photoUrl: string | null; createdAt: Date },
     } as ReturnType<typeof requireHousehold> extends Promise<infer T> ? T : never);
 
     let selectCall = 0;

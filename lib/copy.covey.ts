@@ -47,8 +47,8 @@ export const coveyCopy: AppCopy = {
     releasedTitle: (name: string) => `↩️ ${name} released your Whistle`,
     releasedBody: (title: string, when: string) => `"${title}" · ${when} — open again`,
     cancelledTitle: '❌ Whistle cancelled',
-    deepLinkTab: 'almanac',
-    shiftsDeepLinkTab: 'shifts',
+    deepLinkTab: 'perch',
+    shiftsDeepLinkTab: 'whistles',
     tagPrefix: 'whistle',
     claimedTagPrefix: 'covered',
     releasedTagPrefix: 'released',
@@ -93,11 +93,6 @@ export const coveyCopy: AppCopy = {
   emails: {
     contact: 'hello@sirmans.co',
     notify: 'notify@sirmans.co',
-  },
-  api: {
-    urgentSignal: '/api/lantern',
-    request: '/api/whistles',
-    circle: '/api/circle',
   },
   guide: {
     whatIsTitle: 'What is Covey?',

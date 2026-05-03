@@ -52,7 +52,7 @@ vi.mock('@/lib/api-error', () => ({
 
 // ── Imports after mocks ───────────────────────────────────────────────────────
 
-import { POST } from '@/app/api/village/route';
+import { POST } from '@/app/api/circle/route';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
@@ -68,7 +68,7 @@ const HOUSEHOLD_ROW = { id: HH_ID, clerkOrgId: CLERK_ORG_ID, name: 'Smith Family
 const USER_ROW = {
   id: USER_ID, clerkUserId: CLERK_USER_ID, householdId: HH_ID,
   email: 'alice@example.com', name: 'Alice Smith',
-  role: 'parent', villageGroup: 'covey',
+  role: 'keeper', villageGroup: 'covey',
   // B2 (synthesis L2): village POST/DELETE are admin-only. Existing tests
   // exercise an admin caller so the fixture row carries isAdmin=true; the
   // 4xx-shape assertions below test the route's own validation, not the gate.
@@ -107,7 +107,7 @@ function makeInsertStub(returning: unknown[] = []) {
 }
 
 function makeReq(body: unknown) {
-  return new NextRequest('http://localhost/api/village', {
+  return new NextRequest('http://localhost/api/circle', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -121,7 +121,7 @@ function wireHousehold() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('POST /api/village', () => {
+describe('POST /api/circle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -202,7 +202,7 @@ describe('POST /api/village', () => {
 
   it('inserts an adult placeholder and returns the row', async () => {
     wireHousehold();
-    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'caregiver', villageGroup: 'covey' };
+    const adult = { id: 'usr-002', clerkUserId: 'placeholder_x', householdId: HH_ID, name: 'Bob', email: 'bob@example.com', role: 'watcher', villageGroup: 'covey' };
     vi.mocked(db.insert).mockReturnValue(makeInsertStub([adult]));
 
     const res = await POST(makeReq({ type: 'adult', name: 'Bob', email: 'bob@example.com' }));

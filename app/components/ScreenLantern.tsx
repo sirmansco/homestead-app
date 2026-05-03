@@ -79,7 +79,7 @@ function Rung({ ring, label, status, time, people }: {
   people: { name: string; state: string; sub: string; highlight?: boolean }[];
 }) {
   const ringStyle = {
-    rung:    { bg: RED,     ink: 'var(--bg)', label: 'Ringing' },
+    rung:    { bg: RED,     ink: 'var(--bg)', label: 'Lit' },
     queued:  { bg: G.paper, ink: G.ink,     label: 'Queued' },
     pending: { bg: G.paper, ink: G.muted,   label: 'If needed' },
   }[status];
@@ -124,7 +124,7 @@ function plusHours(h: number) {
 
 type VillageMember = { id: string; name: string; villageGroup: 'covey' | 'field' };
 
-function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregiver' }) {
+function PushPermissionBanner({ role = 'keeper' }: { role?: 'keeper' | 'watcher' }) {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [requesting, setRequesting] = useState(false);
 
@@ -135,10 +135,10 @@ function PushPermissionBanner({ role = 'parent' }: { role?: 'parent' | 'caregive
 
   if (permission === 'granted' || permission === null) return null;
 
-  const deniedCopy = role === 'caregiver'
+  const deniedCopy = role === 'watcher'
     ? 'Notifications blocked. Enable them in your browser settings so you\'re alerted when a family lights the lantern.'
-    : 'Notifications blocked. Enable them in your browser settings so caregivers get alerted when you ring.';
-  const allowCopy = role === 'caregiver'
+    : 'Notifications blocked. Enable them in your browser settings so watchers get alerted when you light the Lantern.';
+  const allowCopy = role === 'watcher'
     ? 'Allow notifications so you\'re alerted the moment a family lights the lantern.'
     : 'Allow notifications so caregivers are alerted instantly.';
 
@@ -210,7 +210,7 @@ function BellCompose({ onRing, onBack, onPost }: {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/bell', {
+      const res = await fetch('/api/lantern', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -317,7 +317,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           marginTop: 22, padding: 14, borderRadius: 8,
           border: `1px dashed ${RED}`, background: G.claySoft,
         }}>
-          <GLabel color={RED}>How it&apos;ll ring</GLabel>
+          <GLabel color={RED}>How it&apos;ll reach them</GLabel>
           <div style={{ marginTop: 8, fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.ink2, lineHeight: 1.6 }}>
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: RED, letterSpacing: 1 }}>NOW</b> &nbsp; {getCopy().circle.innerLabel}</div>
             <div><b style={{ fontFamily: G.sans, fontStyle: 'normal', fontSize: 11, fontWeight: 700, color: G.ink2, letterSpacing: 1 }}>+5 MIN</b> &nbsp; {getCopy().circle.outerLabel}</div>
@@ -341,7 +341,7 @@ function BellCompose({ onRing, onBack, onPost }: {
           textTransform: 'uppercase', cursor: why === null || submitting ? 'default' : 'pointer',
           boxShadow: why === null || submitting ? 'none' : `0 4px 0 ${RED_DARK}`,
           transition: 'background 0.15s, color 0.15s',
-        }}>{submitting ? 'Ringing…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
+        }}>{submitting ? 'Lighting…' : why === null ? 'Select a reason above' : getCopy().urgentSignal.actionLabel}</button>
 
         <div style={{ marginTop: 12, textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           Not urgent?{' '}
@@ -399,7 +399,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
     setMarking(true);
     setBellError(null);
     try {
-      const res = await fetch(`/api/bell/${bellId}`, {
+      const res = await fetch(`/api/lantern/${bellId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'handled' }),
@@ -419,7 +419,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
     setBellError(null);
     if (bellId) {
       try {
-        const res = await fetch(`/api/bell/${bellId}`, {
+        const res = await fetch(`/api/lantern/${bellId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
@@ -534,12 +534,17 @@ function BellIncoming() {
   const { allBells, bellLoading, refreshBell } = useAppData();
   const [responding, setResponding] = useState<string | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function respond(bellId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
     setResponding(bellId + response);
     setRespondError(null);
     try {
-      const res = await fetch(`/api/bell/${bellId}/respond`, {
+      const res = await fetch(`/api/lantern/${bellId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ response }),
@@ -577,7 +582,7 @@ function BellIncoming() {
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-          <PushPermissionBanner role="caregiver" />
+          <PushPermissionBanner role="watcher" />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
             <BellGlyph size={48} />
@@ -602,8 +607,7 @@ function BellIncoming() {
         {activeBells.map(bell => {
           const myResp = bell.myResponse;
           const rungAt = new Date(bell.createdAt);
-          // eslint-disable-next-line react-hooks/purity
-          const secondsAgo = Math.floor((Date.now() - rungAt.getTime()) / 1000);
+          const secondsAgo = Math.floor((now - rungAt.getTime()) / 1000);
           const timeAgo = secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`;
 
           return (
@@ -709,9 +713,9 @@ function BellIncoming() {
   );
 }
 
-export function ScreenLantern({ initialCompose = false, role = 'parent', onBack, onPost }: {
+export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack, onPost }: {
   initialCompose?: boolean;
-  role?: 'parent' | 'caregiver';
+  role?: 'keeper' | 'watcher';
   onBack?: () => void;
   onPost?: () => void;
 }) {
@@ -734,7 +738,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
   // On first render as a keep-alive screen (parent only): use shared activeBell
   // from context rather than a dedicated fetch — context is already polling.
   useEffect(() => {
-    if (role !== 'parent' || initialCompose) return;
+    if (role !== 'keeper' || initialCompose) return;
     if (activeBell && activeBell.status === 'ringing') {
       setRingBellId(activeBell.id);
       setRingReason(activeBell.reason);
@@ -756,7 +760,7 @@ export function ScreenLantern({ initialCompose = false, role = 'parent', onBack,
     }
   }, [activeBell, mode]);
 
-  if (role === 'caregiver') return <BellIncoming />;
+  if (role === 'watcher') return <BellIncoming />;
 
   if (mode === 'loading') {
     return (

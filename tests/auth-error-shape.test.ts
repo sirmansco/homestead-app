@@ -54,22 +54,22 @@ import { auth } from '@clerk/nextjs/server';
 
 // ── Import every user-auth route handler under test ──────────────────────────
 
-import * as villageRoute from '@/app/api/village/route';
-import * as villageInviteRoute from '@/app/api/village/invite/route';
-import * as villageInviteFamilyRoute from '@/app/api/village/invite-family/route';
+import * as villageRoute from '@/app/api/circle/route';
+import * as villageInviteRoute from '@/app/api/circle/invite/route';
+import * as villageInviteFamilyRoute from '@/app/api/circle/invite-family/route';
 import * as householdRoute from '@/app/api/household/route';
 import * as householdMembersRoute from '@/app/api/household/members/route';
 import * as householdMemberItemRoute from '@/app/api/household/members/[id]/route';
 import * as feedbackRoute from '@/app/api/feedback/route';
-import * as shiftsRoute from '@/app/api/shifts/route';
-import * as shiftClaimRoute from '@/app/api/shifts/[id]/claim/route';
-import * as shiftUnclaimRoute from '@/app/api/shifts/[id]/unclaim/route';
-import * as shiftCancelRoute from '@/app/api/shifts/[id]/cancel/route';
-import * as bellRoute from '@/app/api/bell/route';
-import * as bellItemRoute from '@/app/api/bell/[id]/route';
-import * as bellRespondRoute from '@/app/api/bell/[id]/respond/route';
-import * as bellEscalateRoute from '@/app/api/bell/[id]/escalate/route';
-import * as bellActiveRoute from '@/app/api/bell/active/route';
+import * as shiftsRoute from '@/app/api/whistles/route';
+import * as shiftClaimRoute from '@/app/api/whistles/[id]/claim/route';
+import * as shiftUnclaimRoute from '@/app/api/whistles/[id]/unclaim/route';
+import * as shiftCancelRoute from '@/app/api/whistles/[id]/cancel/route';
+import * as bellRoute from '@/app/api/lantern/route';
+import * as bellItemRoute from '@/app/api/lantern/[id]/route';
+import * as bellRespondRoute from '@/app/api/lantern/[id]/respond/route';
+import * as bellEscalateRoute from '@/app/api/lantern/[id]/escalate/route';
+import * as bellActiveRoute from '@/app/api/lantern/active/route';
 import * as unavailabilityRoute from '@/app/api/unavailability/route';
 import * as accountRoute from '@/app/api/account/route';
 import * as notificationsRoute from '@/app/api/notifications/route';
@@ -121,12 +121,12 @@ const cases: Array<{
   needsCtx?: boolean;
   url?: string;
 }> = [
-  { name: 'GET /api/village (scope=household)', handler: villageRoute.GET as unknown as Handler },
-  { name: 'GET /api/village (scope=all)', handler: villageRoute.GET as unknown as Handler, url: 'http://localhost/api/village?scope=all' },
-  { name: 'POST /api/village', handler: villageRoute.POST as unknown as Handler },
-  { name: 'PATCH /api/village', handler: (villageRoute as Record<string, unknown>).PATCH as unknown as Handler },
-  { name: 'POST /api/village/invite', handler: villageInviteRoute.POST as unknown as Handler },
-  { name: 'POST /api/village/invite-family', handler: villageInviteFamilyRoute.POST as unknown as Handler },
+  { name: 'GET /api/circle (scope=household)', handler: villageRoute.GET as unknown as Handler },
+  { name: 'GET /api/circle (scope=all)', handler: villageRoute.GET as unknown as Handler, url: 'http://localhost/api/circle?scope=all' },
+  { name: 'POST /api/circle', handler: villageRoute.POST as unknown as Handler },
+  { name: 'PATCH /api/circle', handler: (villageRoute as Record<string, unknown>).PATCH as unknown as Handler },
+  { name: 'POST /api/circle/invite', handler: villageInviteRoute.POST as unknown as Handler },
+  { name: 'POST /api/circle/invite-family', handler: villageInviteFamilyRoute.POST as unknown as Handler },
   { name: 'GET /api/household', handler: householdRoute.GET as unknown as Handler },
   { name: 'PATCH /api/household', handler: householdRoute.PATCH as unknown as Handler },
   { name: 'POST /api/household', handler: (householdRoute as Record<string, unknown>).POST as unknown as Handler },
@@ -134,19 +134,19 @@ const cases: Array<{
   { name: 'PATCH /api/household/members/[id]', handler: householdMemberItemRoute.PATCH as unknown as Handler, needsCtx: true },
   { name: 'DELETE /api/household/members/[id]', handler: (householdMemberItemRoute as Record<string, unknown>).DELETE as unknown as Handler, needsCtx: true },
   { name: 'POST /api/feedback', handler: feedbackRoute.POST as unknown as Handler },
-  { name: 'GET /api/shifts (scope=household)', handler: shiftsRoute.GET as unknown as Handler },
-  { name: 'GET /api/shifts (scope=all)', handler: shiftsRoute.GET as unknown as Handler, url: 'http://localhost/api/shifts?scope=all' },
-  { name: 'GET /api/shifts (scope=mine)', handler: shiftsRoute.GET as unknown as Handler, url: 'http://localhost/api/shifts?scope=mine' },
-  { name: 'POST /api/shifts', handler: shiftsRoute.POST as unknown as Handler },
-  { name: 'POST /api/shifts/[id]/claim', handler: shiftClaimRoute.POST as unknown as Handler, needsCtx: true },
-  { name: 'POST /api/shifts/[id]/unclaim', handler: shiftUnclaimRoute.POST as unknown as Handler, needsCtx: true },
-  { name: 'POST /api/shifts/[id]/cancel', handler: shiftCancelRoute.POST as unknown as Handler, needsCtx: true },
-  { name: 'GET /api/bell', handler: bellRoute.GET as unknown as Handler },
-  { name: 'POST /api/bell', handler: bellRoute.POST as unknown as Handler },
-  { name: 'PATCH /api/bell/[id]', handler: (bellItemRoute as Record<string, unknown>).PATCH as unknown as Handler, needsCtx: true },
-  { name: 'POST /api/bell/[id]/respond', handler: bellRespondRoute.POST as unknown as Handler, needsCtx: true },
-  { name: 'POST /api/bell/[id]/escalate', handler: bellEscalateRoute.POST as unknown as Handler, needsCtx: true },
-  { name: 'GET /api/bell/active', handler: bellActiveRoute.GET as unknown as Handler },
+  { name: 'GET /api/whistles (scope=household)', handler: shiftsRoute.GET as unknown as Handler },
+  { name: 'GET /api/whistles (scope=all)', handler: shiftsRoute.GET as unknown as Handler, url: 'http://localhost/api/whistles?scope=all' },
+  { name: 'GET /api/whistles (scope=mine)', handler: shiftsRoute.GET as unknown as Handler, url: 'http://localhost/api/whistles?scope=mine' },
+  { name: 'POST /api/whistles', handler: shiftsRoute.POST as unknown as Handler },
+  { name: 'POST /api/whistles/[id]/claim', handler: shiftClaimRoute.POST as unknown as Handler, needsCtx: true },
+  { name: 'POST /api/whistles/[id]/unclaim', handler: shiftUnclaimRoute.POST as unknown as Handler, needsCtx: true },
+  { name: 'POST /api/whistles/[id]/cancel', handler: shiftCancelRoute.POST as unknown as Handler, needsCtx: true },
+  { name: 'GET /api/lantern', handler: bellRoute.GET as unknown as Handler },
+  { name: 'POST /api/lantern', handler: bellRoute.POST as unknown as Handler },
+  { name: 'PATCH /api/lantern/[id]', handler: (bellItemRoute as Record<string, unknown>).PATCH as unknown as Handler, needsCtx: true },
+  { name: 'POST /api/lantern/[id]/respond', handler: bellRespondRoute.POST as unknown as Handler, needsCtx: true },
+  { name: 'POST /api/lantern/[id]/escalate', handler: bellEscalateRoute.POST as unknown as Handler, needsCtx: true },
+  { name: 'GET /api/lantern/active', handler: bellActiveRoute.GET as unknown as Handler },
   { name: 'GET /api/unavailability', handler: unavailabilityRoute.GET as unknown as Handler },
   { name: 'POST /api/unavailability', handler: unavailabilityRoute.POST as unknown as Handler },
   { name: 'DELETE /api/unavailability', handler: unavailabilityRoute.DELETE as unknown as Handler },

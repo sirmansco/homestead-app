@@ -61,12 +61,12 @@ function readRoute(rel: string) {
 
 // Verify each route imports requireUUID and returns 400 on bad input before DB
 const UUID_ROUTES = [
-  'bell/[id]/route.ts',
-  'shifts/[id]/claim/route.ts',
-  'shifts/[id]/cancel/route.ts',
-  'shifts/[id]/unclaim/route.ts',
-  'bell/[id]/escalate/route.ts',
-  'bell/[id]/respond/route.ts',
+  'lantern/[id]/route.ts',
+  'whistles/[id]/claim/route.ts',
+  'whistles/[id]/cancel/route.ts',
+  'whistles/[id]/unclaim/route.ts',
+  'lantern/[id]/escalate/route.ts',
+  'lantern/[id]/respond/route.ts',
 ];
 
 for (const rel of UUID_ROUTES) {

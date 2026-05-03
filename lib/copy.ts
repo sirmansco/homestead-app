@@ -93,11 +93,6 @@ export type AppCopy = {
     contact: string;
     notify: string;
   };
-  api: {
-    urgentSignal: string;
-    request: string;
-    circle: string;
-  };
   guide: {
     whatIsTitle: string;
     whatIsBody1: string;

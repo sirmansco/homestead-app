@@ -11,11 +11,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const { id } = await ctx.params;
     const { household } = await requireHouseholdAdmin();
     const body = await req.json() as {
-      role?: 'parent' | 'caregiver';
+      role?: 'keeper' | 'watcher';
       villageGroup?: 'covey' | 'field';
     };
-    const patch: { role?: 'parent' | 'caregiver'; villageGroup?: 'covey' | 'field' } = {};
-    if (body.role === 'parent' || body.role === 'caregiver') patch.role = body.role;
+    const patch: { role?: 'keeper' | 'watcher'; villageGroup?: 'covey' | 'field' } = {};
+    if (body.role === 'keeper' || body.role === 'watcher') patch.role = body.role;
     if (body.villageGroup === 'covey' || body.villageGroup === 'field') {
       patch.villageGroup = body.villageGroup;
     }
