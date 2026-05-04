@@ -376,15 +376,13 @@ function CoveyInner() {
         {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
         <div style={{
           position: 'absolute', inset: 0,
-          paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 56,
           overflow: 'hidden',
         }}>
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 4, background: 'red', zIndex: 9999 }} />
-        <div style={{ position: 'fixed', bottom: 4, left: 0, right: 0, height: 4, background: 'blue', zIndex: 9999 }} />
-        {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
+{toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
       </div>
     );
