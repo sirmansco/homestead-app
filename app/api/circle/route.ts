@@ -65,17 +65,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.type === 'adult') {
-      const { name, email, role, villageGroup, clerkUserId } = body;
+      const { name, email } = body;
       if (!name?.trim() || !email?.trim()) {
         return NextResponse.json({ error: 'Name and email required' }, { status: 400 });
       }
       const [user] = await db.insert(users).values({
-        clerkUserId: clerkUserId || `placeholder_${crypto.randomUUID()}`,
+        clerkUserId: `placeholder_${crypto.randomUUID()}`,
         householdId: household.id,
         email: email.trim(),
         name: name.trim(),
-        role: role || 'watcher',
-        villageGroup: villageGroup || 'covey',
+        role: 'watcher',
+        villageGroup: 'covey',
       }).returning();
       return NextResponse.json({ user });
     }

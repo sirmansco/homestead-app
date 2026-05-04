@@ -221,6 +221,36 @@ describe('POST /api/circle', () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
+  // Regression — ship-blocker #4: mass-assignment defense. The handler must
+  // ignore caller-supplied clerkUserId, role, and villageGroup and force
+  // server-side defaults so a household admin can't link an arbitrary Clerk
+  // identity or grant elevated privileges via a crafted body.
+  it('ignores caller-supplied clerkUserId, role, and villageGroup', async () => {
+    wireHousehold();
+
+    const valuesSpy = vi.fn().mockReturnValue({
+      returning: () => Promise.resolve([{ id: 'usr-002' }]),
+    });
+    vi.mocked(db.insert).mockReturnValue({ values: valuesSpy } as unknown as ReturnType<typeof db.insert>);
+
+    const res = await POST(makeReq({
+      type: 'adult',
+      name: 'Bob',
+      email: 'bob@example.com',
+      clerkUserId: 'user_attacker_clerk_id',
+      role: 'keeper',
+      villageGroup: 'inner_circle',
+    }));
+
+    expect(res.status).toBe(200);
+    expect(valuesSpy).toHaveBeenCalledTimes(1);
+    const inserted = valuesSpy.mock.calls[0][0] as Record<string, unknown>;
+    expect(inserted.clerkUserId).toMatch(/^placeholder_/);
+    expect(inserted.clerkUserId).not.toBe('user_attacker_clerk_id');
+    expect(inserted.role).toBe('watcher');
+    expect(inserted.villageGroup).toBe('covey');
+  });
+
   // ── unknown type ─────────────────────────────────────────────────────────
 
   it('returns 400 for unknown type', async () => {
