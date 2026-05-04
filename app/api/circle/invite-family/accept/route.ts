@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
       .select({
         id: familyInvites.id,
         parentName: familyInvites.parentName,
-        parentEmail: familyInvites.parentEmail,
         villageGroup: familyInvites.villageGroup,
         status: familyInvites.status,
         expiresAt: familyInvites.expiresAt,
@@ -41,7 +40,6 @@ export async function GET(req: NextRequest) {
       invite: {
         fromName: invite.fromName,
         parentName: invite.parentName,
-        parentEmail: invite.parentEmail,
         villageGroup: invite.villageGroup,
       },
     });

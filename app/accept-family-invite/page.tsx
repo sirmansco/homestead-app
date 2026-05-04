@@ -7,7 +7,6 @@ import { getCopy } from '@/lib/copy';
 type InviteInfo = {
   fromName: string;
   parentName: string | null;
-  parentEmail: string;
   villageGroup: 'covey' | 'field';
 };
 
@@ -115,23 +114,20 @@ function InviteContent() {
             <strong style={{ color: G.ink2 }}>{GROUP_LABEL[invite.villageGroup] ?? invite.villageGroup}</strong>.
           </div>
 
-          <div style={{
-            padding: '12px 16px', borderRadius: 8,
-            background: G.bg, border: `1px solid ${G.hairline}`,
-            marginBottom: 24,
-          }}>
-            <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>
-              Invited as
-            </div>
-            <div style={{ fontFamily: G.display, fontSize: 16, color: G.ink }}>
-              {invite.parentName || invite.parentEmail}
-            </div>
-            {invite.parentName && (
-              <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted, marginTop: 2 }}>
-                {invite.parentEmail}
+          {invite.parentName && (
+            <div style={{
+              padding: '12px 16px', borderRadius: 8,
+              background: G.bg, border: `1px solid ${G.hairline}`,
+              marginBottom: 24,
+            }}>
+              <div style={{ fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: G.muted, marginBottom: 4 }}>
+                Invited as
               </div>
-            )}
-          </div>
+              <div style={{ fontFamily: G.display, fontSize: 16, color: G.ink }}>
+                {invite.parentName}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => router.push(`/sign-up?token=${encodeURIComponent(token!)}`)}

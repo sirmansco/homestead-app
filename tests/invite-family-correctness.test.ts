@@ -185,6 +185,25 @@ describe('GET /api/circle/invite-family/accept — expiry check (F-P1-G)', () =>
     const body = await res.json();
     expect(body.error).toBe('invite_used');
   });
+
+  it('valid invite → response excludes parentEmail (pre-auth PII scrub)', async () => {
+    vi.mocked(db.select).mockReturnValue(
+      makeSelectChain([pendingInvite({
+        fromName: 'Alice',
+        villageGroup: 'covey',
+        parentName: 'Bob',
+      })]) as unknown as ReturnType<typeof db.select>,
+    );
+    const res = await acceptGet(makeGetReq(TOKEN));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.invite).not.toHaveProperty('parentEmail');
+    // still returns enough to render the accept page
+    expect(body.invite.fromName).toBe('Alice');
+    expect(body.invite.villageGroup).toBe('covey');
+    expect(body.invite.parentName).toBe('Bob');
+  });
 });
 
 // ── POST /api/circle/invite-family/accept ─────────────────────────────────────
