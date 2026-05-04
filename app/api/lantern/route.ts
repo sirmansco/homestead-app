@@ -9,6 +9,12 @@ import { notifyLanternLit, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { parseTimeRange } from '@/lib/validate/time-range';
 
+// Canonical reason set — must match ScreenLantern.tsx reasons[] labels.
+// Server-side allowlist prevents arbitrary text from landing in DB rows
+// and push-notification bodies that fan out to every recipient.
+const REASON_ALLOWLIST = new Set(['Sick kid', 'Last-minute conflict', 'Other']);
+const NOTE_MAX_LENGTH = 500;
+
 export async function POST(req: NextRequest) {
   try {
     const { household, user } = await requireHousehold();
@@ -31,6 +37,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'reason, startsAt, endsAt required' }, { status: 400 });
     }
 
+    if (!REASON_ALLOWLIST.has(reason)) {
+      return NextResponse.json({ error: 'invalid reason' }, { status: 400 });
+    }
+
+    const trimmedNote = typeof note === 'string' ? note.trim() : '';
+    if (trimmedNote.length > NOTE_MAX_LENGTH) {
+      return NextResponse.json({ error: `note must be ${NOTE_MAX_LENGTH} characters or fewer` }, { status: 400 });
+    }
+
     const timeRange = parseTimeRange(startsAt, endsAt, { maxWindowMs: 86_400_000 });
     if ('error' in timeRange) {
       return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
@@ -40,7 +55,7 @@ export async function POST(req: NextRequest) {
       householdId: household.id,
       createdByUserId: user.id,
       reason,
-      note: note || null,
+      note: trimmedNote || null,
       startsAt: timeRange.starts,
       endsAt: timeRange.ends,
       status: 'ringing',
