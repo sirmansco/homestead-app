@@ -224,12 +224,14 @@ function LanternCompose({ onRing, onBack, onPost }: {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Failed to ${getCopy().urgentSignal.actionLabel.toLowerCase()}`);
       const noun = getCopy().urgentSignal.noun;
+      const watchersLower = getCopy().roles.watcher.plural.toLowerCase();
+      const watchersTitle = getCopy().roles.watcher.plural;
       const n = data.notify as { kind: string } | undefined;
       const warning =
         !n ? null :
-        n.kind === 'no_recipients' ? `${noun} lit — but no caregivers have notifications enabled. They'll see it when they open the app.` :
-        n.kind === 'vapid_missing' || n.kind === 'push_error' ? `${noun} lit — push delivery failed. Caregivers will see it when they open the app.` :
-        n.kind === 'partial' ? `${noun} lit — some caregivers may not have received the push. They'll see it when they open the app.` :
+        n.kind === 'no_recipients' ? `${noun} lit — but no ${watchersLower} have notifications enabled. They'll see it when they open the app.` :
+        n.kind === 'vapid_missing' || n.kind === 'push_error' ? `${noun} lit — push delivery failed. ${watchersTitle} will see it when they open the app.` :
+        n.kind === 'partial' ? `${noun} lit — some ${watchersLower} may not have received the push. They'll see it when they open the app.` :
         null;
       onRing(data.lantern.id, reasons[why].label, warning ?? undefined);
     } catch (e) {
