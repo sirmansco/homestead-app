@@ -382,6 +382,8 @@ function CoveyInner() {
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 4, background: 'red', zIndex: 9999 }} />
+        <div style={{ position: 'fixed', bottom: 4, left: 0, right: 0, height: 4, background: 'blue', zIndex: 9999 }} />
         {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
       </div>
