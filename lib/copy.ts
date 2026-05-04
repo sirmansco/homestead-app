@@ -46,10 +46,13 @@ export type AppCopy = {
     releasedTitle: (name: string) => string;
     releasedBody: (title: string, when: string) => string;
     cancelledTitle: string;
+    claimerConfirmTitle: (title: string) => string;
+    claimerConfirmBody: (when: string) => string;
     deepLinkTab: string;
     shiftsDeepLinkTab: string;
     tagPrefix: string;
     claimedTagPrefix: string;
+    claimerConfirmTagPrefix: string;
     releasedTagPrefix: string;
     cancelTagPrefix: string;
   };

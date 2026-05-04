@@ -6,7 +6,7 @@ import { whistles, users, households } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
-import { notifyShiftClaimed } from '@/lib/notify';
+import { notifyShiftClaimed, notifyShiftClaimedConfirmation } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { requireUUID } from '@/lib/validate/uuid';
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -83,6 +83,15 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       await notifyShiftClaimed(claimed.id);
     } catch (err) {
       console.error('[whistles:claim:notify]', err);
+    }
+
+    // B8: confirmation push to the watcher who claimed it. Independent
+    // try/catch — keeper notification failure must not suppress claimer
+    // confirmation, and vice versa.
+    try {
+      await notifyShiftClaimedConfirmation(claimed.id);
+    } catch (err) {
+      console.error('[whistles:claim:confirm]', err);
     }
 
     return NextResponse.json({ shift: claimed });

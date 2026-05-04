@@ -224,6 +224,32 @@ export async function notifyShiftClaimed(shiftId: string) {
   await send([creator.email], subject, text);
 }
 
+// B8: confirmation push to the watcher who just claimed a shift, separate
+// from notifyShiftClaimed (which goes to the keeper who created it). Fires
+// regardless of the claimer's notifyShiftClaimed preference — that flag
+// gates "someone covered something for me," not "I covered something."
+export async function notifyShiftClaimedConfirmation(shiftId: string) {
+  const [shift] = await db.select().from(whistles).where(eq(whistles.id, shiftId)).limit(1);
+  if (!shift || !shift.claimedByUserId) {
+    logSkip('notify_shift_claimed_confirmation_skip', { reason: 'shift_or_claim_missing', shiftId });
+    return;
+  }
+
+  const t = getCopy();
+  const when = fmtDateShort(shift.startsAt);
+
+  try {
+    await pushToUser(shift.claimedByUserId, {
+      title: t.request.claimerConfirmTitle(shift.title),
+      body: t.request.claimerConfirmBody(when),
+      url: `/?tab=${t.request.shiftsDeepLinkTab}`,
+      tag: `${t.request.claimerConfirmTagPrefix}-${shiftId}`,
+    });
+  } catch (err) {
+    console.error('[notify:shiftClaimedConfirmation:push]', err);
+  }
+}
+
 export async function notifyShiftReleased(shiftId: string, releasedByUserId: string) {
   const [row] = await db.select({
     shift: whistles,
