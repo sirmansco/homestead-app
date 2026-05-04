@@ -22,7 +22,8 @@ export type NotifyResult =
   | { kind: 'partial'; recipients: number; delivered: number; failed: number; errors: string[] }
   | { kind: 'no_recipients'; reason: 'empty_inner_circle' | 'empty_field' | 'no_caregivers' | 'targeted_caregiver_not_opted_in' }
   | { kind: 'vapid_missing'; recipients: number }
-  | { kind: 'push_error'; recipients: number; error: string };
+  | { kind: 'push_error'; recipients: number; error: string }
+  | { kind: 'auto_escalated_to_field'; lanternId: string };
 
 function logSkip(event: string, payload: Record<string, unknown>) {
   console.log(JSON.stringify({ event, ...payload }));
@@ -348,8 +349,13 @@ export async function notifyLanternLit(lanternId: string): Promise<NotifyResult>
       eq(users.notifyLanternLit, true),
     ));
   if (innerCircle.length === 0) {
-    logSkip('notify_lantern_lit_skip', { reason: 'empty_inner_circle', lanternId, householdId: lantern.householdId });
-    return { kind: 'no_recipients', reason: 'empty_inner_circle' };
+    // Empty Covey at t=0: don't wait for the 5-min cron. Fan straight to Field
+    // via the same atomic-guarded helper the cron uses, so escalatedAt is set
+    // and the cron skips this row when it next ticks.
+    logSkip('notify_lantern_lit_skip', { reason: 'empty_inner_circle_auto_escalated', lanternId, householdId: lantern.householdId });
+    const { escalateLantern } = await import('@/lib/lantern-escalation');
+    await escalateLantern(lanternId);
+    return { kind: 'auto_escalated_to_field', lanternId };
   }
 
   try {
