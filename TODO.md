@@ -11,7 +11,7 @@ Session 4 shipped B3 + B4 + B5 (account-delete CSRF/recent-auth, IP rate limits 
 
 #### B-tier (security / correctness)
 
-- [ ] **B2 — first-user race in `lib/auth/household.ts:51`.** Two concurrent `requireHousehold()` calls for different `clerkUserId`s in the same Clerk org both observe `memberCount === 0` and both insert with `isAdmin: true`. Two viable fixes per the original brief: (a) wrap `memberCount + insert` in a transaction with `SELECT ... FOR UPDATE` on the household row (pattern: `app/api/household/admin/route.ts:27`), or (b) add a partial unique index `users(household_id) WHERE is_admin = true`. Recommendation: do BOTH — app-level lock for clean errors, DB-level index for absolute guarantee. Blocker for the index path: snapshot drift (see "drizzle snapshot drift" below); fix that first or hand-write the migration SQL. Test: two concurrent `requireHousehold()` calls produce exactly one admin.
+- [x] ~~**B2 — first-user race in `lib/auth/household.ts:51`.**~~ Shipped Session 5 in #111 (`9a5cffa`) via transaction + `pg_advisory_xact_lock`. Partial unique index path (option b) deferred — separate PR after the Drizzle snapshot drift chore lands.
 
 - [ ] **B6 — push subscribe dedupe (`app/api/push/subscribe/route.ts`).** On subscribe, also `DELETE FROM push_subscriptions WHERE userId = ? AND household_id = ? AND endpoint != ? AND created_at < now() - interval '60 seconds'`. Test: reinstall PWA, only one active subscription remains.
 

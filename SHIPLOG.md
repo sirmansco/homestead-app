@@ -16,6 +16,15 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-04 · #111 · B2 — serialize first-user-for-household with advisory lock
+**Branch:** `fix/b2-first-user-race` → main (`9a5cffa`)
+**Plan:** N/A — Session 5 brief item B2 (deferred from Session 4)
+**What shipped:** Closes the two-admins-from-concurrent-bootstrap race. Two `requireHousehold()` calls for different `clerkUserId`s in the same empty household both observed `memberCount === 0` and both inserted with `isAdmin=true`. Now wraps the user-creation block in `db.transaction()` and acquires `pg_advisory_xact_lock(hashtext('covey:first-user:' + household.id))` at top of tx; lock releases at commit. Inside tx: re-read user (someone else may have just won), re-count members under serialization, insert with `isFirstUser` decision, re-fetch. Unrelated household reads/writes are unaffected — lock keys per household. Belt-and-suspenders partial unique index `users(household_id) WHERE is_admin = true` (option b from the original brief) deferred — needs the open Drizzle snapshot drift chore resolved first; transaction lock is sufficient on its own.
+**Verification:** `tests/household.test.ts` — 10 cases, 3 new for B2: count > 0 inside tx → `isAdmin=false` + `role=watcher`; count === 0 → `isAdmin=true` + `role=keeper`; advisory lock acquired before count/insert in call order (asserts `pg_advisory_xact_lock` substring in the executed sql). Falsifiability: stash `lib/auth/household.ts` → 6/10 red, including the two updated user-creation tests + the three new B2 cases. Vitest 571/572 (pre-existing kid-avatar-upload failure on main, per Session 5 brief). Lint baseline preserved (34). Build clean. Vercel CI green.
+**Follow-ups:** Partial unique index (B2 option b) — separate PR after Drizzle snapshot drift chore resolves; until then transaction lock alone is the guarantee. Real-Postgres concurrent-bootstrap integration test would catch a future refactor that drops the lock — call-order test is the proxy under vitest.
+
+---
+
 ### 2026-05-04 · #108 · B5 — Sentry beforeSend scrubs query strings, auth headers, and PII keys
 **Branch:** `fix/b5-sentry-pii-scrubbing` → main (`91671e6`)
 **Plan:** N/A — Session 4 brief item B5
