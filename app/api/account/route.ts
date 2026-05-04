@@ -9,6 +9,7 @@ import {
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyShiftCancelled } from '@/lib/notify';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 
 /**
  * GET /api/account — export all data for the current user across all households.
@@ -69,6 +70,21 @@ export async function GET() {
 export async function DELETE(req: NextRequest) {
   try {
     const { userId } = await requireUser();
+
+    // CSRF: require a custom header that XHR/fetch in our origin sends but a
+    // cross-origin <form action="..."> POST cannot. Defense against drive-by
+    // form-based deletion when a session cookie is present.
+    const csrfHeader = req.headers.get('x-covey-confirm');
+    if (csrfHeader !== 'yes-delete-my-data') {
+      return NextResponse.json({ error: 'Missing CSRF confirmation header' }, { status: 403 });
+    }
+
+    // Per-user rate limit: 1 successful-or-attempted delete per hour. Bounds
+    // damage from stolen-cookie retry attacks and protects against accidental
+    // double-fire from a flaky network.
+    const rl = rateLimit({ key: `account-delete:${userId}`, limit: 1, windowMs: 60 * 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const confirm = req.nextUrl.searchParams.get('confirm');
     if (confirm !== 'yes-delete-my-data') {

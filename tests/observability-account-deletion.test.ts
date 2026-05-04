@@ -33,9 +33,12 @@ const CLERK_ID = 'clerk_user_1';
 const USER_ID = 'user-1';
 const HH_ID = 'hh-1';
 
-function mockUser() {
+// Each test must use a distinct clerkUserId so the route's per-user
+// rate limit (1 delete attempt per hour, keyed by userId) doesn't fire
+// on the second-and-later test in the file.
+function mockUser(clerkUserId: string = CLERK_ID) {
   vi.mocked(requireUser).mockResolvedValue({
-    userId: CLERK_ID,
+    userId: clerkUserId,
   } as unknown as Awaited<ReturnType<typeof requireUser>>);
 }
 
@@ -79,6 +82,7 @@ function makeUpdateChain(rows: Row[] = []) {
 function confirmReq() {
   return {
     nextUrl: { searchParams: { get: (k: string) => k === 'confirm' ? 'yes-delete-my-data' : null } },
+    headers: { get: (k: string) => k === 'x-covey-confirm' ? 'yes-delete-my-data' : null },
   } as unknown as Parameters<typeof accountDelete>[0];
 }
 
@@ -116,7 +120,7 @@ describe('F-P3-G — account DELETE notifies shift claimers on bulk cancel', () 
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('two future claimed whistles → notifyShiftCancelled called twice', async () => {
-    mockUser();
+    mockUser('clerk_user_obs_1');
     setupDbForDeletion([
       { id: 'shift-1', claimedByUserId: 'claimer-1' },
       { id: 'shift-2', claimedByUserId: 'claimer-2' },
@@ -130,7 +134,7 @@ describe('F-P3-G — account DELETE notifies shift claimers on bulk cancel', () 
   });
 
   it('future whistles with no claimer → notifyShiftCancelled not called', async () => {
-    mockUser();
+    mockUser('clerk_user_obs_2');
     setupDbForDeletion([
       { id: 'shift-1', claimedByUserId: null },
       { id: 'shift-2', claimedByUserId: null },
@@ -142,7 +146,7 @@ describe('F-P3-G — account DELETE notifies shift claimers on bulk cancel', () 
   });
 
   it('notifyShiftCancelled throwing does not abort deletion — still 200', async () => {
-    mockUser();
+    mockUser('clerk_user_obs_3');
     setupDbForDeletion([{ id: 'shift-1', claimedByUserId: 'claimer-1' }]);
     vi.mocked(notifyShiftCancelled).mockRejectedValueOnce(new Error('push failed'));
 
@@ -153,7 +157,7 @@ describe('F-P3-G — account DELETE notifies shift claimers on bulk cancel', () 
   });
 
   it('no future whistles → notifyShiftCancelled not called', async () => {
-    mockUser();
+    mockUser('clerk_user_obs_4');
     setupDbForDeletion([]);
 
     const res = await accountDelete(confirmReq());
