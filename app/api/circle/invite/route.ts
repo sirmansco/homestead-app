@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { requireHouseholdAdmin } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse, clientIp } from '@/lib/ratelimit';
 
 // Allowlists are enforced before any Clerk metadata write so caller-supplied
 // values cannot bleed back through requireHousehold()'s first-user provisioning
@@ -11,10 +12,16 @@ const ALLOWED_VILLAGE_GROUPS = ['covey', 'field'] as const;
 
 export async function POST(req: NextRequest) {
   try {
+    // IP rate limit BEFORE Clerk — caps cookieless flood from a single IP that
+    // would otherwise amplify into requireHouseholdAdmin() Clerk lookups. 30/min
+    // is far above any legitimate human invite cadence.
+    const ipRl = rateLimit({ key: `ip:invite:post:${clientIp(req)}`, limit: 30, windowMs: 60_000 });
+    const ipLimited = rateLimitResponse(ipRl);
+    if (ipLimited) return ipLimited;
+
     const { userId, orgId } = await requireHouseholdAdmin();
 
     // Rate limit: 10 invites per hour per user (prevents email spam)
-    const { rateLimit, rateLimitResponse } = await import('@/lib/ratelimit');
     const rl = rateLimit({ key: `invite:${userId}`, limit: 10, windowMs: 60 * 60_000 });
     const limited = rateLimitResponse(rl);
     if (limited) return limited;

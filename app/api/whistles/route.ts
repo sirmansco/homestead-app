@@ -8,7 +8,7 @@ import { whistles, users, households } from '@/lib/db/schema';
 const claimerUsers = alias(users, 'claimer');
 import { requireHousehold, requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
-import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
+import { rateLimit, rateLimitResponse, clientIp } from '@/lib/ratelimit';
 import { notifyNewShift, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { parseTimeRange } from '@/lib/validate/time-range';
@@ -154,6 +154,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // IP rate limit BEFORE any Clerk lookup — an unauthenticated flood from a
+    // single IP must not amplify into a flood of `clerkClient` calls inside
+    // requireHousehold(). 30 attempts / minute is generous for legit posting
+    // (typing a whistle and submitting) but caps cookieless burst abuse.
+    const ipRl = rateLimit({ key: `ip:whistles:post:${clientIp(req)}`, limit: 30, windowMs: 60_000 });
+    const ipLimited = rateLimitResponse(ipRl);
+    if (ipLimited) return ipLimited;
+
     const { household, user } = await requireHousehold();
     if (user.role !== 'keeper') {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
