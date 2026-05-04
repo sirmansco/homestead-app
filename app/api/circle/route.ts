@@ -54,12 +54,32 @@ export async function POST(req: NextRequest) {
 
     if (body.type === 'kid') {
       const { name, birthday, notes } = body;
-      if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
+      const trimmedName = typeof name === 'string' ? name.trim() : '';
+      if (!trimmedName) return NextResponse.json({ error: 'Name required' }, { status: 400 });
+
+      let validBirthday: string | null = null;
+      if (birthday) {
+        if (typeof birthday !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+          return NextResponse.json({ error: 'birthday must be YYYY-MM-DD' }, { status: 400 });
+        }
+        const d = new Date(birthday + 'T00:00:00Z');
+        if (Number.isNaN(+d)) {
+          return NextResponse.json({ error: 'birthday is not a valid date' }, { status: 400 });
+        }
+        const now = new Date();
+        const minDate = new Date(now.getFullYear() - 25, now.getMonth(), now.getDate());
+        const maxDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        if (d < minDate || d > maxDate) {
+          return NextResponse.json({ error: 'birthday out of range' }, { status: 400 });
+        }
+        validBirthday = birthday;
+      }
+
       const [kid] = await db.insert(chicks).values({
         householdId: household.id,
-        name: name.trim(),
-        birthday: birthday || null,
-        notes: notes || null,
+        name: trimmedName.slice(0, 100),
+        birthday: validBirthday,
+        notes: typeof notes === 'string' ? notes.trim().slice(0, 2000) || null : null,
       }).returning();
       return NextResponse.json({ kid });
     }
