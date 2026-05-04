@@ -72,11 +72,18 @@ export type AppCopy = {
   };
   circle: {
     title: string;
+    // Bottom-tab label specifically. Shorter than `title` so it fits a
+    // 4-tab bar without truncation. Covey: 'Covey'. Homestead: 'Village'.
+    tabLabel: string;
     caregiverTitle: string;
     innerLabel: string;
     outerLabel: string;
     innerNote: string;
     outerNote: string;
+    // Family section header — the parents-and-chicks group rendered above
+    // the Covey/Field tiers in the keeper view of ScreenCircle.
+    familyLabel: string;
+    familyNote: string;
     kidLabel: string;
     loadingState: string;
     emptyState: string;

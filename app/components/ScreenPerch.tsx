@@ -523,7 +523,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
       <OnboardStep
         num={2}
         done={step2Done}
-        title={`Invite your ${getCopy().circle.title.toLowerCase()}`}
+        title={`Invite your ${getCopy().circle.networkLabel}`}
         sub={step2Done
           ? `Circle members added. They can claim ${getCopy().request.tabLabel.toLowerCase()} and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`
           : `Add a grandparent, sitter, or trusted friend. They can claim ${getCopy().request.tabLabel.toLowerCase()} and answer the ${getCopy().urgentSignal.noun.toLowerCase()}.`}
@@ -534,7 +534,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
             border: 'none', borderRadius: 6,
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase', cursor: 'pointer',
-          }}>Go to {getCopy().circle.title} →</button>
+          }}>Go to {getCopy().circle.tabLabel} →</button>
         ) : undefined}
       />
       <OnboardStep
@@ -543,7 +543,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         title="Post your first need"
         sub={step3Done
           ? "You've posted your first need."
-          : `Pick a date, a time, and who it's for. Your ${getCopy().circle.title.toLowerCase()} gets notified instantly.`}
+          : `Pick a date, a time, and who it's for. Your ${getCopy().circle.networkLabel} gets notified instantly.`}
         action={!step3Done ? (
           <button onClick={onPost} disabled={!step2Done} style={{
             padding: '8px 16px',
@@ -553,7 +553,7 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
             fontFamily: G.sans, fontSize: 10, fontWeight: 700, letterSpacing: 1.4,
             textTransform: 'uppercase',
             cursor: step2Done ? 'pointer' : 'not-allowed',
-          }}>{step2Done ? 'Post a need →' : `Invite ${getCopy().circle.title.toLowerCase()} first`}</button>
+          }}>{step2Done ? 'Post a need →' : `Invite your ${getCopy().circle.networkLabel} first`}</button>
         ) : undefined}
       />
     </div>
