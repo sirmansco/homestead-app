@@ -6,6 +6,13 @@ import { familyInvites, users } from '@/lib/db/schema';
 import { apiError } from '@/lib/api-error';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
+
+function clientIp(req: NextRequest): string {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
+}
 
 // GET /api/circle/invite-family/accept?token=... — side-effect-free token preview.
 // Returns invite metadata for the accept page without mutating state.
@@ -14,6 +21,11 @@ export async function GET(req: NextRequest) {
   try {
     const token = new URL(req.url).searchParams.get('token');
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
+
+    const ip = clientIp(req);
+    const rl = rateLimit({ key: `invite-family-accept-preview:${ip}`, limit: 30, windowMs: 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const [invite] = await db
       .select({
@@ -58,6 +70,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json() as { token?: string };
     const token = body.token;
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
+
+    const ip = clientIp(req);
+    const rlIp = rateLimit({ key: `invite-family-accept-post:${ip}`, limit: 20, windowMs: 60_000 });
+    const limitedIp = rateLimitResponse(rlIp);
+    if (limitedIp) return limitedIp;
+
+    const rlTok = rateLimit({ key: `invite-family-accept-token:${token}`, limit: 5, windowMs: 60_000 });
+    const limitedTok = rateLimitResponse(rlTok);
+    if (limitedTok) return limitedTok;
 
     const [invite] = await db
       .select()
