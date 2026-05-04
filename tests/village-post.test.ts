@@ -198,6 +198,107 @@ describe('POST /api/circle', () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
+  // Regression — ship-blocker #13: cap kid name/notes; validate birthday.
+  // Server-side validation prevents megabyte-blob inputs from bloating rows
+  // and rejects malformed birthday strings before they hit Postgres' date cast.
+
+  it('caps kid name at 100 chars', async () => {
+    wireHousehold();
+    const valuesSpy = vi.fn().mockReturnValue({
+      returning: () => Promise.resolve([KID_ROW]),
+    });
+    vi.mocked(db.insert).mockReturnValue({ values: valuesSpy } as unknown as ReturnType<typeof db.insert>);
+
+    const longName = 'A'.repeat(500);
+    const res = await POST(makeReq({ type: 'kid', name: longName, birthday: null }));
+
+    expect(res.status).toBe(200);
+    const inserted = valuesSpy.mock.calls[0][0] as Record<string, unknown>;
+    expect((inserted.name as string).length).toBe(100);
+  });
+
+  it('caps kid notes at 2000 chars and trims whitespace', async () => {
+    wireHousehold();
+    const valuesSpy = vi.fn().mockReturnValue({
+      returning: () => Promise.resolve([KID_ROW]),
+    });
+    vi.mocked(db.insert).mockReturnValue({ values: valuesSpy } as unknown as ReturnType<typeof db.insert>);
+
+    const longNotes = '  ' + 'x'.repeat(5000) + '  ';
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', notes: longNotes }));
+
+    expect(res.status).toBe(200);
+    const inserted = valuesSpy.mock.calls[0][0] as Record<string, unknown>;
+    expect((inserted.notes as string).length).toBe(2000);
+  });
+
+  it('coerces empty/whitespace notes to null', async () => {
+    wireHousehold();
+    const valuesSpy = vi.fn().mockReturnValue({
+      returning: () => Promise.resolve([KID_ROW]),
+    });
+    vi.mocked(db.insert).mockReturnValue({ values: valuesSpy } as unknown as ReturnType<typeof db.insert>);
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', notes: '   ' }));
+
+    expect(res.status).toBe(200);
+    const inserted = valuesSpy.mock.calls[0][0] as Record<string, unknown>;
+    expect(inserted.notes).toBeNull();
+  });
+
+  it('returns 400 when birthday is malformed', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: 'not-a-date' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/birthday/i);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when birthday has wrong format (MM/DD/YYYY)', async () => {
+    wireHousehold();
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: '03/14/2021' }));
+
+    expect(res.status).toBe(400);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when birthday is far in the past (>25 yrs)', async () => {
+    wireHousehold();
+    const tooOld = `${new Date().getFullYear() - 50}-01-01`;
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: tooOld }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/birthday/i);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when birthday is far in the future (>1 yr ahead)', async () => {
+    wireHousehold();
+    const tooFar = `${new Date().getFullYear() + 5}-01-01`;
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: tooFar }));
+
+    expect(res.status).toBe(400);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid recent birthday', async () => {
+    wireHousehold();
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub([KID_ROW]));
+    const recent = `${new Date().getFullYear() - 5}-06-15`;
+
+    const res = await POST(makeReq({ type: 'kid', name: 'Emma', birthday: recent }));
+
+    expect(res.status).toBe(200);
+    expect(db.insert).toHaveBeenCalledTimes(1);
+  });
+
   // ── type: 'adult' ────────────────────────────────────────────────────────
 
   it('inserts an adult placeholder and returns the row', async () => {
