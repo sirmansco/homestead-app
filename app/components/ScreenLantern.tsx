@@ -242,7 +242,7 @@ function LanternCompose({ onRing, onBack, onPost }: {
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: BELL_BG, color: G.ink }}>
       <GMasthead
         leftAction={
-          <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: G.ink, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
+          <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 13, fontWeight: 700, letterSpacing: 0.3, color: G.green, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
         }
         right={getCopy().urgentSignal.actionLabel}
         title={getCopy().urgentSignal.towerTitle}
@@ -439,7 +439,7 @@ function LanternActive({ onBack, onDone, lanternId, reason, warning }: { onBack?
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: BELL_BG, color: G.ink }}>
       <GMasthead
         leftAction={onBack ? (
-          <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: G.ink, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
+          <button onClick={onBack} style={{ fontFamily: G.sans, fontSize: 13, fontWeight: 700, letterSpacing: 0.3, color: G.green, lineHeight: 1, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}>‹ Back</button>
         ) : undefined}
         right="Urgent"
         title={reason || `${getCopy().urgentSignal.noun} ringing`}

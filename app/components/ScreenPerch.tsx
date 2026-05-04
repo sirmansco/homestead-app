@@ -420,10 +420,10 @@ function EmptyAlmanac({ onRing, onPost, onVillage, role, villageSize, hasPosted 
         border: `1px dashed ${G.hairline2}`, borderRadius: 10, background: G.paper,
       }}>
         <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 20, color: G.ink }}>
-          All clear.
+          You&apos;re all clear.
         </div>
         <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.muted, marginTop: 6 }}>
-          No {getCopy().request.tabLabel.toLowerCase()} posted yet. Check the {getCopy().request.tabLabel} tab for open needs from your circle.
+          Nothing posted yet — when a family needs help, it&apos;ll show up here. Check the {getCopy().request.tabLabel} tab to see what&apos;s open now.
         </div>
       </div>
     );

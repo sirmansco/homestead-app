@@ -576,9 +576,9 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
         )}
       </div>
 
-      {/* Parents + Kids in one row grid */}
+      {/* Row 1: Parents + Kids */}
       {(parents.length > 0 || family.chicks.length > 0) && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: caregivers.length > 1 ? 8 : 0 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: caregivers.length > 0 ? 8 : 0 }}>
           {parents.length > 0 && (
             <div style={{ flex: 1 }}>
               <GLabel style={{ marginBottom: 5 }}>{getCopy().roles.keeper.plural}</GLabel>
@@ -608,9 +608,10 @@ const FamilyCard = React.memo(function FamilyCard({ family, myUserId, onLeave }:
         </div>
       )}
 
-      {caregivers.length > 1 && (
+      {/* Row 2: Watchers */}
+      {caregivers.length > 0 && (
         <div>
-          <GLabel style={{ marginBottom: 5 }}>Also helping</GLabel>
+          <GLabel style={{ marginBottom: 5 }}>{getCopy().roles.watcher.plural}</GLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {caregivers.map(c => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

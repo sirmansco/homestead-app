@@ -341,7 +341,7 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
         leftAction={<HouseholdSwitcher />}
         right={myRows.length > 0 ? `${myRows.length} mine` : ''}
         title={getCopy().request.tabLabel}
-        tagline={filter === 'open' ? 'Open requests from your circle.' : 'Open and your claimed Whistles.'}
+        tagline={filter === 'open' ? 'Open requests from your circle.' : `Open requests and ${getCopy().request.tabLabel} you've claimed.`}
       />
 
       {activeBell && (
