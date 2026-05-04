@@ -113,6 +113,13 @@
       "when": 1777832400030,
       "tag": "0015_rename_bell_id_column",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1746324000000,
+      "tag": "0016_rename_notify_bell_columns",
+      "breakpoints": true
     }
   ]
 }

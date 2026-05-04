@@ -11,16 +11,16 @@ type NotifPrefs = {
   notifyShiftPosted: boolean;
   notifyShiftClaimed: boolean;
   notifyShiftReleased: boolean;
-  notifyBellRinging: boolean;
-  notifyBellResponse: boolean;
+  notifyLanternLit: boolean;
+  notifyLanternResponse: boolean;
 };
 
 const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'keeper' | 'watcher' | 'both' }[] = [
   { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'watcher' },
   { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by watcher`, forRole: 'keeper' },
   { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'keeper' },
-  { key: 'notifyBellRinging', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
-  { key: 'notifyBellResponse', label: `Watcher responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
+  { key: 'notifyLanternLit', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
+  { key: 'notifyLanternResponse', label: `Watcher responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
 ];
 
 type Theme = 'system' | 'light' | 'dark';

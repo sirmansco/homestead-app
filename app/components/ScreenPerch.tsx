@@ -53,8 +53,8 @@ const RESPONSE_LABEL: Record<string, string> = {
   cannot: 'Can\'t cover',
 };
 
-function LanternCard({ bell, onView, onCancel, cancelling }: {
-  bell: ActiveBellData;
+function LanternCard({ lantern, onView, onCancel, cancelling }: {
+  lantern: ActiveBellData;
   onView: () => void;
   onCancel?: () => void;
   cancelling: boolean;
@@ -66,20 +66,20 @@ function LanternCard({ bell, onView, onCancel, cancelling }: {
     return () => clearInterval(id);
   }, []);
 
-  const created = new Date(bell.createdAt);
-  const escalated = bell.escalatedAt ? new Date(bell.escalatedAt) : null;
+  const created = new Date(lantern.createdAt);
+  const escalated = lantern.escalatedAt ? new Date(lantern.escalatedAt) : null;
   const now = new Date();
   const elapsedMs = now.getTime() - created.getTime();
   const elapsedMin = Math.floor(elapsedMs / 60_000);
   const elapsedLabel = elapsedMin < 1 ? 'just now' : elapsedMin === 1 ? '1 min ago' : `${elapsedMin} min ago`;
 
-  const isHandled = bell.status === 'handled';
+  const isHandled = lantern.status === 'handled';
   const isEscalated = !!escalated && now >= escalated;
 
   // Responses grouped by type
-  const onWay   = bell.responses.filter(r => r.response === 'on_my_way');
-  const inThirty = bell.responses.filter(r => r.response === 'in_thirty');
-  const cannot  = bell.responses.filter(r => r.response === 'cannot');
+  const onWay   = lantern.responses.filter(r => r.response === 'on_my_way');
+  const inThirty = lantern.responses.filter(r => r.response === 'in_thirty');
+  const cannot  = lantern.responses.filter(r => r.response === 'cannot');
 
   const statusLabel = isHandled
     ? 'Help is on the way'
@@ -106,13 +106,13 @@ function LanternCard({ bell, onView, onCancel, cancelling }: {
             {statusLabel} · {elapsedLabel}
           </div>
           <div style={{ fontFamily: G.display, fontSize: 15, fontWeight: 500, color: G.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {bell.reason}
+            {lantern.reason}
           </div>
         </div>
       </div>
 
       {/* Responses */}
-      {bell.responses.length > 0 && (
+      {lantern.responses.length > 0 && (
         <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           {[...onWay, ...inThirty, ...cannot].map(r => (
             <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -126,7 +126,7 @@ function LanternCard({ bell, onView, onCancel, cancelling }: {
           ))}
         </div>
       )}
-      {bell.responses.length === 0 && !isHandled && (
+      {lantern.responses.length === 0 && !isHandled && (
         <div style={{ padding: '6px 14px', fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
           Waiting for responses…
         </div>
@@ -596,8 +596,8 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
 export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
   role?: 'keeper' | 'watcher';
   isDualRole?: boolean;
-  onRing?: () => void;      // compose mode — new bell
-  onViewBell?: () => void;  // status mode — view existing active bell
+  onRing?: () => void;      // compose mode — new lantern
+  onViewBell?: () => void;  // status mode — view existing active lantern
   onPost?: () => void;
   onVillage?: () => void;
 }) {
@@ -816,7 +816,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
             Cancel action is parent-only (PATCH /api/lantern/:id is gated server-side). */}
         {activeBell && (
           <LanternCard
-            bell={activeBell}
+            lantern={activeBell}
             onView={onViewBell ?? (() => {})}
             onCancel={role === 'keeper' ? async () => {
               if (cancellingBell) return;

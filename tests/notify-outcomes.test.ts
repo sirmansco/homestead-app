@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// L13 + L16 regression: notifyBellRing and notifyNewShift previously returned
+// L13 + L16 regression: notifyLanternLit and notifyNewShift previously returned
 // `{ sent: recipients.length, eligible: recipients.length }` regardless of
 // whether pushToUsers actually delivered anything — vapid_not_configured,
 // zero subscribers, partial failure all collapsed to "sent = recipients."
@@ -68,7 +68,7 @@ vi.mock('@/lib/format/time', () => ({
 
 // ── Import after mocks ───────────────────────────────────────────────────────
 
-import { notifyBellRing, notifyNewShift } from '@/lib/notify';
+import { notifyLanternLit, notifyNewShift } from '@/lib/notify';
 import { db } from '@/lib/db';
 import { pushToUser, pushToUsers } from '@/lib/push';
 
@@ -109,53 +109,53 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// ── notifyBellRing ───────────────────────────────────────────────────────────
+// ── notifyLanternLit ─────────────────────────────────────────────────────────
 
-describe('notifyBellRing — empty inner circle (L13 + L16)', () => {
-  it('returns no_recipients/empty_inner_circle and emits notify_bell_ring_skip', async () => {
+describe('notifyLanternLit — empty inner circle (L13 + L16)', () => {
+  it('returns no_recipients/empty_inner_circle and emits notify_lantern_lit_skip', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b1', householdId: 'hh-1', reason: 'sick', note: null }])) // bell
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l1', householdId: 'hh-1', reason: 'sick', note: null }])) // lantern
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))                                  // household
       .mockReturnValueOnce(makeSelectStub([]));                                                              // innerCircle (empty)
 
-    const result = await notifyBellRing('b1');
+    const result = await notifyLanternLit('l1');
 
     expect(result).toEqual({ kind: 'no_recipients', reason: 'empty_inner_circle' });
     expect(pushToUsers).not.toHaveBeenCalled();
 
-    const logs = logCallsForEvent('notify_bell_ring_skip');
+    const logs = logCallsForEvent('notify_lantern_lit_skip');
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ reason: 'empty_inner_circle', bellId: 'b1', householdId: 'hh-1' });
+    expect(logs[0]).toMatchObject({ reason: 'empty_inner_circle', lanternId: 'l1', householdId: 'hh-1' });
   });
 });
 
-describe('notifyBellRing — VAPID missing (L13)', () => {
+describe('notifyLanternLit — VAPID missing (L13)', () => {
   it('returns vapid_missing with the recipient count', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b2', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l2', householdId: 'hh-1', reason: 'sick', note: null }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]));
     vi.mocked(pushToUsers).mockResolvedValueOnce({
       attempted: 3, delivered: 0, stale: 0, failed: 3, errors: [], reason: 'vapid_not_configured',
     });
 
-    const result = await notifyBellRing('b2');
+    const result = await notifyLanternLit('l2');
 
     expect(result).toEqual({ kind: 'vapid_missing', recipients: 3 });
   });
 });
 
-describe('notifyBellRing — partial delivery (L13)', () => {
+describe('notifyLanternLit — partial delivery (L13)', () => {
   it('returns partial with delivered/failed/errors when some succeed', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b3', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l3', householdId: 'hh-1', reason: 'sick', note: null }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]));
     vi.mocked(pushToUsers).mockResolvedValueOnce({
       attempted: 3, delivered: 2, stale: 0, failed: 1, errors: ['HTTP 500: provider error'],
     });
 
-    const result = await notifyBellRing('b3');
+    const result = await notifyLanternLit('l3');
 
     expect(result).toEqual({
       kind: 'partial',
@@ -167,46 +167,46 @@ describe('notifyBellRing — partial delivery (L13)', () => {
   });
 });
 
-describe('notifyBellRing — full delivery (L13)', () => {
+describe('notifyLanternLit — full delivery (L13)', () => {
   it('returns delivered when all subscriptions succeed', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b4', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l4', householdId: 'hh-1', reason: 'sick', note: null }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'u1' }, { id: 'u2' }]));
     vi.mocked(pushToUsers).mockResolvedValueOnce({
       attempted: 2, delivered: 2, stale: 0, failed: 0, errors: [],
     });
 
-    const result = await notifyBellRing('b4');
+    const result = await notifyLanternLit('l4');
 
     expect(result).toEqual({ kind: 'delivered', recipients: 2, delivered: 2 });
   });
 });
 
-describe('notifyBellRing — bell missing (L16)', () => {
-  it('returns no_recipients and emits notify_bell_ring_skip with reason bell_missing', async () => {
-    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub([])); // bell select returns empty
+describe('notifyLanternLit — lantern missing (L16)', () => {
+  it('returns no_recipients and emits notify_lantern_lit_skip with reason lantern_missing', async () => {
+    vi.mocked(db.select).mockReturnValueOnce(makeSelectStub([])); // lantern select returns empty
 
-    const result = await notifyBellRing('missing');
+    const result = await notifyLanternLit('missing');
 
     expect(result).toEqual({ kind: 'no_recipients', reason: 'no_caregivers' });
     expect(pushToUsers).not.toHaveBeenCalled();
 
-    const logs = logCallsForEvent('notify_bell_ring_skip');
+    const logs = logCallsForEvent('notify_lantern_lit_skip');
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ reason: 'bell_missing', bellId: 'missing' });
+    expect(logs[0]).toMatchObject({ reason: 'lantern_missing', lanternId: 'missing' });
   });
 });
 
-describe('notifyBellRing — push exception (L13)', () => {
+describe('notifyLanternLit — push exception (L13)', () => {
   it('returns push_error with the thrown message when pushToUsers rejects', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b5', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l5', householdId: 'hh-1', reason: 'sick', note: null }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))
       .mockReturnValueOnce(makeSelectStub([{ id: 'u1' }]));
     vi.mocked(pushToUsers).mockRejectedValueOnce(new Error('boom'));
 
-    const result = await notifyBellRing('b5');
+    const result = await notifyLanternLit('l5');
 
     expect(result).toEqual({ kind: 'push_error', recipients: 1, error: 'boom' });
   });

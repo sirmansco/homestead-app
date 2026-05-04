@@ -58,7 +58,7 @@ export type ChickRow = {
 type AppDataCtx = {
   // Bell
   activeBell: ActiveBellData | null;
-  allBells: ActiveBellData[];        // full list for caregiver BellIncoming
+  allBells: ActiveBellData[];        // full list for caregiver LanternIncoming
   bellLoading: boolean;
   refreshBell: () => void;
 
@@ -116,7 +116,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshBell = useCallback(() => { void fetchBell(); }, [fetchBell]);
 
-  // Start bell polling on mount; refresh on window focus; pause when page is hidden.
+  // Start lantern polling on mount; refresh on window focus; pause when page is hidden.
   useEffect(() => {
     void fetchBell();
     bellTimerRef.current = setInterval(() => { void fetchBell(); }, BELL_POLL_MS);

@@ -28,9 +28,9 @@ vi.mock('@/lib/notify', () => ({
   notifyShiftClaimed: vi.fn(),
   notifyShiftReleased: vi.fn(),
   notifyShiftCancelled: vi.fn(),
-  notifyBellResponse: vi.fn(),
-  notifyBellRing: vi.fn(),
-  notifyBellEscalated: vi.fn(),
+  notifyLanternResponse: vi.fn(),
+  notifyLanternLit: vi.fn(),
+  notifyLanternEscalated: vi.fn(),
 }));
 
 vi.mock('@/lib/ratelimit', () => ({

@@ -41,7 +41,7 @@ export async function GET() {
       return a.status === 'ringing' ? -1 : 1;
     });
 
-    // For each bell, attach who has responded
+    // For each lantern, attach who has responded
     const bellIds = activeBells.map(b => b.id);
     const responses = bellIds.length
       ? await db.select().from(lanternResponses).where(inArray(lanternResponses.lanternId, bellIds))
@@ -72,6 +72,6 @@ export async function GET() {
 
     return NextResponse.json({ lanterns: result });
   } catch (err) {
-    return authError(err, 'bell:active', `Could not load active ${getCopy().urgentSignal.noun.toLowerCase()}`);
+    return authError(err, 'lantern:active', `Could not load active ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }
 }

@@ -12,19 +12,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { household, user } = await requireHousehold();
     const { id: rawId } = await params;
-    const bellId = requireUUID(rawId);
-    if (!bellId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
+    const lanternId = requireUUID(rawId);
+    if (!lanternId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
     const { status } = await req.json() as { status: 'handled' | 'cancelled' };
 
     if (!['handled', 'cancelled'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    // Verify this bell belongs to the caller's active household — prevents one
-    // household from cancelling another household's bell by guessing the UUID.
-    const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
-    if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
-    if (bell.householdId !== household.id) {
+    // Verify this lantern belongs to the caller's active household — prevents one
+    // household from cancelling another household's lantern by guessing the UUID.
+    const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
+    if (!lantern) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
+    if (lantern.householdId !== household.id) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
@@ -34,9 +34,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.handledAt = new Date();
     }
 
-    await db.update(lanterns).set(updates).where(eq(lanterns.id, bellId));
+    await db.update(lanterns).set(updates).where(eq(lanterns.id, lanternId));
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return authError(err, 'bell:id', `${getCopy().urgentSignal.noun} action failed`);
+    return authError(err, 'lantern:id', `${getCopy().urgentSignal.noun} action failed`);
   }
 }

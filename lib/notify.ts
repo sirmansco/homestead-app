@@ -13,7 +13,7 @@ if (!RESEND_API_KEY) {
 }
 
 // L13 + L16: every callsite that surfaces "did the notification land" to the
-// client (bell POST, shift POST) returns this discriminated outcome. Every
+// client (lantern POST, shift POST) returns this discriminated outcome. Every
 // silent-skip path (creator opted out, empty inner circle, Resend missing)
 // emits a structured `notify_*_skip` log line via logSkip() before returning,
 // so operations can distinguish intentional suppression from broken pipeline.
@@ -323,17 +323,17 @@ export async function notifyShiftCancelled(shiftId: string, recipientUserId: str
   await send([recipient.email], subject, text);
 }
 
-export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
+export async function notifyLanternLit(lanternId: string): Promise<NotifyResult> {
   const t = getCopy();
-  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
-  if (!bell) {
-    logSkip('notify_bell_ring_skip', { reason: 'bell_missing', bellId });
+  const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
+  if (!lantern) {
+    logSkip('notify_lantern_lit_skip', { reason: 'lantern_missing', lanternId });
     return { kind: 'no_recipients', reason: 'no_caregivers' };
   }
 
-  const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
+  const [household] = await db.select().from(households).where(eq(households.id, lantern.householdId)).limit(1);
   if (!household) {
-    logSkip('notify_bell_ring_skip', { reason: 'household_missing', bellId, householdId: bell.householdId });
+    logSkip('notify_lantern_lit_skip', { reason: 'household_missing', lanternId, householdId: lantern.householdId });
     return { kind: 'no_recipients', reason: 'no_caregivers' };
   }
 
@@ -342,35 +342,35 @@ export async function notifyBellRing(bellId: string): Promise<NotifyResult> {
   const innerCircle = await db.select({ id: users.id })
     .from(users)
     .where(and(
-      eq(users.householdId, bell.householdId),
+      eq(users.householdId, lantern.householdId),
       eq(users.role, 'watcher'),
       inArray(users.villageGroup, ['covey', 'inner_circle']),
-      eq(users.notifyBellRinging, true),
+      eq(users.notifyLanternLit, true),
     ));
   if (innerCircle.length === 0) {
-    logSkip('notify_bell_ring_skip', { reason: 'empty_inner_circle', bellId, householdId: bell.householdId });
+    logSkip('notify_lantern_lit_skip', { reason: 'empty_inner_circle', lanternId, householdId: lantern.householdId });
     return { kind: 'no_recipients', reason: 'empty_inner_circle' };
   }
 
   try {
-    const r = await pushToUsers(innerCircle.map(u => u.id), bell.householdId, {
+    const r = await pushToUsers(innerCircle.map(u => u.id), lantern.householdId, {
       title: t.urgentSignal.pushTitle(household.name),
-      body: t.urgentSignal.pushBody(bell.reason, bell.note ?? undefined),
+      body: t.urgentSignal.pushBody(lantern.reason, lantern.note ?? undefined),
       url: `/?tab=${t.urgentSignal.deepLinkTab}`,
-      tag: `${t.urgentSignal.tagPrefix}-${bell.id}`,
+      tag: `${t.urgentSignal.tagPrefix}-${lantern.id}`,
     });
     return pushResultToNotify(r, innerCircle.length);
   } catch (err) {
-    console.error('[notify:bellRing:push]', err);
+    console.error('[notify:lanternLit:push]', err);
     return { kind: 'push_error', recipients: innerCircle.length, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
-export async function notifyBellEscalated(bellId: string) {
+export async function notifyLanternEscalated(lanternId: string) {
   const t = getCopy();
-  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
-  if (!bell) {
-    logSkip('notify_bell_escalated_skip', { reason: 'bell_missing', bellId });
+  const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
+  if (!lantern) {
+    logSkip('notify_lantern_escalated_skip', { reason: 'lantern_missing', lanternId });
     return;
   }
 
@@ -379,71 +379,71 @@ export async function notifyBellEscalated(bellId: string) {
   const sitters = await db.select({ id: users.id })
     .from(users)
     .where(and(
-      eq(users.householdId, bell.householdId),
+      eq(users.householdId, lantern.householdId),
       eq(users.role, 'watcher'),
       inArray(users.villageGroup, ['field', 'sitter']),
-      eq(users.notifyBellRinging, true),
+      eq(users.notifyLanternLit, true),
     ));
   if (sitters.length === 0) {
-    logSkip('notify_bell_escalated_skip', { reason: 'empty_field', bellId, householdId: bell.householdId });
+    logSkip('notify_lantern_escalated_skip', { reason: 'empty_field', lanternId, householdId: lantern.householdId });
     return;
   }
 
   try {
-    await pushToUsers(sitters.map(s => s.id), bell.householdId, {
-      title: t.urgentSignal.escalateTitle(bell.reason),
+    await pushToUsers(sitters.map(s => s.id), lantern.householdId, {
+      title: t.urgentSignal.escalateTitle(lantern.reason),
       body: t.urgentSignal.escalateBody,
       url: `/?tab=${t.urgentSignal.deepLinkTab}`,
-      tag: `${t.urgentSignal.escalateTagPrefix}-${bellId}`,
+      tag: `${t.urgentSignal.escalateTagPrefix}-${lanternId}`,
     });
   } catch (err) {
-    console.error('[notify:bellEscalated:push]', err);
+    console.error('[notify:lanternEscalated:push]', err);
   }
 }
 
-export async function notifyBellResponse(
-  bellId: string,
+export async function notifyLanternResponse(
+  lanternId: string,
   responderId: string,   // users.id (not clerkUserId)
   response: 'on_my_way' | 'in_thirty' | 'cannot',
 ) {
-  // Only push — no email for bell responses (time-sensitive, email is too slow)
-  const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
-  if (!bell) {
-    logSkip('notify_bell_response_skip', { reason: 'bell_missing', bellId });
+  // Only push — no email for lantern responses (time-sensitive, email is too slow)
+  const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
+  if (!lantern) {
+    logSkip('notify_lantern_response_skip', { reason: 'lantern_missing', lanternId });
     return;
   }
 
   const [responder] = await db.select().from(users).where(eq(users.id, responderId)).limit(1);
   if (!responder) {
-    logSkip('notify_bell_response_skip', { reason: 'responder_missing', bellId, responderId });
+    logSkip('notify_lantern_response_skip', { reason: 'responder_missing', lanternId, responderId });
     return;
   }
 
   const name = responder.name || 'Someone';
 
-  // Find the keepers who own this household; filter by their notifyBellResponse pref
+  // Find the keepers who own this household; filter by their notifyLanternResponse pref
   const parents = await db.select().from(users).where(
-    and(eq(users.householdId, bell.householdId), eq(users.role, 'keeper'))
+    and(eq(users.householdId, lantern.householdId), eq(users.role, 'keeper'))
   );
 
-  const optedParents = parents.filter(p => p.notifyBellResponse !== false);
+  const optedParents = parents.filter(p => p.notifyLanternResponse !== false);
   if (optedParents.length === 0) {
-    logSkip('notify_bell_response_skip', { reason: 'no_parents_opted_in', bellId, householdId: bell.householdId });
+    logSkip('notify_lantern_response_skip', { reason: 'no_parents_opted_in', lanternId, householdId: lantern.householdId });
     return;
   }
 
   const t = getCopy();
   const msg = response === 'on_my_way'
-    ? { title: t.urgentSignal.respondedTitles.onWay(name), body: t.urgentSignal.respondedBodies.onWay, tag: `${t.urgentSignal.respondedTagPrefix}-${bellId}` }
+    ? { title: t.urgentSignal.respondedTitles.onWay(name), body: t.urgentSignal.respondedBodies.onWay, tag: `${t.urgentSignal.respondedTagPrefix}-${lanternId}` }
     : response === 'in_thirty'
-    ? { title: t.urgentSignal.respondedTitles.thirty(name), body: t.urgentSignal.respondedBodies.thirty, tag: `${t.urgentSignal.thirtyTagPrefix}-${bellId}` }
-    : { title: t.urgentSignal.respondedTitles.cannot(name), body: t.urgentSignal.respondedBodies.cannot, tag: `${t.urgentSignal.cannotTagPrefix}-${bellId}` };
+    ? { title: t.urgentSignal.respondedTitles.thirty(name), body: t.urgentSignal.respondedBodies.thirty, tag: `${t.urgentSignal.thirtyTagPrefix}-${lanternId}` }
+    : { title: t.urgentSignal.respondedTitles.cannot(name), body: t.urgentSignal.respondedBodies.cannot, tag: `${t.urgentSignal.cannotTagPrefix}-${lanternId}` };
 
   for (const parent of optedParents) {
     try {
       await pushToUser(parent.id, { ...msg, url: `/?tab=${t.urgentSignal.deepLinkTab}` });
     } catch (err) {
-      console.error('[notify:bellResponse:push]', err);
+      console.error('[notify:lanternResponse:push]', err);
     }
   }
 }

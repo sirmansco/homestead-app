@@ -9,8 +9,8 @@ const PREF_KEYS = [
   'notifyShiftPosted',
   'notifyShiftClaimed',
   'notifyShiftReleased',
-  'notifyBellRinging',
-  'notifyBellResponse',
+  'notifyLanternLit',
+  'notifyLanternResponse',
 ] as const;
 
 type PrefKey = typeof PREF_KEYS[number];
@@ -27,8 +27,8 @@ export async function GET() {
         notifyShiftPosted: user.notifyShiftPosted,
         notifyShiftClaimed: user.notifyShiftClaimed,
         notifyShiftReleased: user.notifyShiftReleased,
-        notifyBellRinging: user.notifyBellRinging,
-        notifyBellResponse: user.notifyBellResponse,
+        notifyLanternLit: user.notifyLanternLit,
+        notifyLanternResponse: user.notifyLanternResponse,
       },
     });
   } catch (err) {

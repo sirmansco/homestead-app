@@ -55,8 +55,8 @@ import {
   notifyShiftClaimed,
   notifyShiftReleased,
   notifyShiftCancelled,
-  notifyBellEscalated,
-  notifyBellResponse,
+  notifyLanternEscalated,
+  notifyLanternResponse,
 } from '@/lib/notify';
 import { db } from '@/lib/db';
 import { pushToUser, pushToUsers } from '@/lib/push';
@@ -169,33 +169,33 @@ describe('notifyShiftCancelled — recipient opted out (L16)', () => {
   });
 });
 
-describe('notifyBellEscalated — empty field (L16)', () => {
-  it('emits notify_bell_escalated_skip with reason empty_field', async () => {
+describe('notifyLanternEscalated — empty field (L16)', () => {
+  it('emits notify_lantern_escalated_skip with reason empty_field', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b1', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l1', householdId: 'hh-1', reason: 'sick', note: null }]))
       .mockReturnValueOnce(makeSelectStub([])); // no field caregivers
 
-    await notifyBellEscalated('b1');
+    await notifyLanternEscalated('l1');
 
     expect(pushToUsers).not.toHaveBeenCalled();
-    const logs = logCallsForEvent('notify_bell_escalated_skip');
+    const logs = logCallsForEvent('notify_lantern_escalated_skip');
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ reason: 'empty_field', bellId: 'b1', householdId: 'hh-1' });
+    expect(logs[0]).toMatchObject({ reason: 'empty_field', lanternId: 'l1', householdId: 'hh-1' });
   });
 });
 
-describe('notifyBellResponse — no parents opted in (L16)', () => {
-  it('emits notify_bell_response_skip with reason no_parents_opted_in', async () => {
+describe('notifyLanternResponse — no parents opted in (L16)', () => {
+  it('emits notify_lantern_response_skip with reason no_parents_opted_in', async () => {
     vi.mocked(db.select)
-      .mockReturnValueOnce(makeSelectStub([{ id: 'b2', householdId: 'hh-1' }])) // bell
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l2', householdId: 'hh-1' }])) // lantern
       .mockReturnValueOnce(makeSelectStub([{ id: 'u-resp', name: 'Responder' }])) // responder
-      .mockReturnValueOnce(makeSelectStub([{ id: 'p1', notifyBellResponse: false }])); // parents — none opted in
+      .mockReturnValueOnce(makeSelectStub([{ id: 'p1', notifyLanternResponse: false }])); // parents — none opted in
 
-    await notifyBellResponse('b2', 'u-resp', 'on_my_way');
+    await notifyLanternResponse('l2', 'u-resp', 'on_my_way');
 
     expect(pushToUser).not.toHaveBeenCalled();
-    const logs = logCallsForEvent('notify_bell_response_skip');
+    const logs = logCallsForEvent('notify_lantern_response_skip');
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ reason: 'no_parents_opted_in', bellId: 'b2', householdId: 'hh-1' });
+    expect(logs[0]).toMatchObject({ reason: 'no_parents_opted_in', lanternId: 'l2', householdId: 'hh-1' });
   });
 });

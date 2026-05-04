@@ -67,7 +67,7 @@ function row(overrides: Partial<{
   isAdmin: boolean;
   role: 'keeper' | 'watcher';
   notifyShiftPosted: boolean;
-  notifyBellRinging: boolean;
+  notifyLanternLit: boolean;
 }> = {}) {
   return {
     id: overrides.id ?? ADMIN_ID,
@@ -81,8 +81,8 @@ function row(overrides: Partial<{
     notifyShiftPosted: overrides.notifyShiftPosted ?? true,
     notifyShiftClaimed: true,
     notifyShiftReleased: true,
-    notifyBellRinging: overrides.notifyBellRinging ?? true,
-    notifyBellResponse: true,
+    notifyLanternLit: overrides.notifyLanternLit ?? true,
+    notifyLanternResponse: true,
   };
 }
 
@@ -336,11 +336,11 @@ describe('/api/notifications — per-household scoping (L5)', () => {
   it('GET returns only the active household row prefs', async () => {
     // requireHousehold returns the row for active household A only — that's
     // the contract. The route must not query db.users itself.
-    mockHouseholdOk(row({ householdId: HH_A, notifyBellRinging: false }));
+    mockHouseholdOk(row({ householdId: HH_A, notifyLanternLit: false }));
     const res = await notificationsGET();
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.prefs.notifyBellRinging).toBe(false);
+    expect(body.prefs.notifyLanternLit).toBe(false);
     expect(body.prefs.notifyShiftPosted).toBe(true);
   });
 

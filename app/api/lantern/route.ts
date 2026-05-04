@@ -5,7 +5,7 @@ import { lanterns } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
 import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
-import { notifyBellRing, type NotifyResult } from '@/lib/notify';
+import { notifyLanternLit, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { parseTimeRange } from '@/lib/validate/time-range';
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     // Rate limit: max 3 lanterns per user per 5 minutes. Bell spam alerts every
     // phone in the village — this is the highest-impact endpoint to protect.
-    const rl = rateLimit({ key: `bell:${user.id}`, limit: 3, windowMs: 5 * 60_000 });
+    const rl = rateLimit({ key: `lantern:${user.id}`, limit: 3, windowMs: 5 * 60_000 });
     const limited = rateLimitResponse(rl);
     if (limited) return limited;
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: timeRange.error }, { status: timeRange.status });
     }
 
-    const [bell] = await db.insert(lanterns).values({
+    const [lantern] = await db.insert(lanterns).values({
       householdId: household.id,
       createdByUserId: user.id,
       reason,
@@ -50,14 +50,14 @@ export async function POST(req: NextRequest) {
     // Recipient resolution + preference filter live in notify.ts.
     let notify: NotifyResult = { kind: 'push_error', recipients: 0, error: 'notify_threw' };
     try {
-      notify = await notifyBellRing(bell.id);
+      notify = await notifyLanternLit(lantern.id);
     } catch (err) {
-      console.error('[bell:ring:notify]', err);
+      console.error('[lantern:ring:notify]', err);
     }
 
-    return NextResponse.json({ bell, notify });
+    return NextResponse.json({ lantern, notify });
   } catch (err) {
-    return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
+    return authError(err, 'lantern', `${getCopy().urgentSignal.noun} action failed`);
   }
 }
 
@@ -69,6 +69,6 @@ export async function GET() {
       .orderBy(desc(lanterns.createdAt));
     return NextResponse.json({ lanterns: activeBells });
   } catch (err) {
-    return authError(err, 'bell', `${getCopy().urgentSignal.noun} action failed`);
+    return authError(err, 'lantern', `${getCopy().urgentSignal.noun} action failed`);
   }
 }

@@ -26,7 +26,7 @@ export async function GET() {
     const myUserIds = myRows.map(u => u.id);
 
     // Use inArray across all user IDs so multi-household users get complete exports
-    const [myShifts, myBells, mySubs, myUnavail, myBellResponses] = await Promise.all([
+    const [myShifts, myLanterns, mySubs, myUnavail, myLanternResponses] = await Promise.all([
       db.select().from(whistles).where(
         or(inArray(whistles.createdByUserId, myUserIds), inArray(whistles.claimedByUserId, myUserIds))
       ),
@@ -45,13 +45,13 @@ export async function GET() {
         photoUrl: r.photoUrl, createdAt: r.createdAt,
       })),
       whistles: myShifts,
-      lanterns: myBells,
+      lanterns: myLanterns,
       pushSubscriptions: mySubs.map(s => ({
         id: s.id, householdId: s.householdId, endpoint: s.endpoint.substring(0, 40) + '...',
         createdAt: s.createdAt,
       })),
       unavailability: myUnavail,
-      lanternResponses: myBellResponses,
+      lanternResponses: myLanternResponses,
     });
   } catch (err) {
     return authError(err, 'account:GET', 'Could not export your data');

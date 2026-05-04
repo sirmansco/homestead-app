@@ -179,8 +179,8 @@ function PushPermissionBanner({ role = 'keeper' }: { role?: 'keeper' | 'watcher'
   );
 }
 
-function BellCompose({ onRing, onBack, onPost }: {
-  onRing: (bellId: string, label: string, warning?: string) => void;
+function LanternCompose({ onRing, onBack, onPost }: {
+  onRing: (lanternId: string, label: string, warning?: string) => void;
   onBack?: () => void;
   onPost?: () => void;
 }) {
@@ -231,7 +231,7 @@ function BellCompose({ onRing, onBack, onPost }: {
         n.kind === 'vapid_missing' || n.kind === 'push_error' ? `${noun} lit — push delivery failed. Caregivers will see it when they open the app.` :
         n.kind === 'partial' ? `${noun} lit — some caregivers may not have received the push. They'll see it when they open the app.` :
         null;
-      onRing(data.bell.id, reasons[why].label, warning ?? undefined);
+      onRing(data.lantern.id, reasons[why].label, warning ?? undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
       setSubmitting(false);
@@ -356,19 +356,19 @@ function BellCompose({ onRing, onBack, onPost }: {
   );
 }
 
-type BellResponse = { userId: string; response: string };
+type LanternResponse = { userId: string; response: string };
 
-function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () => void; onDone?: () => void; bellId?: string; reason?: string; warning?: string }) {
+function LanternActive({ onBack, onDone, lanternId, reason, warning }: { onBack?: () => void; onDone?: () => void; lanternId?: string; reason?: string; warning?: string }) {
   const { activeBell, village, refreshBell } = useAppData();
   // Responses come from the shared activeBell state polled by AppDataContext
-  const responses: BellResponse[] = (bellId && activeBell?.id === bellId)
-    ? (activeBell.responses as BellResponse[]) ?? []
+  const responses: LanternResponse[] = (lanternId && activeBell?.id === lanternId)
+    ? (activeBell.responses as LanternResponse[]) ?? []
     : [];
   const members = village.length > 0 ? village : null;
 
   const [marking, setMarking] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
-  const [bellError, setBellError] = useState<string | null>(null);
+  const [lanternError, setLanternError] = useState<string | null>(null);
 
   // Map a village member ID to their response state
   function memberState(memberId: string): string {
@@ -395,20 +395,20 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
   const sitter = byGroup('field');
 
   async function handleMarkDone() {
-    if (!bellId || marking) return;
+    if (!lanternId || marking) return;
     setMarking(true);
-    setBellError(null);
+    setLanternError(null);
     try {
-      const res = await fetch(`/api/lantern/${bellId}`, {
+      const res = await fetch(`/api/lantern/${lanternId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'handled' }),
       });
       if (!res.ok) throw new Error('Could not mark as handled');
       refreshBell();
-      onDone?.();   // go to compose, stay on Bell tab
+      onDone?.();   // go to compose, stay on Lantern tab
     } catch {
-      setBellError('Something went wrong. Try again.');
+      setLanternError('Something went wrong. Try again.');
       setMarking(false);
     }
   }
@@ -416,19 +416,19 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
   async function handleCancel() {
     if (!confirmingCancel) { setConfirmingCancel(true); return; }
     setConfirmingCancel(false);
-    setBellError(null);
-    if (bellId) {
+    setLanternError(null);
+    if (lanternId) {
       try {
-        const res = await fetch(`/api/lantern/${bellId}`, {
+        const res = await fetch(`/api/lantern/${lanternId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled' }),
         });
         if (!res.ok) throw new Error(`Could not cancel ${getCopy().urgentSignal.noun.toLowerCase()}`);
         refreshBell();
-        onDone?.();   // go to compose, stay on Bell tab
+        onDone?.();   // go to compose, stay on Lantern tab
       } catch {
-        setBellError(`Could not cancel the ${getCopy().urgentSignal.noun.toLowerCase()}. Try again.`);
+        setLanternError(`Could not cancel the ${getCopy().urgentSignal.noun.toLowerCase()}. Try again.`);
       }
     } else {
       onDone?.();
@@ -484,12 +484,12 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
           }}>{warning}</div>
         )}
 
-        {bellError && (
+        {lanternError && (
           <div style={{
             marginTop: 16, padding: '10px 14px', borderRadius: 8,
             background: G.claySoft, border: `1px solid ${RED}`,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: RED,
-          }}>{bellError}</div>
+          }}>{lanternError}</div>
         )}
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleMarkDone} disabled={marking} style={{
@@ -530,7 +530,7 @@ function BellRinging({ onBack, onDone, bellId, reason, warning }: { onBack?: () 
   );
 }
 
-function BellIncoming() {
+function LanternIncoming() {
   const { allBells, bellLoading, refreshBell } = useAppData();
   const [responding, setResponding] = useState<string | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
@@ -540,11 +540,11 @@ function BellIncoming() {
     return () => clearInterval(id);
   }, []);
 
-  async function respond(bellId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
-    setResponding(bellId + response);
+  async function respond(lanternId: string, response: 'on_my_way' | 'in_thirty' | 'cannot') {
+    setResponding(lanternId + response);
     setRespondError(null);
     try {
-      const res = await fetch(`/api/lantern/${bellId}/respond`, {
+      const res = await fetch(`/api/lantern/${lanternId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ response }),
@@ -604,14 +604,14 @@ function BellIncoming() {
         tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
-        {activeBells.map(bell => {
-          const myResp = bell.myResponse;
-          const rungAt = new Date(bell.createdAt);
+        {activeBells.map(lantern => {
+          const myResp = lantern.myResponse;
+          const rungAt = new Date(lantern.createdAt);
           const secondsAgo = Math.floor((now - rungAt.getTime()) / 1000);
           const timeAgo = secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`;
 
           return (
-            <div key={bell.id} style={{
+            <div key={lantern.id} style={{
               background: G.paper, border: `1px solid ${RED}`, borderRadius: 10,
               padding: 18, marginTop: 8, position: 'relative',
               boxShadow: '0 8px 24px rgba(181,52,43,0.12)',
@@ -622,22 +622,22 @@ function BellIncoming() {
                 <span style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 11, color: G.muted }}>{timeAgo}</span>
               </div>
               <div style={{ fontFamily: G.display, fontSize: 20, fontWeight: 500, color: G.ink, lineHeight: 1.2 }}>
-                {bell.reason}
+                {lantern.reason}
               </div>
-              {bell.note && (
+              {lantern.note && (
                 <div style={{ fontFamily: G.serif, fontStyle: 'italic', color: G.ink2, fontSize: 13, marginTop: 6, lineHeight: 1.4 }}>
-                  &ldquo;{bell.note}&rdquo;
+                  &ldquo;{lantern.note}&rdquo;
                 </div>
               )}
               <div style={{ height: 1, background: G.hairline, margin: '14px 0' }} />
               <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted }}>
-                Needed from {fmtTimeOnly(bell.startsAt ?? bell.createdAt)} until {fmtTimeOnly(bell.endsAt)}
+                Needed from {fmtTimeOnly(lantern.startsAt ?? lantern.createdAt)} until {fmtTimeOnly(lantern.endsAt)}
               </div>
 
               {!myResp ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
                   <button
-                    onClick={() => respond(bell.id, 'on_my_way')}
+                    onClick={() => respond(lantern.id, 'on_my_way')}
                     disabled={responding !== null}
                     style={{
                       padding: '14px 18px', background: G.green, color: G.bg,
@@ -647,7 +647,7 @@ function BellIncoming() {
                       opacity: responding ? 0.7 : 1,
                     }}>I&apos;m on my way</button>
                   <button
-                    onClick={() => respond(bell.id, 'in_thirty')}
+                    onClick={() => respond(lantern.id, 'in_thirty')}
                     disabled={responding !== null}
                     style={{
                       padding: '12px 18px', background: 'transparent', color: G.muted,
@@ -657,7 +657,7 @@ function BellIncoming() {
                       opacity: responding ? 0.7 : 1,
                     }}>Available in 30 min</button>
                   <button
-                    onClick={() => respond(bell.id, 'cannot')}
+                    onClick={() => respond(lantern.id, 'cannot')}
                     disabled={responding !== null}
                     style={{
                       padding: '10px 18px', background: 'transparent', color: G.clay,
@@ -720,17 +720,17 @@ export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack,
   onPost?: () => void;
 }) {
   const { activeBell, refreshBell } = useAppData();
-  // 'loading' while we check for an existing ringing bell
+  // 'loading' while we check for an existing lit lantern
   const [mode, setMode] = useState<'loading' | 'compose' | 'ringing'>(
     initialCompose ? 'compose' : 'loading'
   );
   const [ringReason, setRingReason] = useState('');
-  const [ringBellId, setRingBellId] = useState<string | undefined>();
+  const [ringLanternId, setRingLanternId] = useState<string | undefined>();
   const [ringWarning, setRingWarning] = useState<string | undefined>();
 
   // When initialCompose flips true (user tapped "Ring" from another screen),
-  // jump straight to compose without waiting for the active-bell check.
-  // This replaces the old key={`lantern-${bellCompose}`} remount hack.
+  // jump straight to compose without waiting for the active-lantern check.
+  // This replaces the old key={`lantern-${lanternCompose}`} remount hack.
   useEffect(() => {
     if (initialCompose) setMode('compose');
   }, [initialCompose]);
@@ -740,7 +740,7 @@ export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack,
   useEffect(() => {
     if (role !== 'keeper' || initialCompose) return;
     if (activeBell && activeBell.status === 'ringing') {
-      setRingBellId(activeBell.id);
+      setRingLanternId(activeBell.id);
       setRingReason(activeBell.reason);
       setMode('ringing');
     } else {
@@ -749,18 +749,18 @@ export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount — subsequent changes come through activeBell prop
 
-  // Keep ringing state in sync if bell is cancelled/handled externally
+  // Keep ringing state in sync if lantern is cancelled/handled externally
   useEffect(() => {
     if (mode !== 'ringing') return;
     if (!activeBell || activeBell.status !== 'ringing') {
-      setRingBellId(undefined);
+      setRingLanternId(undefined);
       setRingReason('');
       setRingWarning(undefined);
       setMode('compose');
     }
   }, [activeBell, mode]);
 
-  if (role === 'watcher') return <BellIncoming />;
+  if (role === 'watcher') return <LanternIncoming />;
 
   if (mode === 'loading') {
     return (
@@ -770,18 +770,18 @@ export function ScreenLantern({ initialCompose = false, role = 'keeper', onBack,
     );
   }
 
-  const resetToCompose = () => { setRingBellId(undefined); setRingReason(''); setRingWarning(undefined); setMode('compose'); };
+  const resetToCompose = () => { setRingLanternId(undefined); setRingReason(''); setRingWarning(undefined); setMode('compose'); };
 
   return mode === 'compose'
-    ? <BellCompose
-        onRing={(bellId, label, warning) => { setRingBellId(bellId); setRingReason(label); setRingWarning(warning); setMode('ringing'); }}
+    ? <LanternCompose
+        onRing={(lanternId, label, warning) => { setRingLanternId(lanternId); setRingReason(label); setRingWarning(warning); setMode('ringing'); }}
         onBack={onBack}
         onPost={onPost}
       />
-    : <BellRinging
+    : <LanternActive
         onBack={() => { resetToCompose(); onBack?.(); }}
         onDone={resetToCompose}
-        bellId={ringBellId}
+        lanternId={ringLanternId}
         reason={ringReason}
         warning={ringWarning}
       />;

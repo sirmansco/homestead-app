@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull, lte } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { lanterns } from '@/lib/db/schema';
-import { escalateBell } from '@/lib/bell-escalation';
+import { escalateLantern } from '@/lib/lantern-escalation';
 
 const BATCH_LIMIT = 50;
 const CONCURRENCY = 10;
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     ))
     .limit(BATCH_LIMIT);
 
-  const results = await runWithConcurrency(due, CONCURRENCY, bell => escalateBell(bell.id));
+  const results = await runWithConcurrency(due, CONCURRENCY, lantern => escalateLantern(lantern.id));
 
   const failed = results.filter(r => r.status === 'rejected');
   const processed = due.length;
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   // second SELECT COUNT(*) every minute. The bound itself is the safety belt;
   // backlog drain is observable via successive ticks reporting processed=50.
   console.log(JSON.stringify({
-    event: 'bell_cron',
+    event: 'lantern_cron',
     processed,
     failed: failed.length,
     batch_limit: BATCH_LIMIT,
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
   }));
 
   if (failed.length > 0) {
-    console.error('[bell:cron] escalation errors', failed.map(f => (f as PromiseRejectedResult).reason));
+    console.error('[lantern:cron] escalation errors', failed.map(f => (f as PromiseRejectedResult).reason));
   }
 
   return NextResponse.json({ processed, failed: failed.length });

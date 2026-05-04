@@ -65,7 +65,7 @@ export async function GET() {
       COVEY_BRAND_ACTIVE: process.env.COVEY_BRAND_ACTIVE ?? '(unset)',
     };
 
-    // Lantern recipient diagnostic — mirrors notify.ts:notifyBellRing's WHERE clause exactly.
+    // Lantern recipient diagnostic — mirrors notify.ts:notifyLanternLit's WHERE clause exactly.
     // Reports who would receive a push if the caller lit the lantern right now. If
     // eligibleInnerCircle is 0, the silent no-op is "no one in this household is set up
     // to receive lantern pings" — not a delivery failure.
@@ -107,13 +107,13 @@ export async function GET() {
             eq(users.clerkUserId, userId),
           ));
           // Transitional read-compat: include legacy inner_circle rows alongside
-          // covey. Must mirror notify.ts:notifyBellRing exactly.
+          // covey. Must mirror notify.ts:notifyLanternLit exactly.
           // Remove after B4 backfill confirms zero inner_circle rows.
           const innerCircle = await db.select({ id: users.id }).from(users).where(and(
             eq(users.householdId, household.id),
             eq(users.role, 'watcher'),
             inArray(users.villageGroup, ['covey', 'inner_circle']),
-            eq(users.notifyBellRinging, true),
+            eq(users.notifyLanternLit, true),
           ));
           let subCount = 0;
           if (innerCircle.length > 0) {

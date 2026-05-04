@@ -8,8 +8,8 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/bell-escalation', () => ({
-  escalateBell: vi.fn(),
+vi.mock('@/lib/lantern-escalation', () => ({
+  escalateLantern: vi.fn(),
 }));
 
 vi.mock('next/server', () => ({
@@ -26,7 +26,7 @@ vi.mock('next/server', () => ({
 
 import { GET } from '@/app/api/lantern/cron/route';
 import { db } from '@/lib/db';
-import { escalateBell } from '@/lib/bell-escalation';
+import { escalateLantern } from '@/lib/lantern-escalation';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ function makeSelectStub(rows: unknown[]) {
   return chain;
 }
 
-function makeBell(id: string) {
+function makeLantern(id: string) {
   return {
     id,
     householdId: 'hh-1',
@@ -93,20 +93,20 @@ describe('GET /api/lantern/cron — auth', () => {
   it('returns 401 when Authorization header is missing', async () => {
     const res = await GET(makeRequest(null));
     expect(res.status).toBe(401);
-    expect(escalateBell).not.toHaveBeenCalled();
+    expect(escalateLantern).not.toHaveBeenCalled();
   });
 
   it('returns 401 when Authorization header is wrong', async () => {
     const res = await GET(makeRequest('Bearer wrong'));
     expect(res.status).toBe(401);
-    expect(escalateBell).not.toHaveBeenCalled();
+    expect(escalateLantern).not.toHaveBeenCalled();
   });
 
   it('returns 401 when CRON_SECRET env is unset', async () => {
     delete process.env.CRON_SECRET;
     const res = await GET(makeRequest('Bearer anything'));
     expect(res.status).toBe(401);
-    expect(escalateBell).not.toHaveBeenCalled();
+    expect(escalateLantern).not.toHaveBeenCalled();
   });
 
   it('returns 200 when Bearer matches CRON_SECRET', async () => {
@@ -124,35 +124,35 @@ describe('GET /api/lantern/cron — LIMIT enforcement', () => {
     //     returns 50 rows from the stub.
     //  2. Whatever rows the bounded SELECT returns, the route processes all
     //     of them (no further drop on the application side).
-    const lanterns = Array.from({ length: 50 }, (_, i) => makeBell(`bell-${i}`));
+    const lanterns = Array.from({ length: 50 }, (_, i) => makeLantern(`lantern-${i}`));
     const stub = makeSelectStub(lanterns);
     vi.mocked(db.select).mockReturnValueOnce(stub);
-    vi.mocked(escalateBell).mockResolvedValue();
+    vi.mocked(escalateLantern).mockResolvedValue();
 
     const res = await GET(makeRequest(`Bearer ${SECRET}`));
     const body = await res.json();
 
     expect(stub.limit).toHaveBeenCalledWith(50);
-    expect(escalateBell).toHaveBeenCalledTimes(50);
+    expect(escalateLantern).toHaveBeenCalledTimes(50);
     expect(body).toEqual({ processed: 50, failed: 0 });
   });
 
   it('emits a structured log line with batch_limit and concurrency', async () => {
-    const lanterns = Array.from({ length: 3 }, (_, i) => makeBell(`bell-${i}`));
+    const lanterns = Array.from({ length: 3 }, (_, i) => makeLantern(`lantern-${i}`));
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
-    vi.mocked(escalateBell).mockResolvedValue();
+    vi.mocked(escalateLantern).mockResolvedValue();
 
     await GET(makeRequest(`Bearer ${SECRET}`));
 
     const logCalls = (console.log as unknown as { mock: { calls: unknown[][] } }).mock.calls;
     const cronLog = logCalls.find(args => {
-      try { return JSON.parse(args[0] as string).event === 'bell_cron'; }
+      try { return JSON.parse(args[0] as string).event === 'lantern_cron'; }
       catch { return false; }
     });
     expect(cronLog).toBeDefined();
     const parsed = JSON.parse(cronLog![0] as string);
     expect(parsed).toMatchObject({
-      event: 'bell_cron',
+      event: 'lantern_cron',
       processed: 3,
       failed: 0,
       batch_limit: 50,
@@ -168,12 +168,12 @@ describe('GET /api/lantern/cron — concurrency cap', () => {
     // stable rather than empirically stable. A regression that removed the cap
     // would push highWater toward 30; cap=1 or any serial execution would pin
     // highWater at 1 and fail the `>1` assertion.
-    const lanterns = Array.from({ length: 30 }, (_, i) => makeBell(`bell-${i}`));
+    const lanterns = Array.from({ length: 30 }, (_, i) => makeLantern(`lantern-${i}`));
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
 
     let inFlight = 0;
     let highWater = 0;
-    vi.mocked(escalateBell).mockImplementation(async () => {
+    vi.mocked(escalateLantern).mockImplementation(async () => {
       inFlight++;
       if (inFlight > highWater) highWater = inFlight;
       // Yield to the event loop so other workers can start before this one resolves
@@ -185,45 +185,45 @@ describe('GET /api/lantern/cron — concurrency cap', () => {
 
     expect(highWater).toBeLessThanOrEqual(10);
     expect(highWater).toBeGreaterThan(1);
-    expect(escalateBell).toHaveBeenCalledTimes(30);
+    expect(escalateLantern).toHaveBeenCalledTimes(30);
   });
 });
 
-describe('GET /api/lantern/cron — per-bell failure isolation', () => {
+describe('GET /api/lantern/cron — per-lantern failure isolation', () => {
   it('reports failed count without poisoning successful workers', async () => {
-    const lanterns = Array.from({ length: 5 }, (_, i) => makeBell(`bell-${i}`));
+    const lanterns = Array.from({ length: 5 }, (_, i) => makeLantern(`lantern-${i}`));
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub(lanterns));
 
-    vi.mocked(escalateBell).mockImplementation(async (id: string) => {
-      if (id === 'bell-2') throw new Error('notify failed');
+    vi.mocked(escalateLantern).mockImplementation(async (id: string) => {
+      if (id === 'lantern-2') throw new Error('notify failed');
     });
 
     const res = await GET(makeRequest(`Bearer ${SECRET}`));
     const body = await res.json();
 
-    expect(escalateBell).toHaveBeenCalledTimes(5);
+    expect(escalateLantern).toHaveBeenCalledTimes(5);
     expect(body).toEqual({ processed: 5, failed: 1 });
 
     // The error-detail log line fires when failures > 0.
     const errorCalls = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls;
-    const escalationErrors = errorCalls.find(args => args[0] === '[bell:cron] escalation errors');
+    const escalationErrors = errorCalls.find(args => args[0] === '[lantern:cron] escalation errors');
     expect(escalationErrors).toBeDefined();
   });
 });
 
 describe('GET /api/lantern/cron — empty due-set', () => {
-  it('returns 200 with zero counters and never calls escalateBell', async () => {
+  it('returns 200 with zero counters and never calls escalateLantern', async () => {
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub([]));
 
     const res = await GET(makeRequest(`Bearer ${SECRET}`));
     const body = await res.json();
 
     expect(body).toEqual({ processed: 0, failed: 0 });
-    expect(escalateBell).not.toHaveBeenCalled();
+    expect(escalateLantern).not.toHaveBeenCalled();
 
     // No escalation-error console.error because failed=0
     const errorCalls = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls;
-    const escalationErrors = errorCalls.find(args => args[0] === '[bell:cron] escalation errors');
+    const escalationErrors = errorCalls.find(args => args[0] === '[lantern:cron] escalation errors');
     expect(escalationErrors).toBeUndefined();
   });
 });

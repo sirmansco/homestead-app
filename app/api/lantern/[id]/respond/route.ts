@@ -5,9 +5,9 @@ import { lanterns, lanternResponses, users, households } from '@/lib/db/schema';
 import { clerkClient } from '@clerk/nextjs/server';
 import { requireUser } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
-import { notifyBellResponse } from '@/lib/notify';
+import { notifyLanternResponse } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
-import { escalateBell } from '@/lib/bell-escalation';
+import { escalateLantern } from '@/lib/lantern-escalation';
 import { requireUUID } from '@/lib/validate/uuid';
 import { normalizeVillageGroup } from '@/lib/village-group/normalize';
 
@@ -16,8 +16,8 @@ type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: rawId } = await params;
-    const bellId = requireUUID(rawId);
-    if (!bellId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
+    const lanternId = requireUUID(rawId);
+    if (!lanternId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
     const { userId } = await requireUser();
     const body = await req.json() as ResponseBody;
@@ -27,23 +27,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Invalid response' }, { status: 400 });
     }
 
-    const [bell] = await db.select().from(lanterns).where(eq(lanterns.id, bellId)).limit(1);
-    if (!bell) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
+    const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
+    if (!lantern) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
 
     // Don't allow responses to lanterns that are no longer ringing
-    if (bell.status !== 'ringing') {
+    if (lantern.status !== 'ringing') {
       return NextResponse.json({ error: `${getCopy().urgentSignal.noun} is no longer active` }, { status: 409 });
     }
 
-    // Find this user's DB record for the bell's household.
+    // Find this user's DB record for the lantern's household.
     // Auto-create it if missing (caregiver who was invited via link may not have a row yet).
     let [userRow] = await db.select().from(users)
-      .where(and(eq(users.clerkUserId, userId), eq(users.householdId, bell.householdId)))
+      .where(and(eq(users.clerkUserId, userId), eq(users.householdId, lantern.householdId)))
       .limit(1);
 
     if (!userRow) {
       // Verify the user is actually a member of this household via Clerk org membership
-      const [household] = await db.select().from(households).where(eq(households.id, bell.householdId)).limit(1);
+      const [household] = await db.select().from(households).where(eq(households.id, lantern.householdId)).limit(1);
       if (!household) return NextResponse.json({ error: 'Household not found' }, { status: 404 });
 
       const client = await clerkClient();
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const meta = (cu.publicMetadata ?? {}) as { villageGroup?: 'covey' | 'field' | 'inner_circle' | 'sitter' };
       [userRow] = await db.insert(users).values({
         clerkUserId: userId,
-        householdId: bell.householdId,
+        householdId: lantern.householdId,
         email,
         name,
         role: 'watcher',
@@ -65,45 +65,45 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }).returning();
     }
 
-    // Upsert response (one per user per bell)
+    // Upsert response (one per user per lantern)
     const existing = await db.select().from(lanternResponses)
-      .where(and(eq(lanternResponses.lanternId, bellId), eq(lanternResponses.userId, userRow.id)))
+      .where(and(eq(lanternResponses.lanternId, lanternId), eq(lanternResponses.userId, userRow.id)))
       .limit(1);
 
     if (existing.length > 0) {
       await db.update(lanternResponses)
         .set({ response, respondedAt: new Date() })
-        .where(and(eq(lanternResponses.lanternId, bellId), eq(lanternResponses.userId, userRow.id)));
+        .where(and(eq(lanternResponses.lanternId, lanternId), eq(lanternResponses.userId, userRow.id)));
     } else {
       await db.insert(lanternResponses).values({
-        lanternId: bellId,
+        lanternId: lanternId,
         userId: userRow.id,
         response,
       });
     }
 
-    // If on_my_way, mark bell handled
+    // If on_my_way, mark lantern handled
     if (response === 'on_my_way') {
       await db.update(lanterns)
         .set({ status: 'handled', handledByUserId: userRow.id, handledAt: new Date() })
-        .where(eq(lanterns.id, bellId));
+        .where(eq(lanterns.id, lanternId));
     }
 
-    // Notify the ringer so they see the response immediately
+    // Notify the keeper so they see the response immediately
     try {
-      await notifyBellResponse(bellId, userRow.id, response);
+      await notifyLanternResponse(lanternId, userRow.id, response);
     } catch (err) {
-      console.error('[bell:respond:notify]', err);
+      console.error('[lantern:respond:notify]', err);
     }
 
     // Immediate escalation if all covey members have responded cannot
-    if (response === 'cannot' && bell.escalatedAt === null) {
+    if (response === 'cannot' && lantern.escalatedAt === null) {
       // Transitional read-compat: include legacy inner_circle rows alongside
       // covey. Remove after B4 backfill confirms zero inner_circle rows.
       const [{ total }] = await db.select({ total: sql<number>`count(*)::int` })
         .from(users)
         .where(and(
-          eq(users.householdId, bell.householdId),
+          eq(users.householdId, lantern.householdId),
           eq(users.role, 'watcher'),
           inArray(users.villageGroup, ['covey', 'inner_circle']),
         ));
@@ -112,18 +112,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           .from(lanternResponses)
           .innerJoin(users, eq(lanternResponses.userId, users.id))
           .where(and(
-            eq(lanternResponses.lanternId, bellId),
+            eq(lanternResponses.lanternId, lanternId),
             eq(lanternResponses.response, 'cannot'),
             inArray(users.villageGroup, ['covey', 'inner_circle']),
           ));
         if (cannotCount >= total) {
-          await escalateBell(bellId);
+          await escalateLantern(lanternId);
         }
       }
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return authError(err, 'bell:respond', `Could not respond to ${getCopy().urgentSignal.noun.toLowerCase()}`);
+    return authError(err, 'lantern:respond', `Could not respond to ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }
 }
