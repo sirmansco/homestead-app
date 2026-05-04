@@ -22,6 +22,10 @@ vi.mock('@/lib/push', () => ({
   pushToUsers: vi.fn(),
 }));
 
+vi.mock('@/lib/lantern-escalation', () => ({
+  escalateLantern: vi.fn(),
+}));
+
 vi.mock('@/lib/copy', () => ({
   getCopy: () => ({
     brand: { name: 'Covey' },
@@ -71,6 +75,7 @@ vi.mock('@/lib/format/time', () => ({
 import { notifyLanternLit, notifyNewShift } from '@/lib/notify';
 import { db } from '@/lib/db';
 import { pushToUser, pushToUsers } from '@/lib/push';
+import { escalateLantern } from '@/lib/lantern-escalation';
 
 // Drizzle chain stub — supports .from().leftJoin().where().limit() and the
 // terminal awaitable. Each returned chain.then resolves with the supplied rows.
@@ -111,8 +116,8 @@ afterEach(() => {
 
 // ── notifyLanternLit ─────────────────────────────────────────────────────────
 
-describe('notifyLanternLit — empty inner circle (L13 + L16)', () => {
-  it('returns no_recipients/empty_inner_circle and emits notify_lantern_lit_skip', async () => {
+describe('notifyLanternLit — empty Covey auto-escalates to Field (ship-blocker #7)', () => {
+  it('returns auto_escalated_to_field, calls escalateLantern, and logs the skip', async () => {
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([{ id: 'l1', householdId: 'hh-1', reason: 'sick', note: null }])) // lantern
       .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))                                  // household
@@ -120,12 +125,31 @@ describe('notifyLanternLit — empty inner circle (L13 + L16)', () => {
 
     const result = await notifyLanternLit('l1');
 
-    expect(result).toEqual({ kind: 'no_recipients', reason: 'empty_inner_circle' });
+    expect(result).toEqual({ kind: 'auto_escalated_to_field', lanternId: 'l1' });
+    expect(escalateLantern).toHaveBeenCalledTimes(1);
+    expect(escalateLantern).toHaveBeenCalledWith('l1');
     expect(pushToUsers).not.toHaveBeenCalled();
 
     const logs = logCallsForEvent('notify_lantern_lit_skip');
     expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ reason: 'empty_inner_circle', lanternId: 'l1', householdId: 'hh-1' });
+    expect(logs[0]).toMatchObject({ reason: 'empty_inner_circle_auto_escalated', lanternId: 'l1', householdId: 'hh-1' });
+  });
+});
+
+describe('notifyLanternLit — non-empty Covey does NOT auto-escalate (ship-blocker #7)', () => {
+  it('does not call escalateLantern when there is at least one opted-in Covey member', async () => {
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([{ id: 'l-ok', householdId: 'hh-1', reason: 'sick', note: null }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'hh-1', name: 'Smith' }]))
+      .mockReturnValueOnce(makeSelectStub([{ id: 'u1' }]));
+    vi.mocked(pushToUsers).mockResolvedValueOnce({
+      attempted: 1, delivered: 1, stale: 0, failed: 0, errors: [],
+    });
+
+    const result = await notifyLanternLit('l-ok');
+
+    expect(result).toEqual({ kind: 'delivered', recipients: 1, delivered: 1 });
+    expect(escalateLantern).not.toHaveBeenCalled();
   });
 });
 
