@@ -36,6 +36,7 @@ vi.mock('@/lib/notify', () => ({
 vi.mock('@/lib/ratelimit', () => ({
   rateLimit: vi.fn().mockReturnValue({ ok: true, remaining: 9, resetAt: Date.now() + 3600000, retryAfterMs: 0 }),
   rateLimitResponse: vi.fn().mockReturnValue(null),
+  clientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
 // push/test route imports lib/push directly (allowlisted diagnostic); stub so

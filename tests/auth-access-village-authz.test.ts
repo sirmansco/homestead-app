@@ -26,6 +26,7 @@ vi.mock('@/lib/format', () => ({
 vi.mock('@/lib/ratelimit', () => ({
   rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 9, resetAt: 0 }),
   rateLimitResponse: vi.fn().mockReturnValue(null),
+  clientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
 vi.mock('@/lib/auth/household', async () => {
