@@ -50,6 +50,7 @@ function useIsMobile() {
   return isMobile;
 }
 
+
 function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -372,17 +373,14 @@ function CoveyInner() {
         position: 'fixed', inset: 0,
         background: G.bg, color: G.ink,
         fontFamily: G.sans,
+        display: 'flex', flexDirection: 'column',
       }}>
         {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
-        <div style={{
-          position: 'absolute', inset: 0,
-          paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-          overflow: 'hidden',
-        }}>
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
-{toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
+        {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
       </div>
     );
