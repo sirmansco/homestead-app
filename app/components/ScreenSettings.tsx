@@ -168,7 +168,10 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     setDeletingState('deleting');
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/account?confirm=yes-delete-my-data', { method: 'DELETE' });
+      const res = await fetch('/api/account?confirm=yes-delete-my-data', {
+        method: 'DELETE',
+        headers: { 'x-covey-confirm': 'yes-delete-my-data' },
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Delete failed (${res.status})`);
