@@ -27,22 +27,22 @@
 /* ── Dark overrides — system preference ───────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg:         #1F2420;
-    --paper:      #2D3328;
+    --bg:         #22271F;
+    --paper:      #2A3025;
     --ink:        #E8DFCE;
     --ink2:       #B8AF9F;
-    --muted:      #7A7468;
-    --hairline:   rgba(232,223,206,0.10);
-    --hairline2:  rgba(232,223,206,0.20);
-    --green:      #6B7A5E;
-    --green-soft: #2A2E26;
+    --muted:      #8A8478;
+    --hairline:   rgba(232,223,206,0.14);
+    --hairline2:  rgba(232,223,206,0.28);
+    --green:      #7A8F6A;
+    --green-soft: #2F3529;
     --clay:       #C4614A;
-    --clay-soft:  #2E1A16;
+    --clay-soft:  #3A1F1A;
     --mustard:    #D9A441;
-    --cream:      #252820;
+    --cream:      #282D23;
     --red:        #C4614A;
     --red-dark:   #8E3A2A;
-    --bell-bg:    #1E2018;
+    --bell-bg:    #232820;
     --error-bg:   #2E1510;
     --error-text: #F0A090;
     --scrim:      rgba(0,0,0,0.6);
@@ -51,22 +51,22 @@
 
 /* ── Dark overrides — explicit user preference ────────────────────────── */
 [data-theme="dark"] {
-  --bg:         #1F2420;
-  --paper:      #2D3328;
+  --bg:         #22271F;
+  --paper:      #2A3025;
   --ink:        #E8DFCE;
   --ink2:       #B8AF9F;
-  --muted:      #7A7468;
-  --hairline:   rgba(232,223,206,0.10);
-  --hairline2:  rgba(232,223,206,0.20);
-  --green:      #6B7A5E;
-  --green-soft: #2A2E26;
+  --muted:      #8A8478;
+  --hairline:   rgba(232,223,206,0.14);
+  --hairline2:  rgba(232,223,206,0.28);
+  --green:      #7A8F6A;
+  --green-soft: #2F3529;
   --clay:       #C4614A;
-  --clay-soft:  #2E1A16;
+  --clay-soft:  #3A1F1A;
   --mustard:    #D9A441;
-  --cream:      #252820;
+  --cream:      #282D23;
   --red:        #C4614A;
   --red-dark:   #8E3A2A;
-  --bell-bg:    #1E2018;
+  --bell-bg:    #232820;
   --error-bg:   #2E1510;
   --error-text: #F0A090;
   --scrim:      rgba(0,0,0,0.6);

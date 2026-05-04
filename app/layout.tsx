@@ -64,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     var t = localStorage.getItem('covey-theme') || localStorage.getItem('homestead-theme');
     var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.style.background = dark ? '#1F2420' : '#E8DFCE';
+    document.documentElement.style.background = dark ? '#22271F' : '#E8DFCE';
   } catch(e) {}
 })();
           `.trim() }} />
