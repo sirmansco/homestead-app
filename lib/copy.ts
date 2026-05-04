@@ -78,6 +78,10 @@ export type AppCopy = {
     loadingState: string;
     emptyState: string;
     quote: string;
+    // Lowercase mid-sentence noun for the household's caregiver network.
+    // Covey: 'covey'. Homestead: 'village'. Used in flowing prose where
+    // 'title' (Title Case) doesn't fit grammatically.
+    networkLabel: string;
   };
   roles: {
     keeper: { singular: string; plural: string };
