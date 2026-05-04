@@ -13,16 +13,16 @@ export default function TermsPage() {
   return (
     <main style={{
       maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px',
-      fontFamily: 'Georgia, serif', color: '#1B1713', lineHeight: 1.6,
+      fontFamily: 'Georgia, serif', color: 'var(--ink)', lineHeight: 1.6,
     }}>
       <nav style={{ marginBottom: 32, fontSize: 13 }}>
-        <Link href="/" style={{ color: '#7A6C5D' }}>← {t.brand.name}</Link>
+        <Link href="/" style={{ color: 'var(--muted)' }}>← {t.brand.name}</Link>
       </nav>
 
       <h2 style={{ fontStyle: 'italic', fontSize: 32, margin: '0 0 8px', fontWeight: 500 }}>
         Terms of Service
       </h2>
-      <p style={{ color: '#7A6C5D', fontSize: 13, marginTop: 0 }}>
+      <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0 }}>
         Last updated: May 3, 2026
       </p>
 
