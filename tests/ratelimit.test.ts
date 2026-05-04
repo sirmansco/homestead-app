@@ -46,4 +46,29 @@ describe('rateLimit', () => {
       }, 20);
     });
   });
+
+  // cost: debit N tokens per call so a single request producing N units of
+  // downstream work consumes the right share of the bucket. Backs the
+  // whistles recurrence fan-out fix (audit ship-blocker #8).
+  it('debits cost tokens instead of 1 when cost > 1', () => {
+    const r = rateLimit({ key, limit: 10, windowMs: 60_000, cost: 3 });
+    expect(r.ok).toBe(true);
+    expect(r.remaining).toBe(7);
+  });
+
+  it('blocks when cumulative cost exceeds limit', () => {
+    rateLimit({ key, limit: 10, windowMs: 60_000, cost: 6 });
+    const second = rateLimit({ key, limit: 10, windowMs: 60_000, cost: 5 });
+    expect(second.ok).toBe(false);
+    expect(second.retryAfterMs).toBeGreaterThan(0);
+  });
+
+  it('treats omitted cost as 1 (back-compat)', () => {
+    const r1 = rateLimit({ key, limit: 2, windowMs: 60_000 });
+    const r2 = rateLimit({ key, limit: 2, windowMs: 60_000 });
+    const r3 = rateLimit({ key, limit: 2, windowMs: 60_000 });
+    expect(r1.ok).toBe(true);
+    expect(r2.ok).toBe(true);
+    expect(r3.ok).toBe(false);
+  });
 });

@@ -39,6 +39,10 @@ export function rateLimit(opts: {
   key: string;
   limit: number;
   windowMs: number;
+  // Tokens to debit. Default 1. Use >1 when a single request produces N
+  // units of downstream work (e.g., bulk insert, fan-out) so the limit
+  // tracks true cost rather than call count.
+  cost?: number;
 }): RateLimitResult {
   const now = Date.now();
   gc(now);
@@ -49,7 +53,7 @@ export function rateLimit(opts: {
     store.set(opts.key, bucket);
   }
 
-  bucket.count++;
+  bucket.count += opts.cost ?? 1;
   const ok = bucket.count <= opts.limit;
   const remaining = Math.max(0, opts.limit - bucket.count);
   const retryAfterMs = ok ? 0 : bucket.resetAt - now;

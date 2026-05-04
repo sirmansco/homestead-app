@@ -159,10 +159,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'no_access' }, { status: 403 });
     }
 
-    // Rate limit: 20 whistles per hour per user (generous — covers recurring batches)
-    const rl = rateLimit({ key: `shift-post:${user.id}`, limit: 20, windowMs: 60 * 60_000 });
-    const limited = rateLimitResponse(rl);
-    if (limited) return limited;
     const body = await req.json() as {
       title?: string;
       forWhom?: string;
@@ -261,6 +257,19 @@ export async function POST(req: NextRequest) {
         recurOccurrences: null,
       });
     }
+
+    // Rate limit by true cost: a recurrence producing N rows debits N from
+    // the bucket so 20 calls of 52-row recurrences (1,040 rows) can't slip
+    // past a per-call limit. Limit raised to 100 to accommodate one yearly
+    // weekly recurrence (52) plus margin for typical one-off posts.
+    const rl = rateLimit({
+      key: `shift-post:${user.id}`,
+      limit: 100,
+      windowMs: 60 * 60_000,
+      cost: valuesList.length,
+    });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
 
     const created = await db.insert(whistles).values(valuesList).returning();
 
