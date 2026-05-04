@@ -46,7 +46,7 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
   users: [
     'id', 'clerk_user_id', 'household_id', 'email', 'name', 'role', 'village_group',
     'photo_url', 'notify_shift_posted', 'notify_shift_claimed', 'notify_shift_released',
-    'notify_bell_ringing', 'notify_bell_response', 'is_admin', 'cal_token', 'created_at',
+    'notify_lantern_lit', 'notify_lantern_response', 'is_admin', 'cal_token', 'created_at',
   ],
   lanterns: [
     'id', 'household_id', 'created_by_user_id', 'reason', 'note', 'starts_at', 'ends_at',
