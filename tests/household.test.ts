@@ -13,6 +13,8 @@ vi.mock('@/lib/db', () => ({
     insert: vi.fn(),
     update: vi.fn(),
     $count: vi.fn(),
+    transaction: vi.fn(),
+    execute: vi.fn(),
   },
 }));
 
@@ -69,6 +71,22 @@ function makeInsertStub(rows: unknown[] = []) {
   chain['catch']   = () => chain;
   chain['finally'] = () => chain;
   return chain;
+}
+
+// Drives db.transaction(callback) by invoking the callback with a tx object
+// that proxies to the same select/insert/$count mocks the outer test sets up.
+// The callback's return value resolves out of the transaction call.
+function installTransactionPassthrough() {
+  vi.mocked(db.transaction).mockImplementation(async (cb: (tx: unknown) => unknown) => {
+    const tx = {
+      select: db.select,
+      insert: db.insert,
+      update: db.update,
+      $count: db.$count,
+      execute: vi.fn().mockResolvedValue(undefined), // pg_advisory_xact_lock no-op in tests
+    };
+    return await cb(tx);
+  });
 }
 
 // ── Clerk stubs ──────────────────────────────────────────────────────────────
@@ -141,10 +159,12 @@ describe('requireHousehold()', () => {
   });
 
   it('creates user row when household exists but user does not', async () => {
+    installTransactionPassthrough();
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW])) // household: found
-      .mockReturnValueOnce(makeSelectStub([]))              // user: not found
-      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // user: re-fetch after insert
+      .mockReturnValueOnce(makeSelectStub([]))              // outer user lookup: not found
+      .mockReturnValueOnce(makeSelectStub([]))              // inside tx: existing-user check, none
+      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // inside tx: re-fetch after insert
 
     vi.mocked(db.insert).mockReturnValue(makeInsertStub());
     vi.mocked(db.$count).mockResolvedValue(1); // not first user → caregiver
@@ -163,7 +183,7 @@ describe('requireHousehold()', () => {
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([]))              // household: not found (pre-insert)
       .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW])) // household: re-fetch finds it
-      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // user: found
+      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // user: found (no tx path)
 
     vi.mocked(db.insert).mockReturnValue(makeInsertStub([])); // conflict → nothing returned
 
@@ -173,11 +193,13 @@ describe('requireHousehold()', () => {
     expect(result.user.id).toBe(USER_ID);
   });
 
-  it('handles race: user insert conflicts, re-fetch succeeds', async () => {
+  it('handles race: user insert conflicts inside transaction, re-fetch succeeds', async () => {
+    installTransactionPassthrough();
     vi.mocked(db.select)
       .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW])) // household: found
-      .mockReturnValueOnce(makeSelectStub([]))              // user: not found (pre-insert)
-      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // user: re-fetch finds it
+      .mockReturnValueOnce(makeSelectStub([]))              // outer user lookup: not found
+      .mockReturnValueOnce(makeSelectStub([]))              // inside tx: existing-user check, none
+      .mockReturnValueOnce(makeSelectStub([USER_ROW]));     // inside tx: re-fetch finds the winner's row
 
     vi.mocked(db.insert).mockReturnValue(makeInsertStub([])); // conflict → nothing returned
     vi.mocked(db.$count).mockResolvedValue(1);
@@ -185,5 +207,133 @@ describe('requireHousehold()', () => {
     const result = await requireHousehold();
 
     expect(result.user.id).toBe(USER_ID);
+  });
+
+  // ── B2: first-user race (Session 5 deferred from Session 4) ─────────────────
+  //
+  // Two concurrent requireHousehold() calls for different clerkUserIds in the
+  // same empty household. Without the advisory lock + transactional re-count,
+  // both observed memberCount === 0 and both inserted with isAdmin=true. The
+  // fix serializes the count+insert inside a transaction held by
+  // pg_advisory_xact_lock(hashtext('covey:first-user:' + household.id)) — only
+  // one transaction at a time can run that block per household.
+  //
+  // We can't simulate real Postgres locking in vitest, but we CAN prove:
+  //   (1) the advisory lock is acquired inside the transaction before any
+  //       count/insert, AND
+  //   (2) when memberCount > 0 (i.e. the other tx has already committed by the
+  //       time we re-count inside our tx), isFirstUser is false and the row
+  //       inserts with isAdmin=false.
+
+  it('B2 race: second user observes count > 0 inside tx and inserts with isAdmin=false', async () => {
+    // Capture what the insert is called with so we can assert on isAdmin.
+    const insertedValues: unknown[] = [];
+    const captureInsertStub = () => {
+      const chain: Record<string, unknown> = {};
+      chain['values'] = (vals: unknown) => { insertedValues.push(vals); return chain; };
+      chain['onConflictDoNothing'] = () => chain;
+      chain['returning'] = () => chain;
+      chain['then'] = (resolve: (v: unknown) => void) => { resolve([]); return chain; };
+      chain['catch'] = () => chain;
+      chain['finally'] = () => chain;
+      return chain;
+    };
+
+    installTransactionPassthrough();
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW])) // household: found
+      .mockReturnValueOnce(makeSelectStub([]))              // outer user lookup: not found
+      .mockReturnValueOnce(makeSelectStub([]))              // inside tx: existing-user check, none
+      .mockReturnValueOnce(makeSelectStub([{ ...USER_ROW, role: 'watcher', isAdmin: false }]));
+
+    vi.mocked(db.insert).mockReturnValue(captureInsertStub() as ReturnType<typeof db.insert>);
+    // Other transaction has committed first-user; our tx now sees count = 1.
+    vi.mocked(db.$count).mockResolvedValue(1);
+
+    const result = await requireHousehold();
+
+    expect(insertedValues).toHaveLength(1);
+    expect((insertedValues[0] as { isAdmin?: boolean }).isAdmin).toBe(false);
+    expect((insertedValues[0] as { role?: string }).role).toBe('watcher');
+    expect(result.user).toBeTruthy();
+  });
+
+  it('B2 race: first user observes count === 0 inside tx and inserts with isAdmin=true', async () => {
+    const insertedValues: unknown[] = [];
+    const captureInsertStub = () => {
+      const chain: Record<string, unknown> = {};
+      chain['values'] = (vals: unknown) => { insertedValues.push(vals); return chain; };
+      chain['onConflictDoNothing'] = () => chain;
+      chain['returning'] = () => chain;
+      chain['then'] = (resolve: (v: unknown) => void) => { resolve([]); return chain; };
+      chain['catch'] = () => chain;
+      chain['finally'] = () => chain;
+      return chain;
+    };
+
+    installTransactionPassthrough();
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW]))
+      .mockReturnValueOnce(makeSelectStub([]))
+      .mockReturnValueOnce(makeSelectStub([]))
+      .mockReturnValueOnce(makeSelectStub([USER_ROW]));
+
+    vi.mocked(db.insert).mockReturnValue(captureInsertStub() as ReturnType<typeof db.insert>);
+    vi.mocked(db.$count).mockResolvedValue(0);
+
+    await requireHousehold();
+
+    expect(insertedValues).toHaveLength(1);
+    expect((insertedValues[0] as { isAdmin?: boolean }).isAdmin).toBe(true);
+    expect((insertedValues[0] as { role?: string }).role).toBe('keeper');
+  });
+
+  it('B2: advisory lock is acquired before count/insert inside transaction', async () => {
+    const callOrder: string[] = [];
+    const lockExecute = vi.fn().mockImplementation((q: unknown) => {
+      // Drizzle sql tag produces an object with a `queryChunks`-ish shape; we
+      // just need to confirm the query mentions pg_advisory_xact_lock.
+      const serialized = JSON.stringify(q);
+      if (serialized.includes('pg_advisory_xact_lock')) callOrder.push('lock');
+      return Promise.resolve(undefined);
+    });
+
+    vi.mocked(db.transaction).mockImplementation(async (cb: (tx: unknown) => unknown) => {
+      const tx = {
+        select: vi.fn().mockImplementation((...args: unknown[]) => {
+          callOrder.push('select');
+          return (db.select as unknown as (...a: unknown[]) => unknown)(...args);
+        }),
+        insert: vi.fn().mockImplementation((...args: unknown[]) => {
+          callOrder.push('insert');
+          return (db.insert as unknown as (...a: unknown[]) => unknown)(...args);
+        }),
+        update: db.update,
+        $count: vi.fn().mockImplementation(async (...args: unknown[]) => {
+          callOrder.push('count');
+          return (db.$count as unknown as (...a: unknown[]) => unknown)(...args);
+        }),
+        execute: lockExecute,
+      };
+      return await cb(tx);
+    });
+
+    vi.mocked(db.select)
+      .mockReturnValueOnce(makeSelectStub([HOUSEHOLD_ROW]))
+      .mockReturnValueOnce(makeSelectStub([]))
+      .mockReturnValueOnce(makeSelectStub([]))
+      .mockReturnValueOnce(makeSelectStub([USER_ROW]));
+    vi.mocked(db.insert).mockReturnValue(makeInsertStub());
+    vi.mocked(db.$count).mockResolvedValue(0);
+
+    await requireHousehold();
+
+    // Lock must come before any tx select/count/insert. The first 'select'
+    // call inside callOrder is the inside-tx existing-user check.
+    expect(callOrder[0]).toBe('lock');
+    expect(callOrder).toContain('count');
+    expect(callOrder).toContain('insert');
+    expect(callOrder.indexOf('lock')).toBeLessThan(callOrder.indexOf('count'));
+    expect(callOrder.indexOf('lock')).toBeLessThan(callOrder.indexOf('insert'));
   });
 });

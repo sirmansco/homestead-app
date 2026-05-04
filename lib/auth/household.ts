@@ -1,5 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
 import { looksLikeSlug } from '@/lib/format';
@@ -47,22 +47,38 @@ export async function requireHousehold() {
       name?: string;
     };
 
-    const memberCount = await db.$count(users, eq(users.householdId, household.id));
-    const isFirstUser = memberCount === 0;
+    // Serialize first-user-for-household decisions across concurrent requests.
+    // Without the advisory lock, two concurrent calls for different clerkUserIds
+    // in the same household both observe memberCount === 0 and both insert with
+    // isAdmin=true, leaving the household with two admins.
+    user = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'covey:first-user:' + household.id}))`);
 
-    await db.insert(users).values({
-      clerkUserId: userId,
-      householdId: household.id,
-      email,
-      name: meta.name || name,
-      role: meta.appRole || (isFirstUser ? 'keeper' : 'watcher'),
-      villageGroup: normalizeVillageGroup(meta.villageGroup || (isFirstUser ? 'covey' : 'field')),
-      isAdmin: isFirstUser,
-    }).onConflictDoNothing();
-    [user] = await db.select().from(users).where(and(
-      eq(users.clerkUserId, userId),
-      eq(users.householdId, household.id),
-    )).limit(1);
+      const [existing] = await tx.select().from(users).where(and(
+        eq(users.clerkUserId, userId),
+        eq(users.householdId, household.id),
+      )).limit(1);
+      if (existing) return existing;
+
+      const memberCount = await tx.$count(users, eq(users.householdId, household.id));
+      const isFirstUser = memberCount === 0;
+
+      await tx.insert(users).values({
+        clerkUserId: userId,
+        householdId: household.id,
+        email,
+        name: meta.name || name,
+        role: meta.appRole || (isFirstUser ? 'keeper' : 'watcher'),
+        villageGroup: normalizeVillageGroup(meta.villageGroup || (isFirstUser ? 'covey' : 'field')),
+        isAdmin: isFirstUser,
+      }).onConflictDoNothing();
+
+      const [created] = await tx.select().from(users).where(and(
+        eq(users.clerkUserId, userId),
+        eq(users.householdId, household.id),
+      )).limit(1);
+      return created;
+    });
     if (!user) throw new Error('Failed to resolve user');
   } else if (looksLikeSlug(user.name)) {
     // Backfill: the row was seeded from email/username before Clerk collected a
