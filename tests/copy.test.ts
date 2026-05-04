@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getCopy } from '../lib/copy';
-import { homesteadCopy } from '../lib/copy.homestead';
+import { homesteadCopy } from '../lib/copy.legacy';
 import { coveyCopy } from '../lib/copy.covey';
 
 describe('lib/copy — flag selector', () => {

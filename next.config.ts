@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   org: 'sirmans-co',
   project: 'covey',
+  release: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7),
   // Upload source maps only in CI to avoid slowing local builds
   silent: !process.env.CI,
   widenClientFileUpload: true,

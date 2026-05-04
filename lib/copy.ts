@@ -106,7 +106,7 @@ export type AppCopy = {
   };
 };
 
-import { homesteadCopy } from './copy.homestead';
+import { homesteadCopy } from './copy.legacy';
 import { coveyCopy } from './copy.covey';
 
 // Server-side selector — reads process.env at call time so the flag can be
