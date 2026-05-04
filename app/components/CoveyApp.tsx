@@ -239,6 +239,10 @@ function CoveyInner() {
   const [screen, setScreen] = useState<TabId>('perch');
   const [lanternCompose, setLanternCompose] = useState(false); // true = skip active-lantern check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
+  // B7: deep-link push → highlight the specific whistle's ShiftCard. Set when
+  // the URL carries ?whistle=<uuid>; auto-cleared after 5s so a stale param
+  // from history doesn't permanently mark a card.
+  const [highlightWhistleId, setHighlightWhistleId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const vpHeight = useVisualViewportHeight();
 
@@ -259,25 +263,64 @@ function CoveyInner() {
       .catch(() => {});
   }, [user?.id, canSwitchRole, active?.id, rolesByHousehold]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Deep-link from push notification: ?tab=bell (or ?tab=almanac etc.)
     // This runs on app open so tapping a notification lands on the right screen.
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab') as LegacyTabId | null;
-    const validTabs: LegacyTabId[] = ['perch', 'post', 'circle', 'village', 'whistles', 'lantern', 'bell', 'almanac', 'shifts', 'settings', 'diagnostics'];
-    if (tabParam && validTabs.includes(tabParam)) {
-      /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setScreen(normalizeTabId(tabParam));
-      // Clean the URL so the param doesn't persist on refresh
-      const clean = new URL(window.location.href);
-      clean.searchParams.delete('tab');
-      window.history.replaceState({}, '', clean.pathname + (clean.search || ''));
-      return; // don't apply localStorage over the deep-link
+    // B7: also captures ?whistle=<uuid> for ShiftCard scroll/highlight.
+    const applyDeepLink = (): boolean => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as LegacyTabId | null;
+      const whistleParam = params.get('whistle');
+      const validTabs: LegacyTabId[] = ['perch', 'post', 'circle', 'village', 'whistles', 'lantern', 'bell', 'almanac', 'shifts', 'settings', 'diagnostics'];
+
+      let consumed = false;
+      if (tabParam && validTabs.includes(tabParam)) {
+        setScreen(normalizeTabId(tabParam));
+        consumed = true;
+      }
+      // UUID v4 shape — guards against junk in URL flagging a non-existent
+      // whistle and bypasses the auto-clear timer running on garbage.
+      if (whistleParam && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(whistleParam)) {
+        setHighlightWhistleId(whistleParam);
+        consumed = true;
+      }
+
+      if (consumed) {
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete('tab');
+        clean.searchParams.delete('whistle');
+        window.history.replaceState({}, '', clean.pathname + (clean.search || ''));
+      }
+      return consumed;
+    };
+
+    const consumed = applyDeepLink();
+    if (!consumed) {
+      const savedScreen = localStorage.getItem('covey.screen') as LegacyTabId | null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (savedScreen) setScreen(normalizeTabId(savedScreen));
     }
-    const savedScreen = localStorage.getItem('covey.screen') as LegacyTabId | null;
-    if (savedScreen) setScreen(normalizeTabId(savedScreen));
+
+    // PWA standalone mode keeps the JS context alive across foreground
+    // transitions. A push tap that hits an already-running app does NOT
+    // remount, so re-parse the URL on visibilitychange + focus.
+    const onVis = () => { if (document.visibilityState === 'visible') applyDeepLink(); };
+    const onFocus = () => applyDeepLink();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
+
+  // Auto-clear the highlight 5s after it's set so a stale ?whistle= from
+  // history doesn't permanently mark a card.
+  useEffect(() => {
+    if (!highlightWhistleId) return;
+    const t = setTimeout(() => setHighlightWhistleId(null), 5000);
+    return () => clearTimeout(t);
+  }, [highlightWhistleId]);
 
   useEffect(() => { localStorage.setItem('covey.screen', screen); }, [screen]);
   useEffect(() => {
@@ -345,9 +388,10 @@ function CoveyInner() {
               onViewBell={() => navigate('lantern')}
               onPost={() => setScreen('post')}
               onVillage={() => setScreen('circle')}
+              highlightWhistleId={highlightWhistleId}
             />
           )}
-          {id === 'whistles' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
+          {id === 'whistles' && <ScreenWhistles onViewLantern={() => navigate('lantern')} highlightWhistleId={highlightWhistleId} />}
           {id === 'lantern' && (
             <ScreenLantern
               initialCompose={lanternCompose}
