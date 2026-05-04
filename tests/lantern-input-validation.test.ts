@@ -59,6 +59,7 @@ vi.mock('@/lib/notify', () => ({
 vi.mock('@/lib/ratelimit', () => ({
   rateLimit: vi.fn().mockReturnValue({ ok: true, remaining: 2, resetMs: 0 }),
   rateLimitResponse: vi.fn().mockReturnValue(null),
+  clientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
 // ── Imports after mocks ───────────────────────────────────────────────────────
