@@ -318,6 +318,7 @@ function CoveyInner() {
         <div key={id} style={{
           position: 'absolute', inset: 0,
           display: screen === id ? 'block' : 'none',
+          background: G.bg,
         }}>
           {id === 'perch' && (
             <ScreenPerch
@@ -368,6 +369,7 @@ function CoveyInner() {
     return (
       <div style={{
         position: 'fixed', inset: 0,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: G.bg, color: G.ink,
         fontFamily: G.sans,
         display: 'flex', flexDirection: 'column',

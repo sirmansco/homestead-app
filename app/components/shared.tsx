@@ -225,7 +225,7 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCou
   const tabs = role === 'watcher' ? caregiverTabs : parentTabs;
 
   return (
-    <div className="safe-area-pb" style={{
+    <div style={{
       position: 'relative', zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
