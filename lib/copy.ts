@@ -109,6 +109,44 @@ export type AppCopy = {
 import { homesteadCopy } from './copy.legacy';
 import { coveyCopy } from './copy.covey';
 
+type BrandFlagState = 'valid' | 'unset' | 'malformed';
+
+export function checkBrandFlag(
+  serverValue: string | undefined,
+  publicValue: string | undefined,
+): BrandFlagState {
+  const isValid = (v: string | undefined) => v === 'true' || v === 'false' || v === undefined;
+  if (!isValid(serverValue) || !isValid(publicValue)) return 'malformed';
+  if (serverValue === undefined && publicValue === undefined) return 'unset';
+  return 'valid';
+}
+
+// Boot-time guard: the flip from Homestead → Covey is a launch-day env-var
+// flip. If COVEY_BRAND_ACTIVE is unset or malformed in production, the app
+// silently falls back to Homestead — launch doesn't happen and nothing pages.
+// Fire a structured log line at module load so log-rate alerts catch it on deploy.
+if (process.env.NODE_ENV === 'production') {
+  const state = checkBrandFlag(
+    process.env.COVEY_BRAND_ACTIVE,
+    process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE,
+  );
+  if (state === 'unset') {
+    console.warn(JSON.stringify({
+      event: 'covey_brand_flag_unset',
+      message: 'COVEY_BRAND_ACTIVE not set in production — defaulting to Homestead copy',
+      severity: 'warn',
+    }));
+  } else if (state === 'malformed') {
+    console.error(JSON.stringify({
+      event: 'covey_brand_flag_malformed',
+      message: 'COVEY_BRAND_ACTIVE has malformed value — defaulting to Homestead copy',
+      serverValue: process.env.COVEY_BRAND_ACTIVE,
+      publicValue: process.env.NEXT_PUBLIC_COVEY_BRAND_ACTIVE,
+      severity: 'error',
+    }));
+  }
+}
+
 // Server-side selector — reads process.env at call time so the flag can be
 // changed between test cases without re-importing the module.
 export function getCopy(): AppCopy {
