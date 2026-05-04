@@ -225,10 +225,11 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCou
   const tabs = role === 'watcher' ? caregiverTabs : parentTabs;
 
   return (
-    <div className="safe-area-pb" style={{
+    <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       <div style={{
         display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
