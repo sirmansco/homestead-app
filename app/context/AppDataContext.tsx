@@ -43,8 +43,14 @@ export type ShiftRow = {
 export type VillageMember = {
   id: string;
   name: string;
+  role?: string;
   villageGroup: 'covey' | 'field';
   photoUrl?: string | null;
+};
+
+export type ChickRow = {
+  id: string;
+  name: string;
 };
 
 // ── Context shape ────────────────────────────────────────────────────────────
@@ -66,6 +72,7 @@ type AppDataCtx = {
 
   // Village
   village: VillageMember[];
+  chicks: ChickRow[];
   villageLoading: boolean;
   refreshVillage: () => void;
 };
@@ -234,6 +241,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   // Village state
   const [village, setVillage] = useState<VillageMember[]>([]);
+  const [chicks, setChicks] = useState<ChickRow[]>([]);
   const [villageLoading, setVillageLoading] = useState(false);
 
   const fetchVillage = useCallback(async () => {
@@ -243,6 +251,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return;
       const data = await res.json();
       setVillage(data.adults || []);
+      setChicks(data.chicks || []);
     } catch (err) {
       Sentry.captureException(err, { tags: { source: 'appdata:circle' } });
       console.warn('[appdata:circle] fetch failed', err instanceof Error ? err.message : String(err));
@@ -260,7 +269,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       activeBell, allBells, bellLoading, refreshBell,
       whistles, whistlesLoading, refreshWhistles,
       enableWhistleStream,
-      village, villageLoading, refreshVillage,
+      village, chicks, villageLoading, refreshVillage,
     }}>
       {children}
     </AppDataContext.Provider>

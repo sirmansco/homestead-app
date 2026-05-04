@@ -3,11 +3,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ERROR_BG, ERROR_TEXT, G } from './tokens';
 import { GMasthead, GLabel, Icons } from './shared';
 import { useHousehold } from './HouseholdSwitcher';
+import { useAppData } from '@/app/context/AppDataContext';
 import { shortName } from '@/lib/format';
 import { WhenPickerWindow, WhenPickerDate, shiftWindowPresets, datePresets } from './WhenPicker';
 import { getCopy } from '@/lib/copy';
 
-type Kid = { id: string; name: string };
 type Caregiver = { id: string; name: string; role: string };
 
 function toLocalInputValue(d: Date) {
@@ -21,6 +21,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   onRing?: () => void;
 }) {
   const { active, all } = useHousehold();
+  const { chicks: contextChicks, village } = useAppData();
   const multi = all.length > 1;
 
   const defaults = useMemo(() => {
@@ -34,16 +35,12 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
   const [title, setTitle] = useState('');
   const [forWhom, setForWhom] = useState('');
   const [selectedKidIds, setSelectedKidIds] = useState<string[]>([]);
-  const [chicks, setChicks] = useState<Kid[]>([]);
-  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
+  const chicks = contextChicks;
+  const caregivers = useMemo(
+    () => (village as Caregiver[]).filter(a => a.role === 'watcher'),
+    [village],
+  );
   const [preferredCaregiverId, setPreferredCaregiverId] = useState<string>('');
-
-  useEffect(() => {
-    fetch('/api/circle').then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.chicks) setChicks(d.chicks);
-      if (d?.adults) setCaregivers((d.adults as Caregiver[]).filter(a => a.role === 'watcher'));
-    }).catch(() => {});
-  }, [active?.id]);
 
   const toggleKid = (id: string) => {
     setSelectedKidIds(prev => prev.includes(id) ? prev.filter(k => k !== id) : [...prev, id]);

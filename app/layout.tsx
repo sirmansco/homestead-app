@@ -56,14 +56,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <meta name="app-sha" content={APP_SHA} />
           <link rel="apple-touch-icon" href="/icons/apple-touch-icon-covey.png" />
-          {/* Blocking script — applies saved theme before first paint to prevent flash */}
+          {/* Blocking script — applies saved theme + background before first paint to prevent flash */}
           <script dangerouslySetInnerHTML={{ __html: `
 (function(){
   try {
     var t = localStorage.getItem('covey-theme') || localStorage.getItem('homestead-theme');
-    if (t === 'dark' || t === 'light') {
-      document.documentElement.setAttribute('data-theme', t);
-    }
+    var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.style.background = dark ? '#1F2420' : '#E8DFCE';
   } catch(e) {}
 })();
           `.trim() }} />
