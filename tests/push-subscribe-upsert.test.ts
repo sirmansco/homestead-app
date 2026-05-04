@@ -4,18 +4,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // SELECT-then-INSERT. Reverting to the pre-B6 shape (adding back a db.select
 // call before insert) must turn the "should not call db.select" assertion red.
 
-const { mockInsert, mockValues, mockOnConflictDoUpdate, mockSelect } = vi.hoisted(() => {
+const { mockInsert, mockValues, mockOnConflictDoUpdate, mockSelect, mockDelete, mockDeleteWhere } = vi.hoisted(() => {
   const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
   const mockValues = vi.fn().mockReturnValue({ onConflictDoUpdate: mockOnConflictDoUpdate });
   const mockInsert = vi.fn().mockReturnValue({ values: mockValues });
   const mockSelect = vi.fn();
-  return { mockInsert, mockValues, mockOnConflictDoUpdate, mockSelect };
+  const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
+  const mockDelete = vi.fn().mockReturnValue({ where: mockDeleteWhere });
+  return { mockInsert, mockValues, mockOnConflictDoUpdate, mockSelect, mockDelete, mockDeleteWhere };
 });
 
 vi.mock('@/lib/db', () => ({
   db: {
     insert: mockInsert,
     select: mockSelect,
+    delete: mockDelete,
   },
 }));
 
@@ -74,6 +77,8 @@ beforeEach(() => {
   mockInsert.mockReturnValue({ values: mockValues });
   mockValues.mockReturnValue({ onConflictDoUpdate: mockOnConflictDoUpdate });
   mockOnConflictDoUpdate.mockResolvedValue(undefined);
+  mockDelete.mockReturnValue({ where: mockDeleteWhere });
+  mockDeleteWhere.mockResolvedValue(undefined);
 });
 
 describe('POST /api/push/subscribe — L18 upsert correctness', () => {
