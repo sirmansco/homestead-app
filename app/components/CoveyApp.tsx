@@ -369,13 +369,15 @@ function CoveyInner() {
     return (
       <div style={{
         position: 'fixed', inset: 0,
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: G.bg, color: G.ink,
         fontFamily: G.sans,
-        display: 'flex', flexDirection: 'column',
       }}>
         {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
-        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+          overflow: 'hidden',
+        }}>
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
