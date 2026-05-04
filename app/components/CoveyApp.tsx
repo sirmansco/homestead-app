@@ -74,6 +74,31 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   );
 }
 
+function SafeAreaDebug() {
+  const [info, setInfo] = useState('measuring...');
+  useEffect(() => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;bottom:0;left:0;height:env(safe-area-inset-bottom,999px);width:1px;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    const saInset = getComputedStyle(probe).height;
+    document.body.removeChild(probe);
+    const tabBar = document.querySelector('[style*="calc(56px"]') as HTMLElement | null;
+    const tabH = tabBar ? getComputedStyle(tabBar).height : 'not found';
+    const tabRect = tabBar ? JSON.stringify(tabBar.getBoundingClientRect()) : 'n/a';
+    const vh = window.innerHeight;
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone;
+    setInfo(`sa=${saInset} tabH=${tabH} vh=${vh} standalone=${standalone} rect=${tabRect}`);
+  }, []);
+  return (
+    <div style={{
+      position: 'fixed', top: 60, left: 0, right: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)', color: '#fff',
+      fontSize: 10, padding: '6px 8px', fontFamily: 'monospace',
+      wordBreak: 'break-all',
+    }}>{info}</div>
+  );
+}
+
 function useLiveClock() {
   const [time, setTime] = useState(() => {
     const now = new Date();
@@ -381,6 +406,7 @@ function CoveyInner() {
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
+        <SafeAreaDebug />
         {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
       </div>
