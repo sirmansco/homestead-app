@@ -811,7 +811,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
         tagline={tagline}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {/* Active lantern card — visible to caregivers and parents.
             Cancel action is parent-only (PATCH /api/lantern/:id is gated server-side). */}
         {activeBell && (

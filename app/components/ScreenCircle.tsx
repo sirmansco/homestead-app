@@ -695,7 +695,7 @@ function CaregiverVillage({ onOpenSettings }: { onOpenSettings?: () => void }) {
         tagline="The families you help with."
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {loadError && (
           <div style={{
             margin: '8px 0', padding: '10px 14px', borderRadius: 8,
@@ -911,7 +911,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
         tagline="Grouped by how close they are when the call goes out."
       />
 
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {villageError && (
           <div style={{
             margin: '8px 0', padding: '10px 14px', borderRadius: 8,

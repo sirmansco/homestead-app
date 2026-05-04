@@ -249,7 +249,7 @@ function LanternCompose({ onRing, onBack, onPost }: {
         titleColor={RED}
         tagline="Something came up — we'll reach the inner circle first, then widen if no one answers."
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         <div style={{ marginTop: 10 }}>
           <GLabel color={G.ink}>What&apos;s happening?</GLabel>
           {why === null && (
@@ -446,7 +446,7 @@ function LanternActive({ onBack, onDone, lanternId, reason, warning }: { onBack?
         titleColor={RED}
         tagline={`${getCopy().circle.title} is being notified — ${getCopy().circle.innerLabel.toLowerCase()} first, widening if no one answers.`}
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 18px' }}>
           <BellGlyph size={72} />
         </div>
@@ -581,7 +581,7 @@ function LanternIncoming() {
           titleColor={G.ink}
           tagline="You'll be notified instantly when a family needs help. Stand by."
         />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
           <PushPermissionBanner role="watcher" />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, textAlign: 'center', lineHeight: 1.5, marginBottom: 16 }}>The {getCopy().urgentSignal.noun.toLowerCase()} is how families in {getCopy().circle.title.toLowerCase()} ask for urgent help.</div>
@@ -603,7 +603,7 @@ function LanternIncoming() {
         titleColor={RED}
         tagline={`Someone in ${getCopy().circle.title.toLowerCase()} needs help. ${getCopy().circle.innerLabel} — you're first.`}
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {activeBells.map(lantern => {
           const myResp = lantern.myResponse;
           const rungAt = new Date(lantern.createdAt);

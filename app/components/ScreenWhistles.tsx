@@ -397,7 +397,7 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {firstLoad && (
           <div style={{ padding: '30px 0', textAlign: 'center', fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13 }}>
             Loading Whistles…

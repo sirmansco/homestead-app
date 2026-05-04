@@ -191,7 +191,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
         tagline={`For a last-minute need, light the ${getCopy().urgentSignal.noun.toLowerCase()} instead.`}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: `4px 24px calc(100px + env(safe-area-inset-bottom, 0px))` }}>
         {multi && active && (
           <div style={{
             marginTop: 4, padding: '10px 12px',
