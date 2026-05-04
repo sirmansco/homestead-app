@@ -16,6 +16,16 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-04 · A2 · ops: confirm Vercel plan supports `*/1` cron schedule
+**Branch:** `docs/a2-cron-plan-confirm` → main
+**Plan:** N/A — operational confirmation only, no code change
+**What shipped:** Confirmed `vercel.json` cron `*/1 * * * *` for `/api/lantern/cron` is compatible with the project's Vercel plan. Per Vercel docs (`/docs/cron-jobs/usage-and-pricing`, retrieved 2026-05-04): Hobby = once-per-day max, Pro/Enterprise = once-per-minute. Project `homestead-app` (id `prj_ZvJGIdrjWOTolvqyQlww6FFW7OJ1`, team `team_eF7NzO3wNIgryB6re6NBC1bX`) has been deploying `*/1` continuously through PR #103 — Hobby would have failed deploy at the schedule-validation step. Conclusion: schedule stays at `*/1`; the 5-minute due-by gate at `app/api/lantern/cron/route.ts:63` (`fiveMinutesAgo = new Date(Date.now() - 5 * 60_000)`) is unchanged. No code, schema, or config diff this commit — SHIPLOG-only entry recording the decision.
+**Verification:** Vercel doc confirms Pro tier minimum interval = 1 minute; existing successful deploys of `*/1` are the operational proof the plan supports it. No regression test — SHIPLOG-only change has no code surface to test.
+**Follow-ups:** None. If the project ever downgrades to Hobby, lengthen schedule to `*/1440` (daily) and re-derive the due-by gate; not in scope this session.
+**Operational invariant:** If Vercel account tier is downgraded below Pro, deploys will fail at cron validation. Treat that as the canary — no silent degradation path exists.
+
+---
+
 ### 2026-05-03 · #77 · fix: export filename uses getCopy().brand.name
 **Branch:** `feature/fix-export-filename` → main (`1997154`)
 **Plan:** N/A — 2-line copy fix from naming audit
