@@ -62,6 +62,22 @@ export function rateLimit(opts: {
 }
 
 /**
+ * Extract the originating client IP from a Next.js request. Vercel terminates
+ * TLS at the edge and sets `x-forwarded-for` (comma-separated chain — the first
+ * entry is the original client) and `x-real-ip`. Returns `'unknown'` when neither
+ * header is present so the rate-limit key never collapses to `''`.
+ *
+ * Use as the basis for an IP-keyed rate limit on any unauthenticated-or-cheap-to-
+ * reach endpoint — must run BEFORE any Clerk lookup so an attacker can't burn
+ * the Clerk quota with a flood of cookieless requests.
+ */
+export function clientIp(req: { headers: { get: (name: string) => string | null } }): string {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
+}
+
+/**
  * Convenience wrapper that returns a ready-to-use Response if limited.
  */
 export function rateLimitResponse(result: RateLimitResult) {

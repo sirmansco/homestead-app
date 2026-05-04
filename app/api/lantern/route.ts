@@ -3,7 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { lanterns } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
-import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
+import { rateLimit, rateLimitResponse, clientIp } from '@/lib/ratelimit';
 import { authError } from '@/lib/api-error';
 import { notifyLanternLit, type NotifyResult } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
@@ -17,6 +17,13 @@ const NOTE_MAX_LENGTH = 500;
 
 export async function POST(req: NextRequest) {
   try {
+    // IP rate limit BEFORE Clerk — block cookieless flood that would otherwise
+    // burn Clerk quota inside requireHousehold(). 20 attempts / minute caps
+    // burst abuse; a real keeper igniting an emergency lantern is well under it.
+    const ipRl = rateLimit({ key: `ip:lantern:post:${clientIp(req)}`, limit: 20, windowMs: 60_000 });
+    const ipLimited = rateLimitResponse(ipRl);
+    if (ipLimited) return ipLimited;
+
     const { household, user } = await requireHousehold();
 
     // Rate limit: max 3 lanterns per user per 5 minutes. Bell spam alerts every
