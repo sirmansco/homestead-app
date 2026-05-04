@@ -41,7 +41,12 @@ export async function POST(req: NextRequest) {
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
     const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     if (!allowed.includes(ext)) {
-      return NextResponse.json({ error: 'Image files only (jpg, png, webp, gif)' }, { status: 400 });
+      const isHeic = ext === 'heic' || ext === 'heif';
+      return NextResponse.json({
+        error: isHeic
+          ? 'Use a JPG or PNG photo — HEIC isn\'t supported yet.'
+          : 'Image files only (jpg, png, webp, gif)',
+      }, { status: 400 });
     }
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json({ error: 'Max file size is 5 MB' }, { status: 400 });

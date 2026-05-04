@@ -99,6 +99,12 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !targetType || !targetId) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (['heic', 'heif', 'avif'].includes(ext)) {
+      setUploadError('Use a JPG or PNG photo — HEIC isn\'t supported yet.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     setUploading(true);
     setUploadError(null);
     try {
@@ -157,7 +163,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
                   </svg>
                 )}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile}
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFile}
                 style={{ display: 'none' }} />
             </>
           )}
