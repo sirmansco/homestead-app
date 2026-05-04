@@ -169,7 +169,7 @@ async function main() {
             AND t.relname = '${table}'
             AND c.contype = 'u'
             AND ARRAY(
-              SELECT a.attname FROM pg_attribute a
+              SELECT a.attname::text FROM pg_attribute a
               WHERE a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
               ORDER BY a.attname
             ) = ARRAY(SELECT unnest(ARRAY[${colsLiteral}]::text[]) ORDER BY 1)
