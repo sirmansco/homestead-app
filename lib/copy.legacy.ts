@@ -77,6 +77,7 @@ export const homesteadCopy: AppCopy = {
     loadingState: 'Loading your village…',
     emptyState: 'Your village is empty.',
     quote: 'Many hands make light work.',
+    networkLabel: 'village',
   },
   roles: {
     keeper: { singular: 'Parent', plural: 'Parents' },

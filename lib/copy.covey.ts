@@ -79,6 +79,7 @@ export const coveyCopy: AppCopy = {
     loadingState: 'Loading your covey…',
     emptyState: 'Your covey is quiet.',
     quote: 'Expand your safety net. Build your covey.',
+    networkLabel: 'covey',
   },
   roles: {
     keeper: { singular: 'Keeper', plural: 'Keepers' },
