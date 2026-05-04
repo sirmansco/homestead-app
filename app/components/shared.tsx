@@ -87,7 +87,7 @@ export function GMasthead({
       }}>
         {getCopy().brand.name}
       </div>
-      <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ minWidth: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
         {rightAction ?? (
           <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none" aria-hidden="true">
             <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
