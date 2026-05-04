@@ -82,19 +82,26 @@ function SafeAreaDebug() {
     document.body.appendChild(probe);
     const saInset = getComputedStyle(probe).height;
     document.body.removeChild(probe);
-    const tabBar = document.querySelector('[style*="calc(56px"]') as HTMLElement | null;
+    const allFixed = [...document.querySelectorAll('*')].filter(el => getComputedStyle(el).position === 'fixed');
+    const tabBar = allFixed.find(el => {
+      const r = el.getBoundingClientRect();
+      return r.top > window.innerHeight * 0.7;
+    });
     const tabH = tabBar ? getComputedStyle(tabBar).height : 'not found';
-    const tabRect = tabBar ? JSON.stringify(tabBar.getBoundingClientRect()) : 'n/a';
+    const tabRect = tabBar ? tabBar.getBoundingClientRect() : null;
     const vh = window.innerHeight;
+    const sw = window.screen.width;
+    const sh = window.screen.height;
+    const vvh = window.visualViewport?.height ?? 'n/a';
     const standalone = (navigator as Navigator & { standalone?: boolean }).standalone;
-    setInfo(`sa=${saInset} tabH=${tabH} vh=${vh} standalone=${standalone} rect=${tabRect}`);
+    setInfo(`sa=${saInset} | tabH=${tabH} | vh=${vh} vvh=${vvh} | screen=${sw}x${sh} | pwa=${standalone} | tabBottom=${tabRect?.bottom?.toFixed(0)} tabTop=${tabRect?.top?.toFixed(0)}`);
   }, []);
   return (
     <div style={{
-      position: 'fixed', top: 60, left: 0, right: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.85)', color: '#fff',
-      fontSize: 10, padding: '6px 8px', fontFamily: 'monospace',
-      wordBreak: 'break-all',
+      position: 'absolute', top: 50, left: 0, right: 0, zIndex: 9999,
+      background: 'rgba(255,0,0,0.9)', color: '#fff',
+      fontSize: 11, padding: '8px', fontFamily: 'monospace',
+      wordBreak: 'break-all', lineHeight: 1.4,
     }}>{info}</div>
   );
 }
@@ -245,7 +252,7 @@ function CoveyInner() {
   }, [active?.id, rolesByHousehold, canSwitchRole]);
 
   const [screen, setScreen] = useState<TabId>('perch');
-  const [bellCompose, setBellCompose] = useState(false); // true = skip active-bell check, go straight to compose
+  const [lanternCompose, setLanternCompose] = useState(false); // true = skip active-lantern check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const isMobile = useIsMobile();
 
@@ -292,8 +299,8 @@ function CoveyInner() {
   }, [role, canSwitchRole]);
 
   const navigate = useCallback((id: TabId) => {
-    // Navigating to lantern via tab bar should check for active bells first (not go straight to compose)
-    if (id === 'lantern') setBellCompose(false);
+    // Navigating to lantern via tab bar should check for active lantern first (not go straight to compose)
+    if (id === 'lantern') setLanternCompose(false);
     setScreen(id);
     // Force-refresh bell state immediately so badge and lantern screen are in sync
     if (id === 'lantern' || id === 'perch') refreshBell();
@@ -323,7 +330,7 @@ function CoveyInner() {
     return () => window.removeEventListener('keydown', handler);
   }, [role, navigate]);
 
-  const handleRing = useCallback(() => { setBellCompose(true); setScreen('lantern'); }, []);
+  const handleRing = useCallback(() => { setLanternCompose(true); setScreen('lantern'); }, []);
 
   const handlePost = useCallback((msg?: string) => {
     setToast({ msg: msg || `Posted to ${getCopy().circle.title}`, key: Date.now() });
@@ -357,7 +364,7 @@ function CoveyInner() {
           {id === 'whistles' && <ScreenWhistles onViewLantern={() => navigate('lantern')} />}
           {id === 'lantern' && (
             <ScreenLantern
-              initialCompose={bellCompose}
+              initialCompose={lanternCompose}
               role={role}
               onBack={() => setScreen('perch')}
               onPost={() => setScreen('post')}
