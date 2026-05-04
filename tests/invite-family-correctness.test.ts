@@ -104,6 +104,7 @@ function makeReq(body: unknown, url = 'http://localhost/api/circle/invite-family
 
 function makeGetReq(token: string) {
   return {
+    headers: { get: () => null },
     url: `http://localhost/api/circle/invite-family/accept?token=${token}`,
   } as unknown as Parameters<typeof acceptGet>[0];
 }
@@ -111,6 +112,7 @@ function makeGetReq(token: string) {
 function makeAcceptReq(body: unknown) {
   return {
     json: () => Promise.resolve(body),
+    headers: { get: () => null },
     url: 'http://localhost/api/circle/invite-family/accept',
   } as unknown as Parameters<typeof acceptPost>[0];
 }
