@@ -55,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="en">
         <head>
           <meta name="app-sha" content={APP_SHA} />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/icons/apple-touch-icon-covey.png" />
           {/* Blocking script — applies saved theme + background before first paint to prevent flash */}
           <script dangerouslySetInnerHTML={{ __html: `
