@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { scrubEvent } from '@/lib/sentry-scrub';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -7,6 +8,7 @@ Sentry.init({
   tracesSampleRate: 0.1,
   // Only send errors in production to avoid noise during dev
   enabled: process.env.NODE_ENV === 'production',
+  beforeSend: scrubEvent,
 });
 
 if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SENTRY_DSN) {
