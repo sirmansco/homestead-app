@@ -16,6 +16,33 @@ purpose: Per-merge ship entries (Protos v9.7 §"Review and ship"). Append-only.
 
 ---
 
+### 2026-05-04 · #108 · B5 — Sentry beforeSend scrubs query strings, auth headers, and PII keys
+**Branch:** `fix/b5-sentry-pii-scrubbing` → main (`91671e6`)
+**Plan:** N/A — Session 4 brief item B5
+**What shipped:** New `lib/sentry-scrub.ts` exports `scrubEvent()` wired into all three Sentry configs (`server`, `client`, `edge`). Strips `request.url` query strings (especially `?token=` on the calendar feed), clears `query_string`, redacts authorization-style headers (exact: `authorization`, `cookie`, `set-cookie`, `proxy-authorization`, `x-csrf-token`, `x-covey-confirm`; substring: anything containing `token`/`secret`/`auth`/`clerk`/`session`), empties `request.cookies`, redacts `event.extra` PII keys (`name`, `firstName`, `lastName`, `email`, `chickName`, `parentName`, `forWhom`, etc.). Defensive shallow clone — never mutates input event.
+**Verification:** `tests/sentry-scrub.test.ts` — 13 cases (URL strip, header redaction exact + substring, cookie clearing, extra-key PII redaction, non-mutation guarantee, falsifiability invariant that asserts zero PII needles in serialized output). Falsifiability: identity passthrough → 9/13 red. Vercel CI green. Lint baseline preserved (34 problems unchanged). Did NOT live-verify against a Sentry dashboard — invariant test is the substitute.
+**Follow-ups:** Sentry transactions (sampled at 10%) and replay events are NOT processed by `beforeSend` — out of scope this PR. If Sentry replay/perf becomes a real surface, add `beforeSendTransaction` with the same scrubber. Existing `/api/circle/invite-family/accept` has its own local `clientIp()` helper not refactored to use the new shared one — separate cleanup.
+
+---
+
+### 2026-05-04 · #107 · B4 — IP rate limit before Clerk on whistles/lantern/circle-invite POST
+**Branch:** `fix/b4-ip-rate-limit-pre-clerk` → main (`09d307c`)
+**Plan:** N/A — Session 4 brief item B4
+**What shipped:** Closes the unauthenticated-flood-amplifies-to-Clerk-quota-burn vector. Three POST routes called `requireHousehold` / `requireHouseholdAdmin` (which call `clerkClient` for org membership) BEFORE any rate-limit gate. Now each handler runs an IP-keyed rate limit at the very top: `whistles` 30/min, `lantern` 20/min (tighter — every villager phone gets pinged), `circle/invite` 30/min. Cookieless burst from a single IP is absorbed by the in-memory bucket and never reaches Clerk. Extracted shared `clientIp(req)` helper to `lib/ratelimit.ts` (pattern was duplicated from `app/api/circle/invite-family/accept/route.ts`). Converted dynamic `await import('@/lib/ratelimit')` in `circle/invite/route.ts` to a static import for symmetry.
+**Verification:** `tests/ip-rate-limit-pre-clerk.test.ts` — 4 cases: 35-flood on whistles (first 30 → 401, next 5 → 429, `clerkClient` not called); 25-flood on lantern (first 20 → 401, rest → 429); 35-flood on circle invite (first 30 → 401, rest → 429); cross-IP independence (IP A flood doesn't affect IP B's first request). Falsifiability: with route changes stashed, 3/4 went red — load-bearing assertion is `expect(vi.mocked(clerkClient)).not.toHaveBeenCalled()` per flood case. Vercel CI green. Lint baseline preserved.
+**Follow-ups:** In-memory rate limit is per-instance — a determined attacker can fan across N Vercel function instances. Same constraint as existing per-user limits; upgrade path is `@upstash/ratelimit` (already documented in `lib/ratelimit.ts`). Acceptable for Covey's pre-launch scale.
+
+---
+
+### 2026-05-04 · #106 · B3 — CSRF custom-header + per-user rate limit on DELETE /api/account
+**Branch:** `fix/b3-account-delete-protections` → main (`ebdadb4`)
+**Plan:** N/A — Session 4 brief item B3
+**What shipped:** Defends against drive-by account-deletion via stolen session cookie. (1) CSRF: requires `x-covey-confirm: yes-delete-my-data` header — cross-origin `<form>` POSTs cannot set custom headers; XHR/fetch from our origin can. Stops form-based drive-by deletion when a cookie is present. (2) Per-user rate limit: 1 attempt / hour, keyed on `clerkUserId` via `lib/ratelimit.ts`. Bounds damage from stolen-cookie retry; protects against accidental double-fire. Both gates fire BEFORE the existing `?confirm=` query check, so DB writes never run on a rejected request. Client (`ScreenSettings.tsx handleDelete`) sends the new header alongside the existing query param. Also created `TODO.md` (new file) logging deferred Session 4 items: B2, B6-B8, Q1-Q8, C1-C6, the recent-auth piece originally part of B3 (deferred — Clerk's `reverification` claim is in public beta and there's no client modal yet), and the drizzle snapshot drift chore.
+**Verification:** `tests/account-delete-protections.test.ts` — 5 cases: missing header → 403, wrong header → 403, rate-limit fires on 2nd attempt within 1hr → 429, `?confirm=` still required when header set → 400, happy path → 200. Falsifiability: 3/5 went red with route change reverted. Updated `tests/observability-account-deletion.test.ts` to send the new header in `confirmReq()` and use distinct `clerkUserId` per test (rate limit would otherwise cross-contaminate). Vercel CI green. Lint baseline preserved.
+**Follow-ups:** Recent-auth gate on the same route is logged in TODO.md — needs Clerk reverification GA OR alternate fresh-auth strategy + client modal in `ScreenSettings`.
+
+---
+
 ### 2026-05-04 · A2 · ops: confirm Vercel plan supports `*/1` cron schedule
 **Branch:** `docs/a2-cron-plan-confirm` → main
 **Plan:** N/A — operational confirmation only, no code change
