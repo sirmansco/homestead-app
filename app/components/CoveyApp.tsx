@@ -50,6 +50,21 @@ function useIsMobile() {
   return isMobile;
 }
 
+// Tracks the visual viewport height so the mobile shell shrinks correctly
+// when the iOS software keyboard opens. Falls back to 100dvh via CSS.
+function useVisualViewportHeight() {
+  const [height, setHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setHeight(vv.height);
+    update();
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, []);
+  return height;
+}
+
 
 function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   const [visible, setVisible] = useState(true);
@@ -225,6 +240,7 @@ function CoveyInner() {
   const [lanternCompose, setLanternCompose] = useState(false); // true = skip active-lantern check, go straight to compose
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null);
   const isMobile = useIsMobile();
+  const vpHeight = useVisualViewportHeight();
 
   // Role is now kept in sync via the rolesByHousehold effect above, which
   // fires whenever the HouseholdProvider resolves or the active household changes.
@@ -371,7 +387,7 @@ function CoveyInner() {
     return (
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0,
-        height: '100dvh',
+        height: vpHeight ? `${vpHeight}px` : '100dvh',
         background: G.bg, color: G.ink,
         fontFamily: G.sans,
         display: 'flex', flexDirection: 'column',
