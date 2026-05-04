@@ -226,7 +226,7 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCou
 
   return (
     <div className="safe-area-pb" style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
+      position: 'relative', zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
     }}>
