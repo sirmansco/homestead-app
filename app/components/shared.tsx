@@ -229,7 +229,7 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCou
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
       background: G.bg,
       borderTop: `1px solid ${G.hairline}`,
-      height: 56,
+      height: 'calc(56px + env(safe-area-inset-bottom, 0px))',
     }}>
       <div style={{
         display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,

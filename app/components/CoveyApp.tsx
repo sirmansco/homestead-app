@@ -376,7 +376,7 @@ function CoveyInner() {
         {canSwitchRole && <RoleSwitcherMobile role={role} onChange={handleRoleChange} />}
         <div style={{
           position: 'absolute', inset: 0,
-          paddingBottom: 56,
+          paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
           overflow: 'hidden',
         }}>
           {tabScreens}
