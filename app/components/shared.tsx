@@ -56,16 +56,78 @@ export function GAvatar({ name = '', size = 36, style = {} }: {
 }
 
 // ── GMasthead ─────────────────────────────────────────────────────────────
-// Old props (left, right, title, tagline, folioLeft, folioRight, leftAction, titleColor)
-// are accepted but ignored — the new masthead is a fixed wordmark bar.
 export function GMasthead({
-  rightAction,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ...rest
+  leftAction, rightAction, left, right, title, tagline, titleColor,
 }: {
+  leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
-  [key: string]: unknown;
+  left?: string;
+  right?: string;
+  title?: string;
+  tagline?: string;
+  titleColor?: string;
 }) {
+  const defaultRight = (
+    <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none" aria-hidden="true">
+      <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
+      <circle cx="-7" cy="-4" r="4.6" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
+      <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <circle cx="-8.2" cy="-4.8" r="0.8" fill={G.ink}/>
+      <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill={G.mustard} stroke={G.green} strokeWidth="0.6" strokeLinejoin="round"/>
+      <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill={G.green} opacity="0.72"/>
+      <path d="M -1,-0.5 Q 2,3.8 7,3" stroke={G.green} strokeWidth="1" fill="none" opacity="0.55" strokeLinecap="round"/>
+      <path d="M 0,-2 Q 3,1 7,0.5" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.45" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const wordmark = (
+    <div style={{
+      fontFamily: G.display, fontStyle: 'italic', fontWeight: 400,
+      fontSize: 28, color: G.green, lineHeight: 1, letterSpacing: '-0.02em',
+    }}>
+      {getCopy().brand.name}
+    </div>
+  );
+
+  if (title) {
+    return (
+      <div style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: 12,
+        paddingLeft: 20,
+        paddingRight: 20,
+        flexShrink: 0,
+        borderBottom: `1px solid ${G.hairline}`,
+        background: G.bg,
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          minHeight: 28, gap: 8,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 20 }}>
+            {leftAction ?? (left ? <GLabel>{left}</GLabel> : null)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 20 }}>
+            {right ? <GLabel color={G.clay}>{right}</GLabel> : null}
+            {rightAction ?? null}
+          </div>
+        </div>
+        <div style={{
+          fontFamily: G.display, fontStyle: 'italic', fontWeight: 400,
+          fontSize: 28, lineHeight: 1.05, letterSpacing: '-0.02em',
+          color: titleColor || G.green,
+          marginTop: 8,
+        }}>{title}</div>
+        {tagline && (
+          <div style={{
+            fontFamily: G.serif, fontStyle: 'italic', color: G.ink2,
+            fontSize: 12.5, marginTop: 4, lineHeight: 1.35,
+          }}>{tagline}</div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{
       paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
@@ -80,29 +142,8 @@ export function GMasthead({
       borderBottom: `1px solid ${G.hairline}`,
       background: G.bg,
     }}>
-      <div style={{
-        fontFamily: G.display,
-        fontStyle: 'italic',
-        fontWeight: 400,
-        fontSize: 28,
-        color: G.green,
-        lineHeight: 1,
-        letterSpacing: '-0.02em',
-      }}>
-        {getCopy().brand.name}
-      </div>
-      {rightAction ?? (
-        <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none" aria-hidden="true">
-          <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
-          <circle cx="-7" cy="-4" r="4.6" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
-          <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-          <circle cx="-8.2" cy="-4.8" r="0.8" fill={G.ink}/>
-          <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill={G.mustard} stroke={G.green} strokeWidth="0.6" strokeLinejoin="round"/>
-          <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill={G.green} opacity="0.72"/>
-          <path d="M -1,-0.5 Q 2,3.8 7,3" stroke={G.green} strokeWidth="1" fill="none" opacity="0.55" strokeLinecap="round"/>
-          <path d="M 0,-2 Q 3,1 7,0.5" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.45" strokeLinecap="round"/>
-        </svg>
-      )}
+      {leftAction ?? wordmark}
+      {rightAction ?? defaultRight}
     </div>
   );
 }
