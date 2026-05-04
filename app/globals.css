@@ -90,6 +90,9 @@ body {
   background: var(--bg);
   font-family: Inter, -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 /* Safe-area bottom padding: hardcoded 34px for home-indicator iPhones */

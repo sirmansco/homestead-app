@@ -74,37 +74,6 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
   );
 }
 
-function SafeAreaDebug() {
-  const [info, setInfo] = useState('measuring...');
-  useEffect(() => {
-    const probe = document.createElement('div');
-    probe.style.cssText = 'position:fixed;bottom:0;left:0;height:env(safe-area-inset-bottom,999px);width:1px;visibility:hidden;pointer-events:none';
-    document.body.appendChild(probe);
-    const saInset = getComputedStyle(probe).height;
-    document.body.removeChild(probe);
-    const allFixed = [...document.querySelectorAll('*')].filter(el => getComputedStyle(el).position === 'fixed');
-    const tabBar = allFixed.find(el => {
-      const r = el.getBoundingClientRect();
-      return r.top > window.innerHeight * 0.7;
-    });
-    const tabH = tabBar ? getComputedStyle(tabBar).height : 'not found';
-    const tabRect = tabBar ? tabBar.getBoundingClientRect() : null;
-    const vh = window.innerHeight;
-    const sw = window.screen.width;
-    const sh = window.screen.height;
-    const vvh = window.visualViewport?.height ?? 'n/a';
-    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone;
-    setInfo(`sa=${saInset} | tabH=${tabH} | vh=${vh} vvh=${vvh} | screen=${sw}x${sh} | pwa=${standalone} | tabBottom=${tabRect?.bottom?.toFixed(0)} tabTop=${tabRect?.top?.toFixed(0)}`);
-  }, []);
-  return (
-    <div style={{
-      position: 'absolute', top: 50, left: 0, right: 0, zIndex: 9999,
-      background: 'rgba(255,0,0,0.9)', color: '#fff',
-      fontSize: 11, padding: '8px', fontFamily: 'monospace',
-      wordBreak: 'break-all', lineHeight: 1.4,
-    }}>{info}</div>
-  );
-}
 
 function useLiveClock() {
   const [time, setTime] = useState(() => {
@@ -413,7 +382,6 @@ function CoveyInner() {
           {tabScreens}
         </div>
         <GTabBar active={activeTab} onNavigate={navigate} role={role} bellCount={bellCount} />
-        <SafeAreaDebug />
         {toast && <Toast key={toast.key} msg={toast.msg} onDone={() => setToast(null)} />}
         <InstallHint />
       </div>
