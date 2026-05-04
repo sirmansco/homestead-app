@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { and, eq, isNull, lte } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { lanterns } from '@/lib/db/schema';
@@ -6,6 +7,18 @@ import { escalateLantern } from '@/lib/lantern-escalation';
 
 const BATCH_LIMIT = 50;
 const CONCURRENCY = 10;
+
+// Constant-time Bearer-token check. `!==` on the secret leaks length and
+// prefix timing; timingSafeEqual requires equal-length buffers, so we
+// length-check first and bail before the compare.
+function isAuthorized(authHeader: string | null, secret: string): boolean {
+  if (!authHeader) return false;
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(authHeader);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 // Bounded fan-out: at most `limit` workers in flight at once. Mirrors
 // Promise.allSettled's return shape so callers can keep their existing
@@ -33,7 +46,17 @@ async function runWithConcurrency<T, R>(
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!secret) {
+    // Every tick on purpose — cron runs every minute, and a silent missing
+    // secret kills the lantern escalation pipeline. Per-tick volume is what
+    // makes log-rate alerts fire; one log per cold start would not.
+    console.error(JSON.stringify({
+      event: 'lantern_cron_secret_missing',
+      message: 'CRON_SECRET is unset; cron requests will 401 and lantern escalation will not run',
+    }));
+    return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
+  }
+  if (!isAuthorized(req.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'not_signed_in' }, { status: 401 });
   }
 

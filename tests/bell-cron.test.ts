@@ -109,6 +109,36 @@ describe('GET /api/lantern/cron — auth', () => {
     expect(escalateLantern).not.toHaveBeenCalled();
   });
 
+  it('emits lantern_cron_secret_missing log when CRON_SECRET is unset', async () => {
+    // Operational signal so log-rate alerts fire when the cron silently dies.
+    // Logged every tick on purpose — see route.ts.
+    delete process.env.CRON_SECRET;
+    await GET(makeRequest('Bearer anything'));
+
+    const errorCalls = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const missingLog = errorCalls.find(args => {
+      try { return JSON.parse(args[0] as string).event === 'lantern_cron_secret_missing'; }
+      catch { return false; }
+    });
+    expect(missingLog).toBeDefined();
+  });
+
+  it('returns 401 on a Bearer token shorter than CRON_SECRET (timing-safe length check)', async () => {
+    // Regression for the `!==` → timingSafeEqual fix. timingSafeEqual throws on
+    // length-mismatched buffers; the route must length-check first and return
+    // false rather than throwing 500. Without the length guard this would crash
+    // the cron tick rather than 401ing.
+    const res = await GET(makeRequest('Bearer x'));
+    expect(res.status).toBe(401);
+    expect(escalateLantern).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 on a Bearer token longer than CRON_SECRET (timing-safe length check)', async () => {
+    const res = await GET(makeRequest(`Bearer ${SECRET}-extra-suffix`));
+    expect(res.status).toBe(401);
+    expect(escalateLantern).not.toHaveBeenCalled();
+  });
+
   it('returns 200 when Bearer matches CRON_SECRET', async () => {
     vi.mocked(db.select).mockReturnValueOnce(makeSelectStub([]));
     const res = await GET(makeRequest(`Bearer ${SECRET}`));
