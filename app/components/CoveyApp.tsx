@@ -370,7 +370,8 @@ function CoveyInner() {
   if (isMobile) {
     return (
       <div style={{
-        position: 'fixed', inset: 0,
+        position: 'fixed', top: 0, left: 0, right: 0,
+        height: '100dvh',
         background: G.bg, color: G.ink,
         fontFamily: G.sans,
         display: 'flex', flexDirection: 'column',
