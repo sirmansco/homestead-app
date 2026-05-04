@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { lanterns, lanternResponses, users, households } from '@/lib/db/schema';
 import { clerkClient } from '@clerk/nextjs/server';
@@ -82,11 +82,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
     }
 
-    // If on_my_way, mark lantern handled
+    // If on_my_way, claim the lantern via CAS so two concurrent responders
+    // can't both end up as the "handler". Only one UPDATE will see status
+    // still 'ringing' AND handled_by_user_id still NULL — the other gets
+    // zero rows and silently doesn't claim. The response row is still
+    // recorded above, so the loser's "I'm coming" intent isn't lost.
+    let claimedByThisCall = false;
     if (response === 'on_my_way') {
-      await db.update(lanterns)
+      const claimed = await db.update(lanterns)
         .set({ status: 'handled', handledByUserId: userRow.id, handledAt: new Date() })
-        .where(eq(lanterns.id, lanternId));
+        .where(and(
+          eq(lanterns.id, lanternId),
+          eq(lanterns.status, 'ringing'),
+          isNull(lanterns.handledByUserId),
+        ))
+        .returning({ id: lanterns.id });
+      claimedByThisCall = claimed.length > 0;
     }
 
     // Notify the keeper so they see the response immediately
@@ -122,7 +133,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, claimed: claimedByThisCall });
   } catch (err) {
     return authError(err, 'lantern:respond', `Could not respond to ${getCopy().urgentSignal.noun.toLowerCase()}`);
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { lanterns } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
@@ -34,7 +34,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.handledAt = new Date();
     }
 
-    await db.update(lanterns).set(updates).where(eq(lanterns.id, lanternId));
+    // CAS: only mutate if the lantern is still in 'ringing'. A second concurrent
+    // PATCH or a /respond on_my_way that already terminated the lantern must not
+    // overwrite the winner's status, handler, or handledAt.
+    const result = await db.update(lanterns)
+      .set(updates)
+      .where(and(
+        eq(lanterns.id, lanternId),
+        eq(lanterns.householdId, household.id),
+        eq(lanterns.status, 'ringing'),
+      ))
+      .returning({ id: lanterns.id });
+
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: `${getCopy().urgentSignal.noun} is no longer active` },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     return authError(err, 'lantern:id', `${getCopy().urgentSignal.noun} action failed`);
