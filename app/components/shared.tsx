@@ -87,18 +87,20 @@ export function GMasthead({
       }}>
         {getCopy().brand.name}
       </div>
-      {rightAction ? rightAction : (
-        <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none" aria-hidden="true">
-          <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
-          <circle cx="-7" cy="-4" r="4.6" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
-          <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-          <circle cx="-8.2" cy="-4.8" r="0.8" fill={G.ink}/>
-          <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill={G.mustard} stroke={G.green} strokeWidth="0.6" strokeLinejoin="round"/>
-          <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill={G.green} opacity="0.72"/>
-          <path d="M -1,-0.5 Q 2,3.8 7,3" stroke={G.green} strokeWidth="1" fill="none" opacity="0.55" strokeLinecap="round"/>
-          <path d="M 0,-2 Q 3,1 7,0.5" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.45" strokeLinecap="round"/>
-        </svg>
-      )}
+      <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {rightAction ?? (
+          <svg width="26" height="22" viewBox="-13 -14 30 26" fill="none" aria-hidden="true">
+            <ellipse cx="1" cy="1" rx="9.5" ry="6.5" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
+            <circle cx="-7" cy="-4" r="4.6" fill={G.cream} stroke={G.green} strokeWidth="1.2"/>
+            <path d="M -9.5,-8 Q -12,-12 -8.5,-12.5 Q -5.5,-12.5 -6.8,-9.2" stroke={G.green} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <circle cx="-8.2" cy="-4.8" r="0.8" fill={G.ink}/>
+            <path d="M -3.1,-4.2 L 1.2,-2.8 L -2.6,-1.6 Z" fill={G.mustard} stroke={G.green} strokeWidth="0.6" strokeLinejoin="round"/>
+            <path d="M 9,0 L 15,-3.5 L 13,2.8 Z" fill={G.green} opacity="0.72"/>
+            <path d="M -1,-0.5 Q 2,3.8 7,3" stroke={G.green} strokeWidth="1" fill="none" opacity="0.55" strokeLinecap="round"/>
+            <path d="M 0,-2 Q 3,1 7,0.5" stroke={G.green} strokeWidth="0.8" fill="none" opacity="0.45" strokeLinecap="round"/>
+          </svg>
+        )}
+      </div>
     </div>
   );
 }
