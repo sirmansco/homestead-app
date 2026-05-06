@@ -190,10 +190,26 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-function SegmentControl({ value, onChange }: { value: 'open' | 'all'; onChange: (v: 'open' | 'all') => void }) {
-  const options: { key: 'open' | 'all'; label: string }[] = [
+export function filterOpenWhistles(rows: ShiftRow[], now: Date): ShiftRow[] {
+  return rows.filter(r =>
+    r.shift.status === 'open' &&
+    new Date(r.shift.endsAt) >= now &&
+    !r.claimedByMe
+  );
+}
+
+export function filterClaimedWhistles(rows: ShiftRow[], now: Date): ShiftRow[] {
+  return rows.filter(r =>
+    r.claimedByMe &&
+    r.shift.status === 'claimed' &&
+    new Date(r.shift.endsAt) >= now
+  );
+}
+
+function SegmentControl({ value, onChange }: { value: 'open' | 'claimed'; onChange: (v: 'open' | 'claimed') => void }) {
+  const options: { key: 'open' | 'claimed'; label: string }[] = [
     { key: 'open', label: 'Open' },
-    { key: 'all', label: 'All' },
+    { key: 'claimed', label: 'Claimed' },
   ];
   return (
     <div style={{
@@ -222,7 +238,7 @@ function SegmentControl({ value, onChange }: { value: 'open' | 'all'; onChange: 
 
 export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }) {
   const { activeBell, whistles: contextShifts, whistlesLoading, refreshWhistles, refreshBell } = useAppData();
-  const [filter, setFilter] = useState<'open' | 'all'>('open');
+  const [filter, setFilter] = useState<'open' | 'claimed'>('open');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
@@ -240,19 +256,8 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
   const villageRows: ShiftRow[] = contextShifts['village'] ?? [];
   const mineRows: ShiftRow[] = contextShifts['mine'] ?? [];
 
-  // Open = village scope, status open, future, not already claimed by me
-  const openRows = villageRows.filter(r =>
-    r.shift.status === 'open' &&
-    new Date(r.shift.endsAt) >= now &&
-    !r.claimedByMe
-  );
-
-  // My Whistles = mine scope, claimed by me, future
-  const myRows = mineRows.filter(r =>
-    r.claimedByMe &&
-    r.shift.status === 'claimed' &&
-    new Date(r.shift.endsAt) >= now
-  );
+  const openRows = filterOpenWhistles(villageRows, now);
+  const myRows = filterClaimedWhistles(mineRows, now);
 
   const load = useCallback(() => {
     refreshWhistles('village');
@@ -333,7 +338,8 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
   const firstLoad = (whistlesLoading['village'] && villageRows.length === 0) ||
     (whistlesLoading['mine'] && mineRows.length === 0);
 
-  const showMySection = filter === 'all';
+  const showOpenSection = filter === 'open';
+  const showClaimedSection = filter === 'claimed';
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: G.bg, color: G.ink }}>
@@ -341,7 +347,7 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
         leftAction={<HouseholdSwitcher />}
         right={myRows.length > 0 ? `${myRows.length} mine` : ''}
         title={getCopy().request.tabLabel}
-        tagline={filter === 'open' ? 'Open requests from your circle.' : `Open requests and ${getCopy().request.tabLabel} you've claimed.`}
+        tagline={filter === 'open' ? 'Open requests from your circle.' : `${getCopy().request.tabLabel} you've claimed.`}
       />
 
       {activeBell && (
@@ -407,38 +413,40 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
         {!firstLoad && (
           <>
             {/* ── Open Whistles ── */}
-            {openRows.length === 0 && !animatingIds.size ? (
-              <div style={{
-                marginTop: 32, padding: '36px 20px', textAlign: 'center',
-                border: `1px dashed ${G.hairline2}`, borderRadius: 12,
-                fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
-              }}>
-                No open {getCopy().request.tabLabel.toLowerCase()} right now.
-              </div>
-            ) : (
-              groupByDate(openRows.filter(r => !animatingIds.has(r.shift.id))).map(({ key, label, rows }) => (
-                <div key={key}>
-                  <SectionDivider label={label} />
-                  {rows.map((r, i) => (
-                    <ShiftCard
-                      key={r.shift.id} row={r} first={i === 0}
-                      onClaim={claim}
-                      busy={busyId === r.shift.id}
-                      animating={animatingIds.has(r.shift.id)}
-                    />
-                  ))}
+            {showOpenSection && (
+              openRows.length === 0 && !animatingIds.size ? (
+                <div style={{
+                  marginTop: 32, padding: '36px 20px', textAlign: 'center',
+                  border: `1px dashed ${G.hairline2}`, borderRadius: 12,
+                  fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
+                }}>
+                  No open {getCopy().request.tabLabel.toLowerCase()} right now.
                 </div>
-              ))
+              ) : (
+                groupByDate(openRows.filter(r => !animatingIds.has(r.shift.id))).map(({ key, label, rows }) => (
+                  <div key={key}>
+                    <SectionDivider label={label} />
+                    {rows.map((r, i) => (
+                      <ShiftCard
+                        key={r.shift.id} row={r} first={i === 0}
+                        onClaim={claim}
+                        busy={busyId === r.shift.id}
+                        animating={animatingIds.has(r.shift.id)}
+                      />
+                    ))}
+                  </div>
+                ))
+              )
             )}
 
-            {/* ── My Whistles (All mode only) ── */}
-            {showMySection && (
+            {/* ── Claimed Whistles (Claimed tab only) ── */}
+            {showClaimedSection && (
               <>
-                <SectionDivider label={`My ${getCopy().request.tabLabel}`} />
                 {myRows.length === 0 && !animatingIds.size ? (
                   <div style={{
-                    padding: '24px 20px', textAlign: 'center',
-                    fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 13,
+                    marginTop: 32, padding: '36px 20px', textAlign: 'center',
+                    border: `1px dashed ${G.hairline2}`, borderRadius: 12,
+                    fontFamily: G.serif, fontStyle: 'italic', color: G.muted, fontSize: 14,
                   }}>
                     Nothing claimed yet.
                   </div>
