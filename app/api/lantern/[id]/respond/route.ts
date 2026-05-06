@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { lanterns, lanternResponses, users, households } from '@/lib/db/schema';
-import { clerkClient } from '@clerk/nextjs/server';
-import { requireUser } from '@/lib/auth/household';
+import { lanterns, lanternResponses, users } from '@/lib/db/schema';
+import { requireHousehold } from '@/lib/auth/household';
 import { authError } from '@/lib/api-error';
 import { notifyLanternResponse } from '@/lib/notify';
 import { getCopy } from '@/lib/copy';
 import { escalateLantern } from '@/lib/lantern-escalation';
 import { requireUUID } from '@/lib/validate/uuid';
-import { normalizeVillageGroup } from '@/lib/village-group/normalize';
 
 type ResponseBody = { response: 'on_my_way' | 'in_thirty' | 'cannot' };
 
@@ -19,7 +17,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const lanternId = requireUUID(rawId);
     if (!lanternId) return NextResponse.json({ error: 'invalid id' }, { status: 400 });
 
-    const { userId } = await requireUser();
+    // C3: requireHousehold provisions the caller's users row via the
+    // advisory-lock path (B2) for their ACTIVE household. If their active
+    // org doesn't match the lantern's household we 403 — the UI prompts to
+    // switch orgs rather than this route silently auto-creating a separate
+    // users row in a household they're not actively in.
+    const { user: userRow } = await requireHousehold();
+
     const body = await req.json() as ResponseBody;
     const { response } = body;
 
@@ -30,39 +34,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const [lantern] = await db.select().from(lanterns).where(eq(lanterns.id, lanternId)).limit(1);
     if (!lantern) return NextResponse.json({ error: `${getCopy().urgentSignal.noun} not found` }, { status: 404 });
 
+    // Active household must match the lantern's household.
+    if (userRow.householdId !== lantern.householdId) {
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
+    }
+
     // Don't allow responses to lanterns that are no longer ringing
     if (lantern.status !== 'ringing') {
       return NextResponse.json({ error: `${getCopy().urgentSignal.noun} is no longer active` }, { status: 409 });
-    }
-
-    // Find this user's DB record for the lantern's household.
-    // Auto-create it if missing (caregiver who was invited via link may not have a row yet).
-    let [userRow] = await db.select().from(users)
-      .where(and(eq(users.clerkUserId, userId), eq(users.householdId, lantern.householdId)))
-      .limit(1);
-
-    if (!userRow) {
-      // Verify the user is actually a member of this household via Clerk org membership
-      const [household] = await db.select().from(households).where(eq(households.id, lantern.householdId)).limit(1);
-      if (!household) return NextResponse.json({ error: 'Household not found' }, { status: 404 });
-
-      const client = await clerkClient();
-      const memberships = await client.users.getOrganizationMembershipList({ userId });
-      const isMember = memberships.data.some(m => m.organization.id === household.clerkOrgId);
-      if (!isMember) return NextResponse.json({ error: 'no_access' }, { status: 403 });
-
-      const cu = await client.users.getUser(userId);
-      const email = cu.primaryEmailAddress?.emailAddress ?? '';
-      const name = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || email;
-      const meta = (cu.publicMetadata ?? {}) as { villageGroup?: 'covey' | 'field' | 'inner_circle' | 'sitter' };
-      [userRow] = await db.insert(users).values({
-        clerkUserId: userId,
-        householdId: lantern.householdId,
-        email,
-        name,
-        role: 'watcher',
-        villageGroup: normalizeVillageGroup(meta.villageGroup || 'field'),
-      }).returning();
     }
 
     // Upsert response (one per user per lantern)

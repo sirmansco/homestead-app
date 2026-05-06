@@ -50,7 +50,13 @@ vi.mock('@/lib/notify', () => ({
 }));
 
 vi.mock('@/lib/auth/household', () => ({
-  requireUser: vi.fn().mockResolvedValue({ userId: 'user_clerk_1' }),
+  // C3: route now uses requireHousehold which returns user + household.
+  requireHousehold: vi.fn().mockResolvedValue({
+    user: { id: 'usr-a', clerkUserId: 'user_clerk_1', householdId: 'hh-uuid-1', role: 'watcher', villageGroup: 'covey' },
+    household: { id: 'hh-uuid-1' },
+    userId: 'user_clerk_1',
+    orgId: 'org-1',
+  }),
 }));
 
 vi.mock('@/lib/lantern-escalation', () => ({
@@ -111,11 +117,10 @@ describe('B1 — POST /api/lantern/[id]/respond CAS race', () => {
     // response → UPDATE lanterns CAS → returning rows.
     let updateCall = 0;
     vi.mocked(db.select).mockImplementation(() => {
-      // The route fires SELECTs in order: lantern, user (existing), response-existing
-      // We sequence by call count.
+      // C3: requireHousehold provides the user row, so the route's own
+      // SELECTs are: lantern → existing-response. We sequence by call count.
       const callIndex = vi.mocked(db.select).mock.calls.length;
-      if (callIndex % 3 === 1) return selectStub([ringingLantern()]) as unknown as ReturnType<typeof db.select>;
-      if (callIndex % 3 === 2) return selectStub([{ id: USER_A, clerkUserId: 'user_clerk_1', householdId: HH_ID, role: 'watcher', villageGroup: 'covey' }]) as unknown as ReturnType<typeof db.select>;
+      if (callIndex % 2 === 1) return selectStub([ringingLantern()]) as unknown as ReturnType<typeof db.select>;
       return selectStub([]) as unknown as ReturnType<typeof db.select>;
     });
 
