@@ -66,7 +66,7 @@ export default function SetupPage() {
             autoFocus
             style={{
               width: '100%', padding: '12px 14px',
-              background: '#fff', border: `1px solid ${G.hairline2}`,
+              background: 'var(--paper)', border: `1px solid ${G.hairline2}`,
               borderRadius: 8, fontFamily: G.sans, fontSize: 15, color: G.ink,
             }}
           />
@@ -83,7 +83,7 @@ export default function SetupPage() {
                 onClick={() => setGlyph(g)}
                 style={{
                   aspectRatio: '1', fontSize: 24,
-                  background: glyph === g ? G.ink : '#fff',
+                  background: glyph === g ? G.ink : 'var(--paper)',
                   border: `1px solid ${glyph === g ? G.ink : G.hairline2}`,
                   borderRadius: 8, cursor: 'pointer',
                 }}

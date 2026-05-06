@@ -15,13 +15,20 @@ type NotifPrefs = {
   notifyLanternResponse: boolean;
 };
 
-const PREF_LABELS: { key: keyof NotifPrefs; label: string; forRole: 'keeper' | 'watcher' | 'both' }[] = [
-  { key: 'notifyShiftPosted', label: `New ${getCopy().request.tabLabel.toLowerCase()} available`, forRole: 'watcher' },
-  { key: 'notifyShiftClaimed', label: `${getCopy().request.newLabel.replace(/^New /, '')} claimed by watcher`, forRole: 'keeper' },
-  { key: 'notifyShiftReleased', label: `${getCopy().request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'keeper' },
-  { key: 'notifyLanternLit', label: `Family lights the ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
-  { key: 'notifyLanternResponse', label: `Watcher responds to ${getCopy().urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
-];
+// Q8: built per-render, not at module load, so a brand-flag flip mid-session
+// (COVEY_BRAND_ACTIVE toggling between covey/legacy copy) updates labels on
+// the next render instead of being frozen to whichever copy was active when
+// this module first loaded.
+function buildPrefLabels(): { key: keyof NotifPrefs; label: string; forRole: 'keeper' | 'watcher' | 'both' }[] {
+  const t = getCopy();
+  return [
+    { key: 'notifyShiftPosted', label: `New ${t.request.tabLabel.toLowerCase()} available`, forRole: 'watcher' },
+    { key: 'notifyShiftClaimed', label: `${t.request.newLabel.replace(/^New /, '')} claimed by watcher`, forRole: 'keeper' },
+    { key: 'notifyShiftReleased', label: `${t.request.newLabel.replace(/^New /, '')} released / unclaimed`, forRole: 'keeper' },
+    { key: 'notifyLanternLit', label: `Family lights the ${t.urgentSignal.noun.toLowerCase()}`, forRole: 'watcher' },
+    { key: 'notifyLanternResponse', label: `Watcher responds to ${t.urgentSignal.noun.toLowerCase()}`, forRole: 'keeper' },
+  ];
+}
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -52,7 +59,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
 
   // Calendar feed
   const [calFeedUrl, setCalFeedUrl] = useState<string | null>(null);
-  const [calFeedState, setCalFeedState] = useState<'idle' | 'loading' | 'copied' | 'error'>('idle');
+  const [calFeedState, setCalFeedState] = useState<'idle' | 'loading' | 'copied' | 'error' | 'rotating' | 'rotated'>('idle');
 
   // Notification preferences state
   const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
@@ -213,6 +220,23 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
     }
   }
 
+  // Q1: rotate calToken — invalidates the existing feed URL.
+  async function handleRotateCalFeed() {
+    if (!confirm('Rotate calendar URL? Any apps subscribed to the current URL will stop syncing until you give them the new one.')) return;
+    setCalFeedState('rotating');
+    try {
+      const del = await fetch('/api/whistles/ical', { method: 'DELETE' });
+      if (!del.ok) throw new Error(`${del.status}`);
+      const data = await del.json();
+      const APP_URL = window.location.origin;
+      setCalFeedUrl(`${APP_URL}/api/whistles/ical?token=${data.token}`);
+      setCalFeedState('rotated');
+      setTimeout(() => setCalFeedState('idle'), 2500);
+    } catch {
+      setCalFeedState('error');
+    }
+  }
+
   async function handleFeedback() {
     if (!feedbackMsg.trim() || feedbackState === 'submitting') return;
     setFeedbackState('submitting');
@@ -356,7 +380,7 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
             </div>
           ) : prefs ? (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {PREF_LABELS
+              {buildPrefLabels()
                 .filter(p => p.forRole === 'both' || !role || p.forRole === role)
                 .map(({ key, label }) => (
                   <button
@@ -608,6 +632,22 @@ export function ScreenSettings({ onBack, role, onOpenDiagnostics }: { onBack?: (
                 >
                   Open in Calendar
                 </a>
+                <button
+                  onClick={handleRotateCalFeed}
+                  disabled={calFeedState === 'rotating'}
+                  style={{
+                    padding: '9px 14px', borderRadius: 8,
+                    background: 'transparent',
+                    color: calFeedState === 'rotated' ? G.green : G.clay,
+                    border: `1px solid ${calFeedState === 'rotated' ? G.green : G.clay}`,
+                    fontFamily: G.sans, fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    cursor: calFeedState === 'rotating' ? 'wait' : 'pointer',
+                    opacity: calFeedState === 'rotating' ? 0.6 : 1,
+                  }}
+                >
+                  {calFeedState === 'rotating' ? 'Rotating…' : calFeedState === 'rotated' ? 'New URL ↻' : 'Rotate URL'}
+                </button>
               </div>
               {calFeedState === 'error' && (
                 <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.clay, marginTop: 6 }}>

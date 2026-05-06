@@ -14,7 +14,10 @@ export default function manifest(): MetadataRoute.Manifest {
       start_url: '/',
       display: 'standalone',
       orientation: 'portrait',
-      background_color: '#E8DFCE',
+      // Q3: dark splash so iOS/Android cold launch in system dark mode no
+      // longer flashes cream before paint. Light-mode users see a brief
+      // dark frame instead — the inverse (cream → dark) was the worse jar.
+      background_color: '#22271F',
       theme_color: '#E8DFCE',
       icons: [
         { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
