@@ -202,7 +202,10 @@ export async function notifyShiftClaimed(shiftId: string) {
     await pushToUser(row.shift.createdByUserId, {
       title: t.request.coveredTitle(claimerName),
       body: `"${row.shift.title}" · ${when}`,
-      url: `/?tab=${t.request.deepLinkTab}`,
+      // B7: include &whistle so the keeper's app deep-links + scrolls to
+      // the specific card on tap. Order matters — &whistle after &tab so
+      // the existing tab parser keeps working unchanged.
+      url: `/?tab=${t.request.deepLinkTab}&whistle=${shiftId}`,
       tag: `${t.request.claimedTagPrefix}-${shiftId}`,
     });
   } catch (err) {
@@ -245,7 +248,8 @@ export async function notifyShiftClaimedConfirmation(shiftId: string) {
     await pushToUser(shift.claimedByUserId, {
       title: t.request.claimerConfirmTitle(shift.title),
       body: t.request.claimerConfirmBody(when),
-      url: `/?tab=${t.request.shiftsDeepLinkTab}`,
+      // B7: deep-link the claimer to the specific card too.
+      url: `/?tab=${t.request.shiftsDeepLinkTab}&whistle=${shiftId}`,
       tag: `${t.request.claimerConfirmTagPrefix}-${shiftId}`,
     });
   } catch (err) {

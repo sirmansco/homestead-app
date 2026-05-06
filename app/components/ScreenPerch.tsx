@@ -163,23 +163,38 @@ function fmtRate(cents: number | null | undefined) {
   return dollars % 1 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel, onClaim, onRebroadcast, cancelling, claiming, rebroadcasting, showHousehold, onOpen }: {
+const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel, onClaim, onRebroadcast, cancelling, claiming, rebroadcasting, showHousehold, onOpen, isHighlighted = false }: {
   row: ShiftRow; accent: string; tagline: string;
   onCancel?: (id: string) => void; cancelling?: boolean;
   onClaim?: (id: string) => void; claiming?: boolean;
   onRebroadcast?: (id: string) => void; rebroadcasting?: boolean;
   showHousehold?: boolean;
   onOpen?: (row: ShiftRow) => void;
+  // B7: deep-link from push notification — when true, card scrolls into view
+  // and applies an amber ring/glow for ~5s. Default false keeps memo equality
+  // cheap for the non-highlighted common case.
+  isHighlighted?: boolean;
 }) {
   const [confirmingCancel, setConfirmingCancel] = React.useState(false);
   const rate = fmtRate(row.shift.rateCents);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
   return (
     <div
+      ref={cardRef}
+      data-whistle-id={row.shift.id}
       onClick={onOpen ? () => onOpen(row) : undefined}
       style={{
-        background: G.paper, border: `1px solid ${G.hairline2}`,
+        background: G.paper,
+        border: isHighlighted ? `2px solid ${G.clay}` : `1px solid ${G.hairline2}`,
+        boxShadow: isHighlighted ? `0 0 0 4px rgba(204,143,80,0.18)` : undefined,
         borderRadius: 8, padding: 12, position: 'relative', marginBottom: 8,
         cursor: onOpen ? 'pointer' : 'default',
+        transition: 'box-shadow 200ms ease, border-color 200ms ease',
       }}
     >
       <div style={{
@@ -607,13 +622,14 @@ const BellButton = React.memo(function BellButton({ onRing }: { onRing: () => vo
   );
 });
 
-export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onViewBell, onPost, onVillage }: {
+export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onViewBell, onPost, onVillage, highlightWhistleId = null }: {
   role?: 'keeper' | 'watcher';
   isDualRole?: boolean;
   onRing?: () => void;      // compose mode — new lantern
   onViewBell?: () => void;  // status mode — view existing active lantern
   onPost?: () => void;
   onVillage?: () => void;
+  highlightWhistleId?: string | null;
 }) {
   const { active, all } = useHousehold();
   const multiHousehold = all.length > 1;
@@ -906,6 +922,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
+              isHighlighted={r.shift.id === highlightWhistleId}
             />
           ))}
         </>}
@@ -929,6 +946,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
+              isHighlighted={r.shift.id === highlightWhistleId}
             />
           ))}
         </>}
@@ -972,6 +990,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
                       rebroadcasting={rebroadcastingId === r.shift.id}
                       showHousehold={multiHousehold}
                       onOpen={setOpenRow}
+                      isHighlighted={r.shift.id === highlightWhistleId}
                     />
                   ))}
                 </React.Fragment>
@@ -999,6 +1018,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
+              isHighlighted={r.shift.id === highlightWhistleId}
             />
           ))}
         </>}
@@ -1026,6 +1046,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
                   tagline={`Covering · ${r.household?.name ?? 'another family'}`}
                   showHousehold={true}
                   onOpen={setOpenRow}
+                  isHighlighted={r.shift.id === highlightWhistleId}
                 />
               ))}
             </>}
@@ -1041,6 +1062,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
                   claiming={claimingId === r.shift.id}
                   showHousehold={true}
                   onOpen={setOpenRow}
+                  isHighlighted={r.shift.id === highlightWhistleId}
                 />
               ))}
             </>}

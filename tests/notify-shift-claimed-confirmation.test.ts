@@ -73,7 +73,8 @@ describe('notifyShiftClaimedConfirmation — B8', () => {
     const payload = mockPushToUser.mock.calls[0]?.[1] as Record<string, string>;
     expect(payload.title).toBe(t.request.claimerConfirmTitle(SHIFT_ROW.title));
     expect(payload.tag).toBe(`${t.request.claimerConfirmTagPrefix}-${SHIFT_ID}`);
-    expect(payload.url).toBe(`/?tab=${t.request.shiftsDeepLinkTab}`);
+    // B7 (PR follow-up): URL also carries &whistle=<id> for deep-link scroll.
+    expect(payload.url).toBe(`/?tab=${t.request.shiftsDeepLinkTab}&whistle=${SHIFT_ID}`);
   });
 
   it('skips silently when shift row missing', async () => {

@@ -81,7 +81,7 @@ function ReleaseForm({ onConfirm, onCancel, busy }: {
   );
 }
 
-function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclaim, onCancelUnclaim, animating }: {
+function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclaim, onCancelUnclaim, animating, isHighlighted = false }: {
   row: ShiftRow;
   onClaim: (id: string) => void;
   onUnclaim?: (id: string, reason: string) => void;
@@ -91,18 +91,31 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
   releasingUnclaim?: boolean;
   onCancelUnclaim?: () => void;
   animating?: boolean;
+  // B7: deep-link from push notification (B8 confirmation push lands here for
+  // the watcher who just claimed). Card scrolls into view + amber ring for ~5s.
+  isHighlighted?: boolean;
 }) {
   const s = new Date(row.shift.startsAt);
   const month = fmtMonthAbbr(s);
   const dayLarge = String(s.getDate());
   const dow = fmtDayOfWeek(s);
+  const cardRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
 
   return (
     <article
+      ref={cardRef as React.RefObject<HTMLElement>}
+      data-whistle-id={row.shift.id}
       style={{
         paddingTop: first ? 4 : 12, paddingBottom: 12,
         borderBottom: `1px solid ${G.hairline}`,
-        transition: 'opacity 0.25s ease, transform 0.25s ease',
+        background: isHighlighted ? 'rgba(204,143,80,0.08)' : undefined,
+        boxShadow: isHighlighted ? `inset 0 0 0 2px ${G.clay}` : undefined,
+        transition: 'opacity 0.25s ease, transform 0.25s ease, background 200ms ease, box-shadow 200ms ease',
         opacity: animating ? 0 : 1,
         transform: animating ? 'translateY(12px)' : 'translateY(0)',
       }}
@@ -247,7 +260,7 @@ function SegmentControl({ value, onChange }: { value: 'open' | 'claimed'; onChan
   );
 }
 
-export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }) {
+export function ScreenWhistles({ onViewLantern, highlightWhistleId = null }: { onViewLantern?: () => void; highlightWhistleId?: string | null }) {
   const { activeBell, whistles: contextShifts, whistlesLoading, refreshWhistles, refreshBell } = useAppData();
   const [filter, setFilter] = useState<'open' | 'claimed'>('open');
   const [error, setError] = useState<string | null>(null);
@@ -443,6 +456,7 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
                         onClaim={claim}
                         busy={busyId === r.shift.id}
                         animating={animatingIds.has(r.shift.id)}
+                        isHighlighted={r.shift.id === highlightWhistleId}
                       />
                     ))}
                   </div>
@@ -481,6 +495,7 @@ export function ScreenWhistles({ onViewLantern }: { onViewLantern?: () => void }
                           releasingUnclaim={releasingId === r.shift.id}
                           onCancelUnclaim={() => setReleasingId(null)}
                           animating={animatingIds.has(r.shift.id)}
+                          isHighlighted={r.shift.id === highlightWhistleId}
                         />
                       ))}
                     </div>
