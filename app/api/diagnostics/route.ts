@@ -6,7 +6,12 @@ import { requireUser } from '@/lib/auth/household';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { authError } from '@/lib/api-error';
 
-const DEV_EMAILS = (process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
+// C5: server-side gate prefers the non-public DEV_EMAILS so the gating
+// allowlist stops being part of the client bundle. NEXT_PUBLIC_DEV_EMAILS
+// is consulted as a fallback so a half-migrated env (DEV_EMAILS not yet
+// set in prod) keeps working — once set, the public var can be deleted
+// from production without scheduling a coordinated rollout.
+const DEV_EMAILS = (process.env.DEV_EMAILS ?? process.env.NEXT_PUBLIC_DEV_EMAILS ?? '')
   .split(',')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);

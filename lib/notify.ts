@@ -52,6 +52,9 @@ async function send(to: string[], subject: string, text: string) {
   }
   const t = getCopy();
   const from = process.env.NOTIFY_FROM || `${t.brand.name} <${t.emails.notify}>`;
+  // Q2: Reply-To routes user replies to the human-monitored contact inbox
+  // instead of the noreply notify alias, which silently drops or bounces.
+  const replyTo = process.env.NOTIFY_REPLY_TO || t.emails.contact;
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -59,7 +62,7 @@ async function send(to: string[], subject: string, text: string) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({ from, to, subject, text }),
+      body: JSON.stringify({ from, to, subject, text, reply_to: replyTo }),
     });
     if (!res.ok) {
       let body = '';
@@ -254,7 +257,7 @@ export async function notifyShiftClaimedConfirmation(shiftId: string) {
   }
 }
 
-export async function notifyShiftReleased(shiftId: string, releasedByUserId: string) {
+export async function notifyShiftReleased(shiftId: string, releasedByUserId: string, reason?: string | null) {
   const [row] = await db.select({
     shift: whistles,
     household: households,
@@ -285,10 +288,15 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   const releaserName = releaser?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
   const when = fmtDateShort(row.shift.startsAt);
 
+  const trimmedReason = reason?.trim();
+  const body = trimmedReason
+    ? `${t.request.releasedBody(row.shift.title, when)} — "${trimmedReason}"`
+    : t.request.releasedBody(row.shift.title, when);
+
   try {
     await pushToUser(row.shift.createdByUserId, {
       title: t.request.releasedTitle(releaserName),
-      body: t.request.releasedBody(row.shift.title, when),
+      body,
       url: `/?tab=${t.request.deepLinkTab}`,
       tag: `${t.request.releasedTagPrefix}-${shiftId}`,
     });

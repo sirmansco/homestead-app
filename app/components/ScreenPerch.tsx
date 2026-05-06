@@ -163,10 +163,11 @@ function fmtRate(cents: number | null | undefined) {
   return dollars % 1 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel, onClaim, cancelling, claiming, showHousehold, onOpen, isHighlighted = false }: {
+const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel, onClaim, onRebroadcast, cancelling, claiming, rebroadcasting, showHousehold, onOpen, isHighlighted = false }: {
   row: ShiftRow; accent: string; tagline: string;
   onCancel?: (id: string) => void; cancelling?: boolean;
   onClaim?: (id: string) => void; claiming?: boolean;
+  onRebroadcast?: (id: string) => void; rebroadcasting?: boolean;
   showHousehold?: boolean;
   onOpen?: (row: ShiftRow) => void;
   // B7: deep-link from push notification — when true, card scrolls into view
@@ -239,8 +240,21 @@ const ShiftCard = React.memo(function ShiftCard({ row, accent, tagline, onCancel
           )}
         </div>
       </div>
-      {(onCancel || onClaim) && (
+      {(onCancel || onClaim || onRebroadcast) && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
+          {onRebroadcast && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRebroadcast(row.shift.id); }}
+              disabled={rebroadcasting}
+              style={{
+                padding: '5px 12px', background: G.ink, color: G.bg,
+                border: 'none', borderRadius: 100,
+                fontFamily: G.sans, fontSize: 9, fontWeight: 700, letterSpacing: 1.4,
+                textTransform: 'uppercase', cursor: rebroadcasting ? 'wait' : 'pointer',
+                opacity: rebroadcasting ? 0.7 : 1,
+              }}
+            >{rebroadcasting ? 'Sending…' : 'Send back'}</button>
+          )}
           {onCancel && (
             confirmingCancel ? (
               <div style={{ display: 'flex', gap: 6 }}>
@@ -634,6 +648,7 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [rebroadcastingId, setRebroadcastingId] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<ShiftRow | null>(null);
   const [cancellingBell, setCancellingBell] = useState(false);
   const [unavailability, setUnavailability] = useState<UnavailRow[]>([]);
@@ -751,6 +766,22 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
       setError(err instanceof Error ? err.message : 'claim failed');
     } finally {
       setClaimingId(null);
+    }
+  }, [load]);
+
+  const rebroadcastShift = useCallback(async (id: string) => {
+    setRebroadcastingId(id);
+    try {
+      const res = await fetch(`/api/whistles/${id}/rebroadcast`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'rebroadcast failed');
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'rebroadcast failed');
+    } finally {
+      setRebroadcastingId(null);
     }
   }, [load]);
 
@@ -887,6 +918,8 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               cancelling={cancellingId === r.shift.id}
               onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
+              onRebroadcast={role === 'keeper' && r.shift.status === 'open' && r.shift.releasedAt ? rebroadcastShift : undefined}
+              rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
               isHighlighted={r.shift.id === highlightWhistleId}
@@ -909,6 +942,8 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               cancelling={cancellingId === r.shift.id}
               onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
+              onRebroadcast={role === 'keeper' && r.shift.status === 'open' && r.shift.releasedAt ? rebroadcastShift : undefined}
+              rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
               isHighlighted={r.shift.id === highlightWhistleId}
@@ -951,6 +986,8 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
                       cancelling={cancellingId === r.shift.id}
                       onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
                       claiming={claimingId === r.shift.id}
+                      onRebroadcast={role === 'keeper' && r.shift.status === 'open' && r.shift.releasedAt ? rebroadcastShift : undefined}
+                      rebroadcasting={rebroadcastingId === r.shift.id}
                       showHousehold={multiHousehold}
                       onOpen={setOpenRow}
                       isHighlighted={r.shift.id === highlightWhistleId}
@@ -977,6 +1014,8 @@ export function ScreenPerch({ role = 'keeper', isDualRole = false, onRing, onVie
               cancelling={cancellingId === r.shift.id}
               onClaim={r.shift.status === 'open' && role === 'watcher' ? claimShift : undefined}
               claiming={claimingId === r.shift.id}
+              onRebroadcast={role === 'keeper' && r.shift.status === 'open' && r.shift.releasedAt ? rebroadcastShift : undefined}
+              rebroadcasting={rebroadcastingId === r.shift.id}
               showHousehold={multiHousehold}
               onOpen={setOpenRow}
               isHighlighted={r.shift.id === highlightWhistleId}

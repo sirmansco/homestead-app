@@ -46,7 +46,11 @@ export async function POST(req: NextRequest) {
     }
 
     const client = await clerkClient();
-    const origin = req.headers.get('origin') || new URL(req.url).origin;
+    // C4: derive from server env only. Trusting the request Origin header
+    // lets a forged invite URL embed the inviter's host on a phishing page,
+    // and falling back to req.url ties the URL to whichever vercel preview
+    // happened to handle the request rather than the canonical app origin.
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
 
     if (mode === 'email') {
       if (!email?.trim()) return NextResponse.json({ error: 'Email required' }, { status: 400 });
