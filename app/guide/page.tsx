@@ -251,7 +251,7 @@ export default function GuidePage() {
             ))}
           </div>
           <p style={{ fontFamily: C.serif, fontStyle: 'italic', fontSize: 13, color: C.ink2, lineHeight: 1.6, margin: '14px 0 0' }}>
-            To add someone, open the {t.circle.title.toLowerCase()} tab and send an invite. To move someone between circles, tap their name. Changes take effect immediately for future {t.request.tabLabel} and {t.urgentSignal.noun} alerts.
+            To add someone, open the {t.circle.tabLabel} tab and send an invite. To move someone between circles, tap their name. Changes take effect immediately for future {t.request.tabLabel} and {t.urgentSignal.noun} alerts.
           </p>
         </Section>
 
