@@ -5,6 +5,44 @@ purpose: Backlog of items deferred from prior sessions. Per Protos v9.7 §"Stand
 
 ## Active
 
+### Pending verification — brainstorm-2026-05-04 Items 3 + 4 (added 2026-05-06)
+
+Both PRs merged: #117 (Open/Claimed tabs) and #123 (rebroadcast with parent gatekeeper). Migration 0017 needs to run against prod before Item 4 routes will work (`released_at` column).
+
+#### Step 0 — Apply migration 0017 to production
+
+```bash
+cd "Apps/Covey/covey-app"
+npm run db:migrate
+```
+
+Pre/post doctor checks gate the run. Verify column exists after:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'whistles' AND column_name = 'released_at';
+```
+
+#### Test plan — dual-role single-account (run on prod after main redeploys)
+
+Run as one Clerk account using the dual-role switch.
+
+- [ ] **Test 1 — Open / Claimed tabs.** Switch to watcher. Whistles tabs read "Open" / "Claimed" (not "All"). Open is default. Tagline on Open: "Open requests from your circle." Tagline on Claimed: "[Whistles/Requests] you've claimed."
+- [ ] **Test 2 — Claim moves whistle Open → Claimed.** Keeper posts whistle. Switch to watcher. Cover it. Card animates out of Open. Tap Claimed — whistle there with Release button. Tap Open — whistle NOT there.
+- [ ] **Test 3 — Release with reason; push includes reason.** Watcher taps Release on claimed whistle, types "got a flat tire", confirms. Switch to keeper. Push body should read something like `"…released your Whistle — \"got a flat tire\""`.
+- [ ] **Test 4 — Send Back gate (released vs fresh).** As keeper on Perch: released whistle's card shows TWO buttons (muted Cancel + filled Send Back). Post a fresh whistle (don't claim). Its card shows ONE button: just Cancel. No Send Back on fresh opens.
+- [ ] **Test 5 — Send Back re-broadcasts.** Keeper taps Send Back on released whistle. Button → "Sending…" briefly. Switch to watcher — fresh new-whistle push received. Switch back to keeper, refresh Perch — Send Back button is gone (released_at cleared). Cancel remains.
+- [ ] **Test 6 — Cancel still works.** Keeper taps Cancel on any whistle, confirms. Whistle disappears from Perch (regression check: cancel flow untouched by Item 4).
+
+#### Test plan — requires two Clerk accounts (deferred until aliases set up)
+
+Set up two test accounts via Gmail plus-aliasing (`mjsirmans+keeper-test@gmail.com`, `mjsirmans+watcher-test@gmail.com`) or iCloud Hide-My-Email. ~5 min one-time setup.
+
+- [ ] **Test 7 — Co-keeper authorization.** Invite test-account-2 as a keeper in same household. Account-1 posts. Watcher claims + releases. Account-2 should see Send Back on the released whistle even though account-1 posted it. (Unit-tested in `tests/whistles-rebroadcast.test.ts`.)
+- [ ] **Test 8 — Rate limit (5/min/user/whistle).** As keeper, tap Send Back rapidly across 6 release+rebroadcast cycles within 60 seconds. 6th attempt should return 429 (toast: "too many requests"). (Unit-tested.)
+- [ ] **Test 9 — No fan-out on release.** Test-account-2 is a watcher who NEVER claims, app open on a second device. Account-1 (also watcher) claims + releases. Account-2 should receive ZERO push from the release event. Only the keeper gets pinged. (Unit-tested — this is the critical regression guard from Item 4's plan.)
+
+If any of Tests 1-6 fail, the failure stays here as a bug; otherwise check off and remove the section.
+
 ### Deferred from Session 4 (2026-05-04 — P1 batch)
 
 Session 4 shipped B3 + B4 + B5 (account-delete CSRF/recent-auth, IP rate limits pre-Clerk, Sentry PII scrubbing) and explicitly deferred the rest of the P1 batch to keep scope bounded. All items are still wanted; carry them forward.
