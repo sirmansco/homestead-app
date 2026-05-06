@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    const origin = req.headers.get('origin') || new URL(req.url).origin;
+    // C4: derive from server env only. See app/api/circle/invite/route.ts:48 note.
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://joincovey.co';
     const inviteUrl = `${origin}/accept-family-invite?token=${token}`;
 
     return NextResponse.json({ ok: true, inviteUrl });
