@@ -260,7 +260,7 @@ export function GTabBar({ active = 'perch', onNavigate, role = 'keeper', bellCou
   const parentTabs: Tab[] = [
     { id: 'perch',   label: getCopy().schedule.title, icon: Icons.perch },
     { id: 'post',    label: 'Whistle', icon: Icons.post },
-    { id: 'circle',  label: getCopy().circle.title, icon: Icons.village },
+    { id: 'circle',  label: getCopy().circle.tabLabel, icon: Icons.village },
   ];
   const caregiverTabs: Tab[] = [
     { id: 'whistles', label: getCopy().request.tabLabel, icon: Icons.whistles },

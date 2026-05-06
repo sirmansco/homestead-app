@@ -296,19 +296,6 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   );
 });
 
-function EmptyGroup({ label }: { label: string }) {
-  return (
-    <div style={{
-      background: G.paper, border: `1px dashed ${G.hairline2}`, borderRadius: 10,
-      padding: 18, textAlign: 'center',
-      fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted,
-      marginBottom: 18,
-    }}>
-      No one in {label} yet.
-    </div>
-  );
-}
-
 function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => void; onInvited: () => void; caregiverMode?: boolean }) {
   // Caregivers can only invite families (adults), never add chicks
   const [kind, setKind] = useState<'adult' | 'kid'>(caregiverMode ? 'adult' : 'adult');
@@ -875,7 +862,8 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
 
   if (!loading && myRole === 'watcher') return <CaregiverVillage onOpenSettings={onOpenSettings} />;
 
-  const byGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g);
+  const watchersByGroup = (g: VillageGroup) => adults.filter(a => a.villageGroup === g && a.role === 'watcher');
+  const parents = adults.filter(a => a.role === 'keeper');
   const total = adults.length + chicks.length;
 
   return (
@@ -958,8 +946,70 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
           </div>
         ) : (
           <>
+            {/* Family section — parents + chicks. Renders above Covey/Field. */}
+            <div>
+              <GroupHeader
+                count={parents.length + chicks.length}
+                label={getCopy().circle.familyLabel}
+                note={getCopy().circle.familyNote}
+              />
+              {(parents.length + chicks.length) === 0 ? (
+                <div style={{
+                  background: 'transparent',
+                  border: `1px dashed ${G.hairline2}`,
+                  borderRadius: 10, padding: 18, textAlign: 'center',
+                  fontFamily: G.serif, fontStyle: 'italic', fontSize: 12,
+                  color: G.muted, marginBottom: 18,
+                }}>
+                  No one in {getCopy().circle.familyLabel} yet.
+                </div>
+              ) : (
+                <div style={{
+                  background: G.paper,
+                  border: `1px solid ${G.hairline2}`,
+                  borderRadius: 10,
+                  padding: 14,
+                  marginBottom: 18,
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                    {parents.map(p => {
+                      const isMe = myUserId === p.id;
+                      const canManage = myRole === 'keeper' && !isMe;
+                      return (
+                        <MemberCard
+                          key={p.id}
+                          name={shortName(p.name)}
+                          role={p.role}
+                          isMe={isMe}
+                          appRole={canManage ? p.role : undefined}
+                          onToggleRole={canManage ? () => changeRole(p.id, p.role === 'keeper' ? 'watcher' : 'keeper') : undefined}
+                          onDelete={canManage ? () => removeAdult(p.id) : undefined}
+                          photoUrl={p.photoUrl}
+                          targetType="user"
+                          targetId={p.id}
+                          onPhotoChange={onPhotoChange}
+                        />
+                      );
+                    })}
+                    {chicks.map(k => (
+                      <MemberCard
+                        key={k.id}
+                        name={k.name}
+                        role={k.birthday ? `born ${k.birthday}` : getCopy().circle.kidLabel.toLowerCase()}
+                        onDelete={myRole === 'keeper' ? () => removeKid(k.id) : undefined}
+                        photoUrl={k.photoUrl}
+                        targetType="kid"
+                        targetId={k.id}
+                        onPhotoChange={() => load()}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {(['covey', 'field'] as const).map(g => {
-              const members = byGroup(g);
+              const members = watchersByGroup(g);
               const meta = getGroupMeta()[g];
               return (
                 <div key={g}>
@@ -1010,24 +1060,6 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
                 </div>
               );
             })}
-
-            <GroupHeader count={chicks.length} label={`The ${getCopy().circle.kidLabel}s`} note="who we&rsquo;re coordinating for" />
-            {chicks.length === 0 ? <EmptyGroup label={`the ${getCopy().circle.kidLabel.toLowerCase()}s`} /> : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 18 }}>
-                {chicks.map(k => (
-                  <MemberCard
-                    key={k.id}
-                    name={k.name}
-                    role={k.birthday ? `born ${k.birthday}` : 'child'}
-                    onDelete={myRole === 'keeper' ? () => removeKid(k.id) : undefined}
-                    photoUrl={k.photoUrl}
-                    targetType="kid"
-                    targetId={k.id}
-                    onPhotoChange={() => load()}
-                  />
-                ))}
-              </div>
-            )}
 
             <div style={{
               marginTop: 26, padding: 18, textAlign: 'center',

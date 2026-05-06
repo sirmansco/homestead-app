@@ -249,7 +249,7 @@ export function ScreenPost({ onCancel, onPost, onRing }: {
               background: G.paper, border: `1px dashed ${G.hairline2}`, borderRadius: 8,
               fontFamily: G.serif, fontStyle: 'italic', fontSize: 12, color: G.muted,
             }}>
-              No children added yet. Add them on the {getCopy().circle.title} tab.
+              No children added yet. Add them on the {getCopy().circle.tabLabel} tab.
             </div>
           )}
           <input

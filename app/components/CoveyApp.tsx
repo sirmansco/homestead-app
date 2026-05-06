@@ -417,8 +417,8 @@ function CoveyInner() {
         {canSwitchRole && <RoleSwitcherDesktop role={role} onChange={handleRoleChange} />}
         <div style={{ fontFamily: G.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--bg)', opacity: 0.5, marginBottom: 8 }}>Shortcuts</div>
         {(role === 'keeper'
-          ? [['1', getCopy().schedule.title], ['2', 'Post'], ['3', getCopy().circle.title]]
-          : [['1', 'Open'], ['2', 'Schedule'], ['3', getCopy().urgentSignal.noun], ['4', getCopy().circle.title]]
+          ? [['1', getCopy().schedule.title], ['2', 'Post'], ['3', getCopy().circle.tabLabel]]
+          : [['1', 'Open'], ['2', 'Schedule'], ['3', getCopy().urgentSignal.noun], ['4', getCopy().circle.tabLabel]]
         ).map(([k, l]) => (
           <div key={k} style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
             <div style={{

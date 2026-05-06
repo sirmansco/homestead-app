@@ -463,7 +463,7 @@ function LanternActive({ onBack, onDone, lanternId, reason, warning }: { onBack?
             background: G.claySoft, marginTop: 8,
             fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, lineHeight: 1.5,
           }}>
-            No one in {getCopy().circle.title.toLowerCase()} yet. Add caregivers from the {getCopy().circle.title} tab so they can receive {getCopy().urgentSignal.noun.toLowerCase()} alerts.
+            No one in {getCopy().circle.title} yet. Add caregivers from the {getCopy().circle.tabLabel} tab so they can receive {getCopy().urgentSignal.noun.toLowerCase()} alerts.
           </div>
         ) : (
           <>
