@@ -120,6 +120,13 @@
       "when": 1777832400031,
       "tag": "0016_rename_notify_bell_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777832400032,
+      "tag": "0017_whistles_released_at",
+      "breakpoints": true
     }
   ]
 }

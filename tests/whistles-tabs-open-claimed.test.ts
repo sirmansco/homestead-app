@@ -29,6 +29,7 @@ function row(overrides: {
       householdId: 'h1',
       claimedByUserId: overrides.claimedByUserId ?? null,
       preferredCaregiverId: null,
+      releasedAt: null,
     },
     household: null,
     creator: null,

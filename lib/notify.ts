@@ -250,7 +250,7 @@ export async function notifyShiftClaimedConfirmation(shiftId: string) {
   }
 }
 
-export async function notifyShiftReleased(shiftId: string, releasedByUserId: string) {
+export async function notifyShiftReleased(shiftId: string, releasedByUserId: string, reason?: string | null) {
   const [row] = await db.select({
     shift: whistles,
     household: households,
@@ -281,10 +281,15 @@ export async function notifyShiftReleased(shiftId: string, releasedByUserId: str
   const releaserName = releaser?.name || `A ${t.roles.watcher.singular.toLowerCase()}`;
   const when = fmtDateShort(row.shift.startsAt);
 
+  const trimmedReason = reason?.trim();
+  const body = trimmedReason
+    ? `${t.request.releasedBody(row.shift.title, when)} — "${trimmedReason}"`
+    : t.request.releasedBody(row.shift.title, when);
+
   try {
     await pushToUser(row.shift.createdByUserId, {
       title: t.request.releasedTitle(releaserName),
-      body: t.request.releasedBody(row.shift.title, when),
+      body,
       url: `/?tab=${t.request.deepLinkTab}`,
       tag: `${t.request.releasedTagPrefix}-${shiftId}`,
     });

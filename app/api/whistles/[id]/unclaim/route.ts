@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { whistles, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/household';
@@ -30,13 +30,13 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     }
 
     const [released] = await db.update(whistles)
-      .set({ status: 'open', claimedByUserId: null, claimedAt: null })
+      .set({ status: 'open', claimedByUserId: null, claimedAt: null, releasedAt: sql`now()` })
       .where(and(eq(whistles.id, id), eq(whistles.status, 'claimed')))
       .returning();
     if (!released) return NextResponse.json({ error: 'race lost' }, { status: 409 });
 
     try {
-      await notifyShiftReleased(id, claimer.id);
+      await notifyShiftReleased(id, claimer.id, reason);
     } catch (err) {
       console.error('[whistles:unclaim:notify]', err);
     }
