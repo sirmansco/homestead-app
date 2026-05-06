@@ -63,6 +63,7 @@ export const whistles = pgTable('whistles', {
   rateCents: integer('rate_cents'),
   status: shiftStatusEnum('status').notNull().default('open'),
   claimedAt: timestamp('claimed_at'),
+  releasedAt: timestamp('released_at'),
   isRecurring: boolean('is_recurring').notNull().default(false),
   recurDayOfWeek: integer('recur_day_of_week'),
   recurEndsAt: date('recur_ends_at'),
@@ -74,6 +75,7 @@ export const whistles = pgTable('whistles', {
   claimedByEndsAtIdx: index('idx_whistles_claimed_by_ends_at').on(t.claimedByUserId, t.endsAt),
   createdByEndsAtIdx: index('idx_whistles_created_by_ends_at').on(t.createdByUserId, t.endsAt),
   preferredCaregiverStatusEndsAtIdx: index('idx_whistles_preferred_caregiver_status_ends_at').on(t.preferredCaregiverId, t.status, t.endsAt),
+  householdReleasedAtIdx: index('idx_whistles_household_released_at').on(t.householdId, t.releasedAt),
 }));
 
 export const lanterns = pgTable('lanterns', {

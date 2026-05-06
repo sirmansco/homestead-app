@@ -31,6 +31,7 @@ export type ShiftRow = {
     householdId: string;
     claimedByUserId: string | null;
     preferredCaregiverId: string | null;
+    releasedAt: string | null;
   };
   household: { id: string; name: string; glyph: string } | null;
   creator: { id: string; name: string } | null;
