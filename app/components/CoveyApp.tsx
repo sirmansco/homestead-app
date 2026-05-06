@@ -481,9 +481,6 @@ function CoveyInner() {
           <div>{getCopy().brand.name}</div>
           <div>Family childcare</div>
           <div>coordination</div>
-          <br />
-          <div>Design prototype</div>
-          <div>Oct 2025</div>
         </div>
       </div>
     </div>
