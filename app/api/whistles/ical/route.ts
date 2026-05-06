@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { db } from '@/lib/db';
 import { whistles, users, households } from '@/lib/db/schema';
 import { getCopy } from '@/lib/copy';
+import { authError } from '@/lib/api-error';
+import { rateLimit, rateLimitResponse } from '@/lib/ratelimit';
 
 function escapeIcs(s: string) {
   return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
@@ -124,4 +126,31 @@ export async function GET(req: NextRequest) {
       'Cache-Control': 'no-store',
     },
   });
+}
+
+// Q1: rotate the user's calToken — invalidates any existing calendar
+// subscription URL and issues a new one. Used when a user thinks their
+// feed URL has been shared/leaked. Session-authenticated only; the old
+// token URL stops working immediately on next request.
+export async function DELETE() {
+  try {
+    const { auth } = await import('@clerk/nextjs/server');
+    const { userId } = await auth();
+    if (!userId) return new NextResponse('Unauthorized', { status: 401 });
+
+    const rl = rateLimit({ key: `cal-token-rotate:${userId}`, limit: 5, windowMs: 60 * 60_000 });
+    const limited = rateLimitResponse(rl);
+    if (limited) return limited;
+
+    const newToken = crypto.randomBytes(24).toString('hex');
+    const [updated] = await db.update(users)
+      .set({ calToken: newToken })
+      .where(eq(users.clerkUserId, userId))
+      .returning();
+    if (!updated) return new NextResponse('Unauthorized', { status: 401 });
+
+    return NextResponse.json({ ok: true, token: newToken });
+  } catch (err) {
+    return authError(err, 'ical:rotate', 'Could not rotate calendar URL');
+  }
 }

@@ -15,7 +15,10 @@ function fmtWhen(startIso: string) {
   const todayKey = localDateKey(now);
   const tomorrowKey = localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
   const in7Key = localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
-  if (shiftKey === todayKey) return 'Tonight';
+  // Q6: shift before 5pm reads as "Today", after 5pm as "Tonight" — same
+  // calendar day either way, just matches how people actually talk about
+  // a shift starting at noon vs at 8pm.
+  if (shiftKey === todayKey) return s.getHours() < 17 ? 'Today' : 'Tonight';
   if (shiftKey === tomorrowKey) return 'Tomorrow';
   if (shiftKey < in7Key) return fmtDayOfWeekLong(s);
   return fmtDateShort(s);
@@ -115,6 +118,14 @@ function ShiftCard({ row, onClaim, onUnclaim, first, busy, mine, releasingUnclai
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 9, color: G.muted, paddingBottom: 3 }}>{dow}</div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
+          {row.requestedForMe && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 4,
+              padding: '2px 7px', borderRadius: 100,
+              background: G.clay, color: G.bg,
+              fontFamily: G.sans, fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase',
+            }}>★ Requested for you</div>
+          )}
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
             <div style={{ fontFamily: G.display, fontSize: 16, fontWeight: 500, color: G.ink, lineHeight: 1.2 }}>{row.shift.title}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, flexShrink: 0 }}>

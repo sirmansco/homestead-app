@@ -10,10 +10,14 @@ type InviteInfo = {
   villageGroup: 'covey' | 'field';
 };
 
-const GROUP_LABEL: Record<string, string> = {
-  covey: getCopy().circle.innerLabel,
-  field: getCopy().circle.outerLabel,
-};
+// Q8: built per-render so brand-flag flip mid-session updates labels.
+function buildGroupLabel(): Record<string, string> {
+  const t = getCopy();
+  return {
+    covey: t.circle.innerLabel,
+    field: t.circle.outerLabel,
+  };
+}
 
 const btnStyle: React.CSSProperties = {
   display: 'inline-block',
@@ -111,7 +115,7 @@ function InviteContent() {
           </div>
           <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 14, color: G.muted, marginBottom: 20, lineHeight: 1.5 }}>
             <strong style={{ color: G.ink2 }}>{invite.fromName}</strong> invited you to join their circle on {getCopy().brand.name} as{' '}
-            <strong style={{ color: G.ink2 }}>{GROUP_LABEL[invite.villageGroup] ?? invite.villageGroup}</strong>.
+            <strong style={{ color: G.ink2 }}>{buildGroupLabel()[invite.villageGroup] ?? invite.villageGroup}</strong>.
           </div>
 
           {invite.parentName && (

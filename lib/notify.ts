@@ -52,6 +52,9 @@ async function send(to: string[], subject: string, text: string) {
   }
   const t = getCopy();
   const from = process.env.NOTIFY_FROM || `${t.brand.name} <${t.emails.notify}>`;
+  // Q2: Reply-To routes user replies to the human-monitored contact inbox
+  // instead of the noreply notify alias, which silently drops or bounces.
+  const replyTo = process.env.NOTIFY_REPLY_TO || t.emails.contact;
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -59,7 +62,7 @@ async function send(to: string[], subject: string, text: string) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({ from, to, subject, text }),
+      body: JSON.stringify({ from, to, subject, text, reply_to: replyTo }),
     });
     if (!res.ok) {
       let body = '';
