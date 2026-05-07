@@ -6,6 +6,7 @@ export const bellStatusEnum = pgEnum('bell_status', ['ringing', 'handled', 'canc
 export const bellResponseEnum = pgEnum('bell_response', ['on_my_way', 'in_thirty', 'cannot']);
 export const villageGroupEnum = pgEnum('village_group', ['inner_circle', 'sitter', 'covey', 'field']);
 export const shiftStatusEnum = pgEnum('shift_status', ['open', 'claimed', 'cancelled', 'done']);
+export const householdModeEnum = pgEnum('household_mode', ['join_existing', 'create_new']);
 
 export const households = pgTable('households', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -115,6 +116,14 @@ export const familyInvites = pgTable('family_invites', {
   parentEmail: text('parent_email').notNull(),
   parentName: text('parent_name'),
   villageGroup: villageGroupEnum('village_group').notNull().default('covey'),
+  // The role the invitee should land with on accept. Nullable so existing
+  // pre-0018 rows are valid; new keeper-initiated invites set this explicitly,
+  // and the accept route falls back to 'watcher' if absent for legacy safety.
+  appRole: appRoleEnum('app_role'),
+  // join_existing → invitee joins the inviter's household (today's behavior).
+  // create_new   → invitee gets a brand-new household, keeper+isAdmin=true.
+  // Set at invite-creation time based on inviter's role; branched on at accept.
+  householdMode: householdModeEnum('household_mode').notNull().default('join_existing'),
   status: text('status').notNull().default('pending'),
   acceptedHouseholdId: uuid('accepted_household_id').references(() => households.id, { onDelete: 'set null' }),
   acceptedAt: timestamp('accepted_at'),
