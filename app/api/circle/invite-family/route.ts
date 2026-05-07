@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { familyInvites } from '@/lib/db/schema';
 import { requireHousehold } from '@/lib/auth/household';
@@ -68,6 +69,19 @@ export async function POST(req: NextRequest) {
     let householdMode: 'join_existing' | 'create_new';
 
     if (isWatcherInviter) {
+      // Matrix §2.1 row 3: watchers may only initiate "create_new" flows. If a
+      // Clerk user already exists for this email, the invitee already has a
+      // household — accepting would call createOrganization for them and
+      // produce a duplicate org. Block before insert.
+      const normalizedEmail = body.parentEmail.trim().toLowerCase();
+      const clerk = await clerkClient();
+      const existing = await clerk.users.getUserList({ emailAddress: [normalizedEmail] });
+      const existingCount = Array.isArray(existing)
+        ? existing.length
+        : (existing?.totalCount ?? existing?.data?.length ?? 0);
+      if (existingCount > 0) {
+        return NextResponse.json({ error: 'user_already_has_account' }, { status: 403 });
+      }
       // Ignore any payload role/villageGroup — watchers cannot pick.
       appRole = 'keeper';
       villageGroup = 'covey';
