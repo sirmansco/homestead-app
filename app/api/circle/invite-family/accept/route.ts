@@ -117,14 +117,46 @@ export async function POST(req: NextRequest) {
       // the matching households row + users row (with isAdmin=true via the
       // first-user advisory-lock path in lib/auth/household.ts).
       const orgName = (invite.parentName?.trim() || clerkUser.firstName || 'Family');
+
+      // Idempotency guard: if a previous accept attempt for this invite
+      // succeeded at createOrganization but failed before the DB update below,
+      // an orphan org exists with publicMetadata.inviteId === invite.id. On
+      // retry, reuse it instead of creating a second org.
+      let existingOrgId: string | null = null;
       try {
-        await clerk.organizations.createOrganization({
-          name: orgName,
-          createdBy: userId,
-        });
-      } catch (orgErr) {
-        console.error('[invite-family:accept] createOrganization failed', orgErr);
-        return NextResponse.json({ error: 'household_create_failed' }, { status: 500 });
+        const memberships = await clerk.users.getOrganizationMembershipList({ userId });
+        for (const m of memberships.data) {
+          const meta = m.organization.publicMetadata as { inviteId?: string } | null;
+          if (meta?.inviteId === invite.id) {
+            existingOrgId = m.organization.id;
+            break;
+          }
+        }
+      } catch (lookupErr) {
+        // Non-fatal: if lookup fails we fall through to create. Worst case is
+        // an extra orphan that the cleanup script catches.
+        console.error('[invite-family:accept] org lookup failed', lookupErr);
+      }
+
+      if (!existingOrgId) {
+        try {
+          const newOrg = await clerk.organizations.createOrganization({
+            name: orgName,
+            createdBy: userId,
+          });
+          // Stamp the invite id immediately so a crash before DB update is
+          // recoverable on the next accept attempt.
+          try {
+            await clerk.organizations.updateOrganization(newOrg.id, {
+              publicMetadata: { inviteId: invite.id },
+            });
+          } catch (stampErr) {
+            console.error('[invite-family:accept] inviteId stamp failed', stampErr);
+          }
+        } catch (orgErr) {
+          console.error('[invite-family:accept] createOrganization failed', orgErr);
+          return NextResponse.json({ error: 'household_create_failed' }, { status: 500 });
+        }
       }
 
       // Stamp publicMetadata so requireHousehold() picks the right role on
