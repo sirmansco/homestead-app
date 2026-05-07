@@ -42,7 +42,9 @@ const INVITE_ID = 'invite-1';
 function mockHousehold() {
   vi.mocked(requireHousehold).mockResolvedValue({
     household: { id: HH_ID, clerkOrgId: 'org_1' },
-    user: { id: USER_ID, clerkUserId: CLERK_ID, householdId: HH_ID, role: 'keeper', isAdmin: false },
+    // isAdmin=true added 2026-05-06 per Circle/invite/role audit matrix
+    // §2.1.2 — keeper-non-admin is blocked from /api/circle/invite-family.
+    user: { id: USER_ID, clerkUserId: CLERK_ID, householdId: HH_ID, role: 'keeper', isAdmin: true },
     userId: CLERK_ID,
     orgId: 'org_1',
   } as unknown as Awaited<ReturnType<typeof requireHousehold>>);

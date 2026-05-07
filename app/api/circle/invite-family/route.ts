@@ -49,6 +49,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Parent email required' }, { status: 400 });
     }
 
+    // Matrix §2.1.2: keeper-non-admin sees no Invite button in UI and is
+    // blocked here in case the UI gate is bypassed. Only watchers and
+    // keeper-admins may use this endpoint.
+    if (user.role === 'keeper' && !user.isAdmin) {
+      return NextResponse.json({ error: 'no_access' }, { status: 403 });
+    }
+
     const isWatcherInviter = user.role === 'watcher';
 
     // Server-side enforcement of the matrix:
