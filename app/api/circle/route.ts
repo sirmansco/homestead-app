@@ -19,17 +19,30 @@ export async function GET(req: NextRequest) {
       const hhIds = myRows.map(r => r.householdId);
       if (hhIds.length === 0) return NextResponse.json({ families: [] });
 
+      // Per-household role + viewer-id for the caller. Role can differ across
+      // households (watcher in one, keeper in another), so the watcher peer
+      // filter must be applied per household — same rule as the scoped branch.
+      const viewerByHh = new Map(myRows.map(r => ({ hhId: r.householdId, role: r.role, id: r.id }))
+        .map(v => [v.hhId, { role: v.role, id: v.id }]));
+
       const [hhRows, allAdults, allKids] = await Promise.all([
         db.select().from(households).where(inArray(households.id, hhIds)),
         db.select().from(users).where(inArray(users.householdId, hhIds)),
         db.select().from(chicks).where(inArray(chicks.householdId, hhIds)),
       ]);
 
-      const families = hhRows.map(h => ({
-        household: { id: h.id, name: h.name, glyph: h.glyph },
-        adults: allAdults.filter(a => a.householdId === h.id).map(a => ({ ...a, name: normaliseStoredName(a.name) })),
-        chicks: allKids.filter(k => k.householdId === h.id),
-      }));
+      const families = hhRows.map(h => {
+        const viewer = viewerByHh.get(h.id);
+        const hhAdults = allAdults.filter(a => a.householdId === h.id);
+        const visibleAdults = viewer?.role === 'watcher'
+          ? hhAdults.filter(a => a.role === 'keeper' || a.id === viewer.id)
+          : hhAdults;
+        return {
+          household: { id: h.id, name: h.name, glyph: h.glyph },
+          adults: visibleAdults.map(a => ({ ...a, name: normaliseStoredName(a.name) })),
+          chicks: allKids.filter(k => k.householdId === h.id),
+        };
+      });
 
       return NextResponse.json({ families });
     }
