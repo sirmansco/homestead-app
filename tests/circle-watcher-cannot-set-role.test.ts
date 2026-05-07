@@ -39,7 +39,16 @@ vi.mock('@clerk/nextjs/server', () => ({
 
 import { requireHousehold } from '@/lib/auth/household';
 import { db } from '@/lib/db';
+import { clerkClient } from '@clerk/nextjs/server';
 import { POST as invitePost } from '@/app/api/circle/invite-family/route';
+
+function mockClerkNoExistingUser() {
+  const getUserList = vi.fn().mockResolvedValue({ data: [], totalCount: 0 });
+  vi.mocked(clerkClient).mockResolvedValue({
+    users: { getUserList },
+  } as unknown as Awaited<ReturnType<typeof clerkClient>>);
+  return getUserList;
+}
 
 const HH_ID = 'hh-1';
 const USER_ID = 'watcher-1';
@@ -81,6 +90,7 @@ describe('Bug #5 — watcher inviter cannot set role/villageGroup', () => {
 
   it('watcher payload with appRole=keeper villageGroup=field → server forces keeper + create_new', async () => {
     mockWatcherHousehold();
+    mockClerkNoExistingUser();
     const { chain, captured } = makeInsertCapture();
     vi.mocked(db.insert).mockReturnValue(chain as unknown as ReturnType<typeof db.insert>);
 
@@ -101,6 +111,7 @@ describe('Bug #5 — watcher inviter cannot set role/villageGroup', () => {
 
   it('watcher with no payload role → still create_new with appRole=keeper', async () => {
     mockWatcherHousehold();
+    mockClerkNoExistingUser();
     const { chain, captured } = makeInsertCapture();
     vi.mocked(db.insert).mockReturnValue(chain as unknown as ReturnType<typeof db.insert>);
 
@@ -120,6 +131,7 @@ describe('Bug #5 — watcher inviter cannot set role/villageGroup', () => {
     // the behavior so a future "tighten validation" change doesn't accidentally
     // start 400'ing legitimate watcher invites with malformed legacy payloads.
     mockWatcherHousehold();
+    mockClerkNoExistingUser();
     const { chain, captured } = makeInsertCapture();
     vi.mocked(db.insert).mockReturnValue(chain as unknown as ReturnType<typeof db.insert>);
 
