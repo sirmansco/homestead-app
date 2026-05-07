@@ -38,7 +38,7 @@
  */
 
 import { config } from 'dotenv';
-import { Pool } from 'pg';
+import postgres from 'postgres';
 
 config({ path: '.env.local' });
 
@@ -49,25 +49,26 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new Pool({ connectionString: url });
+  // Uses the postgres-js driver already in package.json (matches lib/db/index.ts).
+  const sql = postgres(url, { max: 1, prepare: false });
 
   try {
-    const watcherPending = await pool.query(`
+    const watcherPending = await sql<{ n: number }[]>`
       SELECT COUNT(*)::int AS n
         FROM family_invites fi
         JOIN users u ON u.id = fi.from_user_id
        WHERE fi.status = 'pending'
          AND u.role = 'watcher'
-    `);
+    `;
 
-    const totalPending = await pool.query(`
+    const totalPending = await sql<{ n: number }[]>`
       SELECT COUNT(*)::int AS n
         FROM family_invites
        WHERE status = 'pending'
-    `);
+    `;
 
-    const watcherCount = watcherPending.rows[0].n;
-    const totalCount = totalPending.rows[0].n;
+    const watcherCount = watcherPending[0].n;
+    const totalCount = totalPending[0].n;
 
     console.log('---');
     console.log('Migration 0018 precheck');
@@ -91,7 +92,7 @@ async function main() {
       console.log(`   Expected affected rows: ${watcherCount}`);
     }
   } finally {
-    await pool.end();
+    await sql.end({ timeout: 5 });
   }
 }
 
