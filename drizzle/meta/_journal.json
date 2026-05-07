@@ -127,6 +127,13 @@
       "when": 1777832400032,
       "tag": "0017_whistles_released_at",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1777832400033,
+      "tag": "0018_circle_invite_role_audit",
+      "breakpoints": true
     }
   ]
 }

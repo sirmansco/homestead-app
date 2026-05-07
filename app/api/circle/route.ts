@@ -34,13 +34,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ families });
     }
 
-    const { household } = await requireHousehold();
+    const { household, user: viewer } = await requireHousehold();
     const [adults, kidsList] = await Promise.all([
       db.select().from(users).where(eq(users.householdId, household.id)),
       db.select().from(chicks).where(eq(chicks.householdId, household.id)),
     ]);
 
-    const normalised = adults.map(a => ({ ...a, name: normaliseStoredName(a.name) }));
+    // Bug #2 (BUGS.md 2026-05-06): watcher viewers cannot see peer watchers.
+    // Privacy filter — server-side, not UI. A watcher sees keepers, chicks,
+    // and themselves. Other watchers are excluded from the response payload.
+    // See docs/plans/circle-invite-role-audit.md §2.3 (Circle visibility).
+    const visibleAdults = viewer.role === 'watcher'
+      ? adults.filter(a => a.role === 'keeper' || a.id === viewer.id)
+      : adults;
+
+    const normalised = visibleAdults.map(a => ({ ...a, name: normaliseStoredName(a.name) }));
     return NextResponse.json({ adults: normalised, chicks: kidsList });
   } catch (err) {
     return authError(err, 'village');

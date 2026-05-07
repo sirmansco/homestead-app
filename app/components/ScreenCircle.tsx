@@ -70,7 +70,7 @@ function getGroupTitle(): Record<VillageGroup, string> {
   };
 }
 
-const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange }: {
+const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, onToggleRole, villageGroup, onChangeGroup, onDelete, photoUrl, targetType, targetId, onPhotoChange, canEditPhoto }: {
   name: string;
   role: string;
   isMe?: boolean;
@@ -83,7 +83,12 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
   targetType?: 'user' | 'kid';
   targetId?: string;
   onPhotoChange?: (url: string) => void;
+  // Audit 2026-05-06 (matrix §2.4): hide upload affordance on cards the viewer
+  // cannot edit. /api/upload also enforces server-side; this is UI parity.
+  // Default true preserves prior behavior for any unmigrated call site.
+  canEditPhoto?: boolean;
 }) {
+  const photoEditable = canEditPhoto ?? true;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -141,7 +146,7 @@ const MemberCard = React.memo(function MemberCard({ name, role, isMe, appRole, o
           ) : (
             <GAvatar name={name} size={size} />
           )}
-          {targetType && targetId && (
+          {targetType && targetId && photoEditable && (
             <>
               <button
                 onClick={() => fileRef.current?.click()}
@@ -312,8 +317,13 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
     setBusy(true); setError(null); setLinkUrl(null);
     try {
       const endpoint = caregiverMode ? '/api/circle/invite-family' : '/api/circle/invite';
+      // caregiverMode is the watcher's "Invite a family" path — server forces
+      // appRole='keeper' and householdMode='create_new' regardless of payload
+      // (per Circle/invite/role audit 2026-05-06, matrix §2.1). Don't send role
+      // or villageGroup; both are ignored server-side and would only make the
+      // payload look like an attempted privilege escalation in logs.
       const payload = caregiverMode
-        ? { parentName: name, parentEmail: email, villageGroup, mode }
+        ? { parentName: name, parentEmail: email, mode }
         : { name, email, role, villageGroup, mode };
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -411,13 +421,11 @@ function InviteSheet({ onClose, onInvited, caregiverMode }: { onClose: () => voi
             </label>
 
             {caregiverMode ? (
-              <label style={{ display: 'block', marginBottom: 14 }}>
-                <div style={labelStyle}>Your circle with this family</div>
-                <select value={villageGroup} onChange={e => setVillageGroup(e.target.value as VillageGroup)} style={inputStyle}>
-                  <option value="covey">{getGroupTitle().covey}</option>
-                  <option value="field">{getGroupTitle().field}</option>
-                </select>
-              </label>
+              // Audit 2026-05-06: watchers cannot pick villageGroup. Server
+              // forces 'covey' on this path and the household_mode='create_new'
+              // branch makes circle-tier irrelevant anyway (the invitee gets
+              // their own household). Selector intentionally omitted.
+              null
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <label>
@@ -988,6 +996,8 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
                           targetType="user"
                           targetId={p.id}
                           onPhotoChange={onPhotoChange}
+                          // Audit 2026-05-06 §2.4: own-photo only for adults.
+                          canEditPhoto={isMe}
                         />
                       );
                     })}
@@ -1001,6 +1011,9 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
                         targetType="kid"
                         targetId={k.id}
                         onPhotoChange={() => load()}
+                        // Audit 2026-05-06 §2.4: keepers may edit any chick in
+                        // their own household; watchers may not edit chicks.
+                        canEditPhoto={myRole === 'keeper'}
                       />
                     ))}
                   </div>
@@ -1051,6 +1064,8 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
                               targetType="user"
                               targetId={m.id}
                               onPhotoChange={onPhotoChange}
+                              // Audit 2026-05-06 §2.4: own-photo only for adults.
+                              canEditPhoto={isMe}
                             />
                           );
                         })}
