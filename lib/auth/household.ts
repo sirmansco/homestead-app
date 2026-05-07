@@ -1,5 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { eq, and, sql } from 'drizzle-orm';
+import * as Sentry from '@sentry/nextjs';
 import { db } from '@/lib/db';
 import { households, users } from '@/lib/db/schema';
 import { looksLikeSlug } from '@/lib/format';
@@ -96,6 +97,7 @@ export async function requireHousehold() {
     } catch { /* best-effort; don't fail the request on Clerk hiccup */ }
   }
 
+  Sentry.setUser({ id: user.id.toString() });
   return { household, user, userId, orgId };
 }
 
