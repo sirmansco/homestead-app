@@ -121,7 +121,9 @@ describe('verifyImageMagicBytes', () => {
 vi.mock('@/lib/auth/household', () => ({
   requireHousehold: vi.fn().mockResolvedValue({
     household: { id: 'hh-1' },
-    user: { id: 'u-1' },
+    // role added 2026-05-06 per Circle/invite/role audit — /api/upload now
+    // gates kid uploads on viewer.role === 'keeper'.
+    user: { id: 'u-1', role: 'keeper' },
   }),
 }));
 
@@ -208,10 +210,11 @@ describe('POST /api/upload — magic-byte gate', () => {
   });
 
   it('returns /api/photo/[id] proxy path in response, not raw blob URL', async () => {
-    const fd = makeFormData(jpegBytes(), 'photo.jpg', 'image/jpeg', 'user', 'target-id-123');
+    // targetId must equal caller.user.id ('u-1') after the audit's auth gate.
+    const fd = makeFormData(jpegBytes(), 'photo.jpg', 'image/jpeg', 'user', 'u-1');
     const res = await callUploadRoute(fd);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.url).toBe('/api/photo/target-id-123');
+    expect(body.url).toBe('/api/photo/u-1');
   });
 });
