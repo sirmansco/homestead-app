@@ -767,6 +767,10 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
   const [showInvite, setShowInvite] = useState(false);
   const myRole: AppRole = roleProp ?? 'keeper';
   const [myUserId, setMyUserId] = useState<string | null>(null);
+  // Matrix §2.1.2: keeper-non-admin must not see the Invite button. Server
+  // returns 403 either way, but the UI gate prevents a silent failure on tap.
+  const [isAdmin, setIsAdmin] = useState(false);
+  const canInvite = myRole === 'keeper' && isAdmin;
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -785,6 +789,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
       if (meRes.ok) {
         const me = await meRes.json();
         if (me.user?.id) setMyUserId(me.user.id);
+        setIsAdmin(Boolean(me.user?.isAdmin));
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
@@ -948,7 +953,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
             <div style={{ fontFamily: G.serif, fontStyle: 'italic', fontSize: 13, color: G.ink2, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
               Invite family and {getCopy().roles.watcher.plural.toLowerCase()} who help with the {getCopy().circle.kidLabel.toLowerCase()}s.
             </div>
-            {myRole === 'keeper' && (
+            {canInvite && (
               <button onClick={() => setShowInvite(true)} style={btnStyle}>Invite or add</button>
             )}
           </div>
@@ -1083,7 +1088,7 @@ export function ScreenCircle({ role: roleProp, onOpenSettings }: { role?: 'keepe
               <div style={{ fontFamily: G.display, fontStyle: 'italic', fontSize: 17, color: G.ink, lineHeight: 1.3 }}>
                 &ldquo;{getCopy().circle.quote}&rdquo;
               </div>
-              {myRole === 'keeper' && (
+              {canInvite && (
                 <button onClick={() => setShowInvite(true)} style={{ ...btnStyle, marginTop: 12 }}>
                   Invite or add
                 </button>
