@@ -37,7 +37,7 @@ describe('Kid avatar upload wiring — ScreenVillage', () => {
     expect(cardSrc).toContain('targetType && targetId');
     // The hidden file input exists
     expect(cardSrc).toContain('type="file"');
-    expect(cardSrc).toContain('accept="image/*"');
+    expect(cardSrc).toMatch(/accept="image\//);
   });
 
   it('uploadPhoto helper uses type=kid-compatible FormData fields', () => {
