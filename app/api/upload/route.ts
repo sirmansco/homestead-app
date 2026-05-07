@@ -38,6 +38,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'file, type, and id required' }, { status: 400 });
     }
 
+    // Bug #4 (BUGS.md 2026-05-06) — photo edit permission gate.
+    // Matrix from docs/plans/circle-invite-role-audit.md §2.4:
+    //   user target: caller may edit ONLY their own row.
+    //   kid  target: caller must be a keeper in the chick's household.
+    // Cross-household and cross-user uploads are 403 with no DB write.
+    if (targetType === 'user') {
+      if (targetId !== user.id) {
+        return NextResponse.json({ error: 'no_access' }, { status: 403 });
+      }
+    } else if (targetType === 'kid') {
+      if (user.role !== 'keeper') {
+        return NextResponse.json({ error: 'no_access' }, { status: 403 });
+      }
+      const [chick] = await db
+        .select({ id: chicks.id, householdId: chicks.householdId })
+        .from(chicks)
+        .where(eq(chicks.id, targetId))
+        .limit(1);
+      if (!chick || chick.householdId !== household.id) {
+        return NextResponse.json({ error: 'no_access' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'type must be user or kid' }, { status: 400 });
+    }
+
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
     const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     if (!allowed.includes(ext)) {

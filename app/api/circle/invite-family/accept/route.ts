@@ -101,12 +101,73 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'email_mismatch' }, { status: 403 });
     }
 
-    // Resolve the household the invite creator belongs to, to set acceptedHouseholdId.
-    const [fromUser] = await db
-      .select({ householdId: users.householdId })
-      .from(users)
-      .where(eq(users.id, invite.fromUserId))
-      .limit(1);
+    // Branch on household_mode (added by 0018):
+    //   join_existing → invitee joins inviter's household (today's behavior).
+    //   create_new    → brand-new Clerk org for invitee; household row created
+    //                   by requireHousehold() on first request from the new org.
+    // Bug #3 (BUGS.md 2026-05-06): watcher-invited new families must NOT fold
+    // into the watcher's household.
+
+    let acceptedHouseholdId: string | null = null;
+
+    if (invite.householdMode === 'create_new') {
+      // Create a brand-new organization for the invitee. Clerk will assign
+      // them as creator (and org admin) automatically. requireHousehold() on
+      // their first authenticated request will see the new orgId and provision
+      // the matching households row + users row (with isAdmin=true via the
+      // first-user advisory-lock path in lib/auth/household.ts).
+      const orgName = (invite.parentName?.trim() || clerkUser.firstName || 'Family');
+      try {
+        await clerk.organizations.createOrganization({
+          name: orgName,
+          createdBy: userId,
+        });
+      } catch (orgErr) {
+        console.error('[invite-family:accept] createOrganization failed', orgErr);
+        return NextResponse.json({ error: 'household_create_failed' }, { status: 500 });
+      }
+
+      // Stamp publicMetadata so requireHousehold() picks the right role on
+      // first-user provision. appRole='keeper' is invariant for create_new
+      // (set server-side at invite creation time; payload override is ignored
+      // for watcher-initiated invites — see invite-family POST).
+      try {
+        await clerk.users.updateUserMetadata(userId, {
+          publicMetadata: {
+            appRole: 'keeper',
+          },
+        });
+      } catch (metaErr) {
+        // Non-fatal: requireHousehold() falls back to isFirstUser ? 'keeper'
+        // for new orgs, so the user still lands as keeper-admin even if this
+        // metadata write fails. Log loudly rather than swallow.
+        console.error('[invite-family:accept] updateUserMetadata failed', metaErr);
+      }
+      // acceptedHouseholdId stays null — household row doesn't exist yet.
+    } else {
+      // join_existing — today's behavior preserved.
+      const [fromUser] = await db
+        .select({ householdId: users.householdId })
+        .from(users)
+        .where(eq(users.id, invite.fromUserId))
+        .limit(1);
+      acceptedHouseholdId = fromUser?.householdId ?? null;
+
+      // Stamp the invite's appRole/villageGroup into Clerk publicMetadata so
+      // requireHousehold() respects it on the invitee's first call. Without
+      // this, meta.appRole is undefined and the user defaults to 'watcher'
+      // (Bug #1's third root cause at lib/auth/household.ts:71).
+      try {
+        await clerk.users.updateUserMetadata(userId, {
+          publicMetadata: {
+            appRole: invite.appRole ?? 'watcher',
+            villageGroup: invite.villageGroup,
+          },
+        });
+      } catch (metaErr) {
+        console.error('[invite-family:accept] updateUserMetadata failed', metaErr);
+      }
+    }
 
     // Atomic consume: AND status = 'pending' guards against a concurrent accept.
     const [updated] = await db
@@ -114,7 +175,7 @@ export async function POST(req: NextRequest) {
       .set({
         status: 'accepted',
         acceptedAt: new Date(),
-        acceptedHouseholdId: fromUser?.householdId ?? null,
+        acceptedHouseholdId,
       })
       .where(and(eq(familyInvites.id, invite.id), ne(familyInvites.status, 'accepted')))
       .returning();

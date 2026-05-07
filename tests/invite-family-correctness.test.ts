@@ -139,7 +139,13 @@ describe('POST /api/circle/invite-family — fromUserId from requireHousehold (F
     mockHousehold();
     vi.mocked(db.insert).mockReturnValue(makeInsertChain() as unknown as ReturnType<typeof db.insert>);
 
-    const res = await invitePost(makeReq({ parentEmail: INVITE_EMAIL }));
+    // appRole + villageGroup added 2026-05-06 per Circle/invite/role audit;
+    // keeper inviters must specify both since the row now persists them.
+    const res = await invitePost(makeReq({
+      parentEmail: INVITE_EMAIL,
+      appRole: 'watcher',
+      villageGroup: 'covey',
+    }));
     expect(res.status).toBe(200);
     // requireHousehold was called; requireUser was NOT called
     expect(vi.mocked(requireHousehold)).toHaveBeenCalledOnce();
@@ -150,7 +156,7 @@ describe('POST /api/circle/invite-family — fromUserId from requireHousehold (F
 
   it('missing parentEmail → 400', async () => {
     mockHousehold();
-    const res = await invitePost(makeReq({ parentEmail: '' }));
+    const res = await invitePost(makeReq({ parentEmail: '', appRole: 'watcher' }));
     expect(res.status).toBe(400);
   });
 });
